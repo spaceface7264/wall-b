@@ -1,8 +1,8 @@
-# 🚀 Launch Guide
+# 🚀 Wall-B Launch Guide
 
-## ✅ Your App is Ready!
+## ✅ Wall-B is Ready!
 
-Your mobile app is now configured and ready to launch with the provided Supabase credentials.
+Your Wall-B bouldering community app is now configured and ready to launch with the provided Supabase credentials.
 
 ## 🔧 Database Setup Required
 
