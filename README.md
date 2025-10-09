@@ -1,6 +1,8 @@
-# 🧗‍♀️ Bouldering Community App
+# 🧗‍♀️ Wall-B
 
-A modern, mobile-first web application for the bouldering community featuring real-time chat, community posts, gym database, and user profiles.
+**Wall-B** is a modern, mobile-first web application for the bouldering community featuring real-time chat, community posts, gym database, and user profiles.
+
+*Your bouldering community hub* 🎯
 
 ## ✨ Features
 

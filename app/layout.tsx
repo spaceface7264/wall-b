@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mobile App",
-  description: "Fast mobile application",
+  title: "Wall-B",
+  description: "Wall-B - A modern bouldering community app with real-time chat, gym database, and social features",
 };
 
 export const viewport = {
