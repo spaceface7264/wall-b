@@ -179,9 +179,9 @@ export default function Gyms() {
       <div className="mobile-container">
         <div className="mobile-section">
           {/* Header Card */}
-          <div className="mobile-card">
+          <div className="mobile-card animate-fade-in">
             <div className="mobile-card-header">
-              <div>
+              <div className="animate-slide-up">
                 <h1 className="mobile-card-title">Bouldering Gyms</h1>
                 <p className="mobile-card-subtitle">
                   Discover amazing bouldering gyms around the world
@@ -191,7 +191,7 @@ export default function Gyms() {
           </div>
 
           {/* Search and Filter */}
-          <div className="mobile-card">
+          <div className="mobile-card animate-slide-up">
             <div className="space-y-4">
               <div>
                 <input
@@ -220,10 +220,22 @@ export default function Gyms() {
           {/* Gyms List */}
           <div className="mobile-section">
             {loading ? (
-              <div className="mobile-card">
-                <div className="minimal-flex-center py-8">
-                  <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mr-2"></div>
-                  <p className="mobile-text-sm">Loading gyms...</p>
+              <div className="mobile-card animate-fade-in">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="loading-skeleton w-16 h-16 rounded-lg"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="loading-skeleton h-4 w-3/4"></div>
+                      <div className="loading-skeleton h-3 w-1/2"></div>
+                      <div className="loading-skeleton h-3 w-2/3"></div>
+                    </div>
+                  </div>
+                  <div className="loading-skeleton h-16 w-full"></div>
+                  <div className="flex gap-2">
+                    <div className="loading-skeleton h-6 w-20"></div>
+                    <div className="loading-skeleton h-6 w-16"></div>
+                    <div className="loading-skeleton h-6 w-18"></div>
+                  </div>
                 </div>
               </div>
             ) : filteredGyms.length === 0 ? (
@@ -236,8 +248,12 @@ export default function Gyms() {
                 </div>
               </div>
             ) : (
-              filteredGyms.map((gym) => (
-                <div key={gym.id} className="mobile-card cursor-pointer" onClick={() => openGym(gym)}>
+              filteredGyms.map((gym, index) => (
+                <div 
+                  key={gym.id} 
+                  className={`mobile-card cursor-pointer touch-feedback animate-stagger-${Math.min(index + 1, 5)}`} 
+                  onClick={() => openGym(gym)}
+                >
                   <div className="mobile-card-header">
                     <div className="minimal-flex">
                       <div className="w-16 h-16 bg-gray-700 rounded-lg minimal-flex-center mr-4 overflow-hidden">

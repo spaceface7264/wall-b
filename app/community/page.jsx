@@ -338,9 +338,9 @@ export default function Community() {
       <div className="mobile-container">
         <div className="mobile-section">
           {/* Header Card */}
-          <div className="mobile-card">
+          <div className="mobile-card animate-fade-in">
             <div className="mobile-card-header">
-              <div>
+              <div className="animate-slide-up">
                 <h1 className="mobile-card-title">Community</h1>
                 <p className="mobile-card-subtitle">
                   Connect with other users, share ideas, and build together.
@@ -348,7 +348,7 @@ export default function Community() {
               </div>
               <button
                 onClick={() => setShowNewPost(true)}
-                className="mobile-btn-primary"
+                className="mobile-btn-primary touch-feedback animate-bounce-in"
               >
                 <Plus className="minimal-icon" />
                 New Post
@@ -358,13 +358,13 @@ export default function Community() {
 
           {/* New Post Modal */}
           {showNewPost && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 minimal-flex-center z-50">
-              <div className="minimal-card p-6 max-w-2xl w-full mx-4">
+            <div className="fixed inset-0 bg-black bg-opacity-50 minimal-flex-center z-50 animate-fade-in">
+              <div className="minimal-card p-6 max-w-2xl w-full mx-4 animate-scale-in">
                 <div className="minimal-flex-between mb-4">
                   <h3 className="mobile-subheading">Create New Post</h3>
                   <button
                     onClick={() => setShowNewPost(false)}
-                    className="mobile-btn-secondary"
+                    className="mobile-btn-secondary touch-feedback"
                   >
                     <X className="minimal-icon" />
                   </button>
@@ -536,10 +536,16 @@ export default function Community() {
           {/* Posts Feed */}
           <div className="mobile-section">
             {loading ? (
-              <div className="mobile-card">
-                <div className="minimal-flex-center py-8">
-                  <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mr-2"></div>
-                  <p className="mobile-text-sm">Loading posts...</p>
+              <div className="mobile-card animate-fade-in">
+                <div className="space-y-4">
+                  <div className="loading-skeleton h-4 w-3/4"></div>
+                  <div className="loading-skeleton h-3 w-1/2"></div>
+                  <div className="loading-skeleton h-20 w-full"></div>
+                  <div className="flex gap-2">
+                    <div className="loading-skeleton h-6 w-16"></div>
+                    <div className="loading-skeleton h-6 w-16"></div>
+                    <div className="loading-skeleton h-6 w-16"></div>
+                  </div>
                 </div>
               </div>
             ) : posts.length === 0 ? (
@@ -552,8 +558,12 @@ export default function Community() {
                 </div>
               </div>
             ) : (
-              posts.map((post) => (
-                <div key={post.id} className="mobile-card cursor-pointer" onClick={() => openPost(post)}>
+              posts.map((post, index) => (
+                <div 
+                  key={post.id} 
+                  className={`mobile-card cursor-pointer touch-feedback animate-stagger-${Math.min(index + 1, 5)}`} 
+                  onClick={() => openPost(post)}
+                >
                   <div className="mobile-card-header">
                     <div className="minimal-flex">
                       <div className="w-8 h-8 bg-gray-700 rounded-full minimal-flex-center mr-3">
