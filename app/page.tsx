@@ -7,8 +7,8 @@ import LoginPage from './LoginPage';
 import { User } from '../types/supabase';
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 );
 
 export default function Home() {
@@ -21,7 +21,10 @@ export default function Home() {
 
     const getUser = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error('Error getting user:', error);
+        }
         if (mounted) {
           setUser(user);
           setLoading(false);
