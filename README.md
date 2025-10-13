@@ -1,177 +1,93 @@
-# 🧗‍♀️ Wall-B
+# Climbing Community App
 
-**Wall-B** is a modern, mobile-first web application for the bouldering community featuring real-time chat, community posts, gym database, and user profiles.
+A modern community platform for climbers built with Next.js and Supabase.
 
-*Your bouldering community hub* 🎯
+## Features
 
-## ✨ Features
+- 🏘️ **Communities**: Join and participate in climbing communities
+- 📝 **Posts**: Create and share posts with media support
+- 💬 **Comments**: Engage in discussions with threaded comments
+- 📅 **Events**: Create and RSVP to climbing events
+- 🏋️ **Gyms**: Discover and review climbing gyms
+- 💬 **Chat**: Real-time messaging system
+- 👤 **Profiles**: Extended user profiles with climbing stats
 
-### 🏠 **Dashboard**
-- Clean, mobile-optimized interface
-- Quick access to all features
-- User authentication with Supabase
+## Tech Stack
 
-### 💬 **Real-time Chat**
-- Live messaging with other users
-- Real-time updates using Supabase
-- Mobile-optimized chat interface
-
-### 👥 **Community**
-- Create and share posts with titles and content
-- Like and comment system
-- Real-time updates
-- Mobile-first design
-
-### 🏢 **Gyms Database**
-- Comprehensive database of bouldering gyms
-- Search and filter by country/city
-- Detailed gym information including:
-  - Contact details and websites
-  - Opening hours
-  - Facilities and amenities
-  - Price ranges and difficulty levels
-  - Wall heights and boulder counts
-
-### 👤 **User Profiles**
-- Avatar upload with Supabase Storage
-- Profile information management
-- Persistent user data
-
-## 🛠️ Tech Stack
-
-- **Frontend**: Next.js 15.5.4, React, Tailwind CSS
+- **Frontend**: Next.js 14, React, Tailwind CSS
 - **Backend**: Supabase (PostgreSQL, Auth, Storage, Real-time)
-- **Styling**: Tailwind CSS with custom mobile-first design
+- **Styling**: Custom mobile-first design system
 - **Icons**: Lucide React
-- **TypeScript**: Type checking and better development experience
 
-## 🚀 Getting Started
+## Getting Started
 
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-- Supabase account
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd proj
-   ```
-
-2. **Install dependencies**
+1. **Install dependencies**:
    ```bash
    npm install
    ```
 
-3. **Set up environment variables**
-   Create a `.env.local` file in the root directory:
-   ```env
+2. **Set up environment variables**:
+   Create `.env.local` with your Supabase credentials:
+   ```
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
    ```
 
-4. **Set up Supabase database**
-   - Run the community schema: `lib/community-schema.sql`
-   - Run the gyms schema: `lib/gyms-schema.sql`
-   - Enable real-time for all tables
-   - Create a public `avatars` storage bucket
+3. **Set up database**:
+   Run the SQL scripts in `sql-scripts/` folder in your Supabase SQL Editor:
+   - `enhanced-community-schema.sql` - Main database schema
+   - `profiles-schema.sql` - User profiles
+   - `storage-setup.sql` - File storage setup
+   - `direct-messages-schema.sql` - Messaging system
+   - `notifications-schema.sql` - Notification system
 
-5. **Start the development server**
+4. **Start development server**:
    ```bash
    npm run dev
    ```
 
-6. **Open your browser**
+5. **Open your browser**:
    Navigate to `http://localhost:3000`
 
-## 📱 Mobile-First Design
-
-The app is designed with mobile users in mind:
-- Touch-friendly interface
-- Optimized for small screens
-- Bottom navigation for easy thumb access
-- Responsive design that works on all devices
-
-## 🗄️ Database Schema
-
-### Community Tables
-- `posts` - Community posts with likes and comments
-- `comments` - Comments on posts
-- `likes` - Likes on posts and comments
-
-### Gyms Tables
-- `gyms` - Gym information and details
-- `gym_images` - Multiple images per gym
-- `gym_reviews` - User reviews and ratings
-
-## 🔧 Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-
-## 📁 Project Structure
+## Project Structure
 
 ```
-proj/
-├── app/
-│   ├── components/
-│   │   └── SidebarLayout.jsx    # Main layout component
-│   ├── chat/
-│   │   └── page.jsx             # Real-time chat
-│   ├── community/
-│   │   └── page.jsx             # Community posts
-│   ├── gyms/
-│   │   └── page.jsx             # Gyms database
-│   ├── profile/
-│   │   └── page.jsx             # User profile
-│   ├── dashboard/
-│   │   └── page.jsx             # Main dashboard
-│   ├── globals.css              # Global styles
-│   ├── layout.tsx               # Root layout
-│   └── page.tsx                 # Landing page
-├── lib/
-│   ├── community-schema.sql     # Community database schema
-│   └── gyms-schema.sql          # Gyms database schema
-├── types/
-│   └── supabase.ts              # TypeScript types
-└── README.md
+app/
+├── components/          # Reusable UI components
+├── community/           # Community pages
+├── gyms/               # Gym listing and details
+├── profile/            # User profile management
+├── chat/               # Messaging system
+└── dashboard/          # Main dashboard
+
+lib/                    # Utility functions and schemas
+sql-scripts/           # Database setup scripts
+types/                 # TypeScript type definitions
 ```
 
-## 🎨 Design System
+## Key Components
 
-The app uses a custom design system optimized for mobile:
-- **Colors**: Dark theme with indigo accents
-- **Typography**: Clean, readable fonts
-- **Spacing**: Consistent mobile-friendly spacing
-- **Components**: Reusable, touch-friendly components
+- **SidebarLayout**: Main app layout with navigation
+- **CommunityCard**: Community listing cards
+- **PostCard**: Individual post display
+- **CommentThread**: Nested comment system
+- **EventCard**: Event display and RSVP
+- **CreatePostModal**: Post creation interface
+- **CreateEventModal**: Event creation interface
 
-## 🔐 Authentication
+## Database Schema
 
-- Supabase Auth integration
-- Email/password authentication
-- Protected routes
-- User session management
+The app uses a comprehensive PostgreSQL schema with:
+- User authentication and profiles
+- Community management
+- Posts and comments with threading
+- Events and RSVPs
+- Gym listings and reviews
+- Direct messaging
+- Notifications system
+- File storage for media
 
-## 📊 Real-time Features
-
-- Live chat messaging
-- Real-time post updates
-- Live like and comment counts
-- Real-time user presence
-
-## 🚀 Deployment
-
-The app is ready for deployment on:
-- Vercel (recommended)
-- Netlify
-- Any Node.js hosting platform
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -179,17 +95,6 @@ The app is ready for deployment on:
 4. Test thoroughly
 5. Submit a pull request
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License.
-
-## 🙏 Acknowledgments
-
-- Supabase for the amazing backend platform
-- Next.js team for the excellent framework
-- Tailwind CSS for the utility-first styling
-- Lucide for the beautiful icons
-
----
-
-**Happy Climbing! 🧗‍♀️🧗‍♂️**
+MIT License - see LICENSE file for details

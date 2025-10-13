@@ -1,4 +1,4 @@
-import { Users, Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal } from 'lucide-react';
+import { Users, Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 export default function PostCard({ 
@@ -8,12 +8,17 @@ export default function PostCard({
   onShare, 
   onSave,
   onOpen,
+  onEdit,
+  onDelete,
+  currentUserId,
   liked = false,
   loadingLike = false,
   showActions = true,
   compact = false
 }) {
   const [showReactions, setShowReactions] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const isOwnPost = post.user_id === currentUserId;
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
@@ -74,6 +79,25 @@ export default function PostCard({
 
   const handleOpen = () => {
     if (onOpen) onOpen(post);
+  };
+
+  const handleEdit = (e) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    if (onEdit) onEdit(post);
+  };
+
+  const handleDelete = (e) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    if (confirm('Are you sure you want to delete this post?')) {
+      if (onDelete) onDelete(post.id);
+    }
+  };
+
+  const toggleMenu = (e) => {
+    e.stopPropagation();
+    setShowMenu(!showMenu);
   };
 
   if (compact) {
@@ -137,13 +161,33 @@ export default function PostCard({
               </span>
             </div>
           </div>
-          {showActions && (
-            <button 
-              onClick={(e) => e.stopPropagation()}
-              className="mobile-btn-secondary p-2"
-            >
-              <MoreHorizontal className="minimal-icon" />
-            </button>
+          {showActions && isOwnPost && (
+            <div className="relative">
+              <button 
+                onClick={toggleMenu}
+                className="mobile-btn-secondary p-2"
+              >
+                <MoreHorizontal className="minimal-icon" />
+              </button>
+              {showMenu && (
+                <div className="absolute right-0 top-10 z-50 bg-gray-800 border border-gray-700 rounded-lg shadow-lg min-w-[150px]">
+                  <button
+                    onClick={handleEdit}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 minimal-flex gap-2 items-center"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Edit Post
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700 minimal-flex gap-2 items-center"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Post
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -155,6 +199,38 @@ export default function PostCard({
             : post.content
           }
         </p>
+        
+        {/* Media Files */}
+        {post.media_files && post.media_files.length > 0 && (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {post.media_files.slice(0, 4).map((file, index) => (
+              <div key={index} className="relative">
+                {file.type.startsWith('image/') ? (
+                  <img
+                    src={file.url}
+                    alt={file.name}
+                    className="w-full h-32 object-cover rounded-lg"
+                    loading="lazy"
+                  />
+                ) : file.type.startsWith('video/') ? (
+                  <video
+                    src={file.url}
+                    className="w-full h-32 object-cover rounded-lg"
+                    controls
+                    preload="metadata"
+                  />
+                ) : null}
+                {post.media_files.length > 4 && index === 3 && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                    <span className="text-white text-sm font-medium">
+                      +{post.media_files.length - 4} more
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       
       <div className="mobile-card-actions">

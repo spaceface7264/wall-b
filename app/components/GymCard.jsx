@@ -1,0 +1,88 @@
+import React from 'react';
+import { MapPin, Star, Clock, Users, ChevronRight } from 'lucide-react';
+
+const GymCard = React.memo(function GymCard({
+  gym,
+  onOpen
+}) {
+  const getFacilityIcon = (facility) => {
+    const iconMap = {
+      'Cafe': '☕',
+      'Shop': '🛍️',
+      'Training Area': '💪',
+      'Yoga Studio': '🧘',
+      'Kids Area': '👶',
+      'Locker Rooms': '🔒',
+      'Parking': '🚗',
+      'Equipment Rental': '🎒',
+      'Sauna': '🧖',
+      'Massage': '💆',
+      'Bike Storage': '🚲'
+    };
+    return iconMap[facility] || '🏢';
+  };
+
+  const facilities = Array.isArray(gym.facilities) ? gym.facilities : JSON.parse(gym.facilities || '[]');
+
+  return (
+    <div
+      className="mobile-card cursor-pointer touch-feedback hover:border-indigo-500/50 transition-all duration-200"
+      onClick={() => onOpen(gym)}
+      style={{ padding: '20px', marginBottom: '16px', position: 'relative' }}
+    >
+      <div style={{ display: 'flex', gap: '20px' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h3 className="mobile-subheading truncate" style={{ marginBottom: '12px' }}>{gym.name}</h3>
+
+          <div className="minimal-flex mobile-text-xs text-gray-400" style={{ marginBottom: '12px' }}>
+            <MapPin className="minimal-icon flex-shrink-0" style={{ marginRight: '10px' }} />
+            <span className="truncate">{gym.city}, {gym.country}</span>
+          </div>
+
+          <p className="mobile-text-xs text-gray-300 line-clamp-2" style={{ lineHeight: '1.7' }}>
+            {gym.description}
+          </p>
+
+          {/* Facilities */}
+          {facilities.length > 0 && (
+            <div className="minimal-flex flex-wrap gap-1 mt-3">
+              {facilities.slice(0, 3).map((facility, index) => (
+                <span 
+                  key={index} 
+                  className="mobile-text-xs bg-gray-700 px-2 py-1 rounded text-gray-300"
+                  style={{ fontSize: '10px' }}
+                >
+                  {getFacilityIcon(facility)} {facility}
+                </span>
+              ))}
+              {facilities.length > 3 && (
+                <span 
+                  className="mobile-text-xs bg-gray-700 px-2 py-1 rounded text-gray-300"
+                  style={{ fontSize: '10px' }}
+                >
+                  +{facilities.length - 3} more
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end', flexShrink: 0 }}>
+          <div className="minimal-flex mobile-text-xs text-gray-400" style={{ marginBottom: '8px' }}>
+            <span className="font-medium">{gym.boulder_count} problems</span>
+          </div>
+
+          <div className="minimal-flex mobile-text-xs text-indigo-400" style={{ marginBottom: '8px' }}>
+            <span className="font-medium">{gym.price_range}</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            <ChevronRight className="minimal-icon text-gray-400" style={{ width: '16px', height: '16px' }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+export default GymCard;

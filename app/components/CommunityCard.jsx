@@ -1,50 +1,42 @@
-import { Users, MapPin, ChevronRight, UserPlus, Star } from 'lucide-react';
+import React from 'react';
+import { Users, MapPin, ChevronRight, Star } from 'lucide-react';
 
-export default function CommunityCard({ 
-  community, 
-  isMember = false, 
-  onJoin, 
-  onLeave, 
-  onOpen, 
+const CommunityCard = React.memo(function CommunityCard({
+  community,
+  isMember = false,
+  onJoin,
+  onOpen,
   joining = false,
-  showJoinButton = true 
+  showJoinButton = true
 }) {
   return (
     <div 
-      className="mobile-card card-interactive card-glow animate-fade-in"
+      className="mobile-card cursor-pointer touch-feedback hover:border-indigo-500/50 transition-all duration-200"
       onClick={() => onOpen(community.id)}
     >
       <div className="minimal-flex">
-        <div className="w-12 h-12 bg-gray-700 rounded-lg minimal-flex-center mr-3 flex-shrink-0">
-          {community.gyms?.image_url ? (
-            <img 
-              src={community.gyms.image_url} 
-              alt={community.gyms.name}
-              className="w-full h-full object-cover rounded-lg"
-            />
-          ) : (
-            <Users className="minimal-icon text-gray-300" />
-          )}
+        <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-lg minimal-flex-center mr-4 flex-shrink-0 shadow-lg">
+          <Users className="minimal-icon text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="mobile-subheading truncate">{community.name}</h3>
-          <div className="minimal-flex mobile-text-xs text-gray-400 mb-1">
-            <MapPin className="minimal-icon mr-1" />
-            <span>{community.gyms?.city}, {community.gyms?.country}</span>
+          <h3 className="mobile-subheading truncate mb-2">{community.name}</h3>
+          <div className="minimal-flex mobile-text-xs text-gray-400 mb-2">
+            <MapPin className="minimal-icon mr-1.5 flex-shrink-0" />
+            <span className="truncate">{community.gyms?.city}, {community.gyms?.country}</span>
           </div>
-          <p className="mobile-text-xs text-gray-300 line-clamp-2 mb-2">
+          <p className="mobile-text-xs text-gray-300 line-clamp-2 mb-3 leading-relaxed">
             {community.description}
           </p>
           <div className="minimal-flex mobile-text-xs text-gray-400">
-            <Users className="minimal-icon mr-1" />
-            <span>{community.member_count} members</span>
+            <Users className="minimal-icon mr-1.5 flex-shrink-0" />
+            <span className="font-medium">{community.member_count} members</span>
           </div>
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <ChevronRight className="minimal-icon text-gray-400" />
+        <div className="flex flex-col items-end gap-3 ml-3">
+          <ChevronRight className="minimal-icon text-gray-400 flex-shrink-0" />
           {showJoinButton && (
             isMember ? (
-              <div className="minimal-flex mobile-text-xs text-green-400">
+              <div className="minimal-flex mobile-text-xs text-green-400 bg-green-900/20 px-2 py-1 rounded-full">
                 <Star className="minimal-icon mr-1" />
                 <span>Member</span>
               </div>
@@ -55,7 +47,7 @@ export default function CommunityCard({
                   onJoin(community.id);
                 }}
                 disabled={joining}
-                className="mobile-btn-primary text-xs disabled:opacity-50"
+                className="mobile-btn-primary text-xs disabled:opacity-50 min-w-[60px]"
               >
                 {joining ? 'Joining...' : 'Join'}
               </button>
@@ -65,4 +57,6 @@ export default function CommunityCard({
       </div>
     </div>
   );
-}
+});
+
+export default CommunityCard;

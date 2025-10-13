@@ -1,30 +1,39 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import { Users, MessageCircle, Plus, Heart, MessageSquare, Clock, X, ThumbsUp, Reply, Send, MapPin, UserPlus, Search, Filter, TrendingUp, Calendar, Star, ChevronRight, Image, Tag, Hash, Bell, Settings, ArrowLeft } from 'lucide-react';
+import { supabase } from '../../../lib/supabase';
+import { Users, MessageCircle, Plus, MessageSquare, Clock, X, ThumbsUp, MapPin, UserPlus, TrendingUp, Calendar, Settings, ArrowLeft, RefreshCw } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
 import PostCard from '../../components/PostCard';
 import EventCard from '../../components/EventCard';
+import SimpleEventCard from '../../components/SimpleEventCard';
+import CreatePostModal from '../../components/CreatePostModal';
+import CreateEventModal from '../../components/CreateEventModal';
 import { useRouter, useParams } from 'next/navigation';
+// Removed mock data imports - now using Supabase directly
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-);
+// Supabase client is now imported from lib/supabase.js
 
 export default function CommunityPage() {
   const [user, setUser] = useState(null);
   const [community, setCommunity] = useState(null);
   const [posts, setPosts] = useState([]);
   const [events, setEvents] = useState([]);
+  const [eventRSVPs, setEventRSVPs] = useState(new Map());
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('feed');
   const [selectedTag, setSelectedTag] = useState('all');
-  const [showNewPost, setShowNewPost] = useState(false);
+  const [showNewPostModal, setShowNewPostModal] = useState(false);
+  const [showEditPostModal, setShowEditPostModal] = useState(false);
+  const [showNewEventModal, setShowNewEventModal] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
   const [isMember, setIsMember] = useState(false);
   const [joining, setJoining] = useState(false);
-  const [newPost, setNewPost] = useState({ title: '', content: '', post_type: 'post', tag: 'general' });
+  const [refreshing, setRefreshing] = useState(false);
+  const [likedPosts, setLikedPosts] = useState(new Set());
+  const [likingPost, setLikingPost] = useState(null);
+  const [rsvpingEvent, setRsvpingEvent] = useState(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [postTags] = useState([
     { name: 'all', label: 'All', color: '#6b7280' },
     { name: 'beta', label: 'Beta', color: '#ef4444' },
@@ -49,12 +58,14 @@ export default function CommunityPage() {
     };
     getUser();
     loadCommunity();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [communityId]);
 
   const loadCommunity = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      const { data: communityData, error } = await supabase
         .from('communities')
         .select(`
           *,
@@ -62,7 +73,6 @@ export default function CommunityPage() {
             name,
             city,
             country,
-            image_url,
             address,
             description
           )
@@ -72,32 +82,21 @@ export default function CommunityPage() {
 
       if (error) {
         console.error('Error fetching community:', error);
-        // Fallback to mock data
-        const mockCommunity = {
-          id: communityId,
-          name: 'The Climbing Hangar Community',
-          description: 'Connect with fellow climbers at The Climbing Hangar in London. Share beta, organize meetups, and stay updated on gym events.',
-          member_count: 156,
-          rules: 'Welcome to The Climbing Hangar community! Please be respectful, share helpful beta, and keep posts relevant to climbing and this gym.',
-          gyms: {
-            name: 'The Climbing Hangar',
-            city: 'London',
-            country: 'United Kingdom',
-            image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb2d26?w=400',
-            address: '123 Climbing Street, London E1 6AN',
-            description: 'Premier bouldering gym in the heart of London with world-class facilities and routes for all levels.'
-          }
-        };
-        setCommunity(mockCommunity);
-        loadPosts(mockCommunity.id);
-        loadEvents(mockCommunity.id);
-      } else {
-        setCommunity(data);
-        loadPosts(data.id);
-        loadEvents(data.id);
+        router.push('/community');
+        return;
       }
+
+      if (!communityData) {
+        router.push('/community');
+        return;
+      }
+
+      setCommunity(communityData);
+      loadPosts(communityData.id);
+      loadEvents(communityData.id);
     } catch (error) {
       console.error('Error loading community:', error);
+      router.push('/community');
     } finally {
       setLoading(false);
     }
@@ -105,7 +104,7 @@ export default function CommunityPage() {
 
   const loadPosts = async (commId) => {
     try {
-      const { data, error } = await supabase
+      const { data: postsData, error } = await supabase
         .from('posts')
         .select('*')
         .eq('community_id', commId)
@@ -113,57 +112,32 @@ export default function CommunityPage() {
 
       if (error) {
         console.error('Error fetching posts:', error);
-        // Fallback to mock data
-        const mockPosts = [
-          {
-            id: 1,
-            title: "Welcome to The Climbing Hangar Community!",
-            content: "Welcome to our community! This is your space to connect with fellow climbers, share beta, organize meetups, and stay updated on gym events. Feel free to introduce yourself and start sharing!",
-            user_name: "Admin",
-            user_email: "admin@example.com",
-            created_at: new Date().toISOString(),
-            like_count: 12,
-            comment_count: 3,
-            post_type: 'social',
-            tag: 'social'
-          },
-          {
-            id: 2,
-            title: "Beta for the new V6 in the corner",
-            content: "Just sent the new V6 in the corner! The key is to use the undercling on the left, then cross over to the right crimp. The top out is tricky - make sure to commit to the final move!",
-            user_name: "Climber123",
-            user_email: "climber@example.com",
-            created_at: new Date(Date.now() - 3600000).toISOString(),
-            like_count: 8,
-            comment_count: 5,
-            post_type: 'beta',
-            tag: 'beta'
-          },
-          {
-            id: 3,
-            title: "Weekly Training Session - Tomorrow 7PM",
-            content: "Join us for our weekly training session tomorrow at 7PM! We'll be working on finger strength and technique. All levels welcome. Meet at the training area.",
-            user_name: "TrainingCoach",
-            user_email: "coach@example.com",
-            created_at: new Date(Date.now() - 7200000).toISOString(),
-            like_count: 15,
-            comment_count: 7,
-            post_type: 'event',
-            tag: 'event'
-          }
-        ];
-        setPosts(mockPosts);
-      } else {
-        setPosts(data || []);
+        setPosts([]);
+        return;
+      }
+
+      setPosts(postsData || []);
+
+      // Check which posts the user has liked
+      if (user) {
+        const { data: likes } = await supabase
+          .from('likes')
+          .select('post_id')
+          .eq('user_id', user.id)
+          .in('post_id', (postsData || []).map(p => p.id));
+
+        const liked = new Set(likes?.map(like => like.post_id) || []);
+        setLikedPosts(liked);
       }
     } catch (error) {
       console.error('Error loading posts:', error);
+      setPosts([]);
     }
   };
 
   const loadEvents = async (commId) => {
     try {
-      const { data, error } = await supabase
+      const { data: eventsData, error } = await supabase
         .from('events')
         .select('*')
         .eq('community_id', commId)
@@ -172,43 +146,39 @@ export default function CommunityPage() {
 
       if (error) {
         console.error('Error fetching events:', error);
-        // Fallback to mock data
-        const mockEvents = [
-          {
-            id: 1,
-            title: "Weekly Training Session",
-            description: "Join us for our weekly training session! We'll be working on finger strength and technique. All levels welcome.",
-            event_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-            event_type: 'training',
-            location: 'Training Area',
-            max_participants: 20
-          },
-          {
-            id: 2,
-            title: "Boulder Competition",
-            description: "Monthly boulder competition with prizes for all categories. Registration required.",
-            event_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            event_type: 'competition',
-            location: 'Main Boulder Area',
-            max_participants: 50
-          }
-        ];
-        setEvents(mockEvents);
-      } else {
-        setEvents(data || []);
+        setEvents([]);
+        return;
+      }
+
+      setEvents(eventsData || []);
+
+      // Load RSVPs for events
+      if (user && eventsData && eventsData.length > 0) {
+        const { data: rsvpsData } = await supabase
+          .from('event_rsvps')
+          .select('event_id, status')
+          .eq('user_id', user.id)
+          .in('event_id', eventsData.map(e => e.id));
+
+        const rsvpMap = new Map();
+        rsvpsData?.forEach(rsvp => {
+          rsvpMap.set(rsvp.event_id, rsvp.status);
+        });
+        setEventRSVPs(rsvpMap);
       }
     } catch (error) {
       console.error('Error loading events:', error);
+      setEvents([]);
     }
   };
 
   const checkMembership = async (userId) => {
     try {
-      const { data, error } = await supabase
+      const { data: membership, error } = await supabase
         .from('community_members')
         .select('id')
-        .eq('community_id', communityId)
         .eq('user_id', userId)
+        .eq('community_id', communityId)
         .single();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
@@ -216,7 +186,7 @@ export default function CommunityPage() {
         return;
       }
 
-      setIsMember(!!data);
+      setIsMember(!!membership);
     } catch (error) {
       console.error('Error checking membership:', error);
     }
@@ -229,10 +199,12 @@ export default function CommunityPage() {
     try {
       const { error } = await supabase
         .from('community_members')
-        .insert([{
+        .insert({
+          user_id: user.id,
           community_id: communityId,
-          user_id: user.id
-        }]);
+          role: 'member',
+          joined_at: new Date().toISOString()
+        });
 
       if (error) {
         console.error('Error joining community:', error);
@@ -248,54 +220,284 @@ export default function CommunityPage() {
     }
   };
 
-  const openPost = (post) => {
-    // For now, just log the post - can be enhanced later with a modal
-    console.log('Opening post:', post);
+  const handleOpenPost = (post) => {
+    router.push(`/community/${communityId}/post/${post.id}`);
   };
 
-  const handleNewPost = async (e) => {
-    e.preventDefault();
-    if (!newPost.title.trim() || !newPost.content.trim() || !user) return;
-
-    const post = {
-      community_id: communityId,
-      title: newPost.title.trim(),
-      content: newPost.content.trim(),
-      post_type: newPost.post_type,
-      tag: newPost.tag,
-      user_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Anonymous',
-      user_email: user.email,
-      like_count: 0,
-      comment_count: 0
-    };
+  const handleCreatePost = async (postData) => {
+    if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      const { data: newPost, error } = await supabase
         .from('posts')
-        .insert([{
-          ...post,
-          user_id: user.id
-        }])
+        .insert({
+          community_id: communityId,
+          user_id: user.id,
+          user_name: user.user_metadata?.full_name || user.email || 'Anonymous',
+          user_email: user.email,
+          title: postData.title,
+          content: postData.content,
+          tag: postData.tag,
+          post_type: postData.post_type || 'post',
+          media_files: postData.media_files || [],
+          like_count: 0,
+          comment_count: 0
+        })
         .select()
         .single();
 
       if (error) {
         console.error('Error creating post:', error);
-        // Add to local state as fallback
-        const newPostData = {
-          id: Date.now(),
-          ...post,
-          created_at: new Date().toISOString()
-        };
-        setPosts([newPostData, ...posts]);
-      } else {
-        setPosts([data, ...posts]);
+        return;
       }
 
-      setNewPost({ title: '', content: '', post_type: 'post', tag: 'general' });
-      setShowNewPost(false);
+      if (newPost) {
+        // Add the new post to local state immediately for instant feedback
+        setPosts(prev => [newPost, ...prev]);
+        
+        // Close the modal
+        setShowNewPostModal(false);
+        
+        // Show success message
+        setShowSuccessMessage(true);
+        setTimeout(() => setShowSuccessMessage(false), 3000);
+        
+        // Also reload posts to ensure consistency with database
+        await loadPosts(communityId);
+      }
     } catch (error) {
       console.error('Error creating post:', error);
+    }
+  };
+
+  const handleCreateEvent = async (eventData) => {
+    if (!user) {
+      throw new Error('You must be logged in to create events');
+    }
+
+    // Ensure we have a valid community ID
+    if (!communityId) {
+      throw new Error('Invalid community. Please try again.');
+    }
+    
+    // Check if community exists in database
+    const { data: community, error: communityError } = await supabase
+      .from('communities')
+      .select('id')
+      .eq('id', communityId)
+      .single();
+    
+    if (communityError || !community) {
+      throw new Error('Community not found. Please try again.');
+    }
+
+    try {
+      // Create event in Supabase
+      const { data: newEvent, error } = await supabase
+        .from('events')
+        .insert({
+          community_id: communityId,
+          created_by: user.id,
+          title: eventData.title,
+          description: eventData.description,
+          event_date: eventData.event_date,
+          location: eventData.location,
+          event_type: eventData.event_type,
+          max_participants: eventData.max_participants
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to create event: ${error.message}`);
+      }
+
+      // Add the event to local state
+      setEvents(prev => [newEvent, ...prev]);
+
+      // Reload events to ensure consistency
+      await loadEvents(communityId);
+
+    } catch (error) {
+      throw error; // Re-throw to be caught by the modal
+    }
+  };
+
+  const handleEditPost = async (postData) => {
+    if (!user || !editingPost) return;
+
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .update({
+          title: postData.title,
+          content: postData.content,
+          tag: postData.tag,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingPost.id)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error updating post:', error);
+        return;
+      }
+
+      // Reload posts
+      await loadPosts(communityId);
+      setEditingPost(null);
+    } catch (error) {
+      console.error('Error editing post:', error);
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting post:', error);
+        return;
+      }
+
+      // Reload posts
+      await loadPosts(communityId);
+    } catch (error) {
+      console.error('Error deleting post:', error);
+    }
+  };
+
+  const handleLikePost = async (postId) => {
+    if (!user) return;
+
+    setLikingPost(postId);
+    try {
+      // Check if already liked
+      const { data: existingLike } = await supabase
+        .from('likes')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('post_id', postId)
+        .single();
+
+      if (existingLike) {
+        // Unlike
+        const { error } = await supabase
+          .from('likes')
+          .delete()
+          .eq('id', existingLike.id);
+
+        if (!error) {
+          // Update local state
+          const newLikedPosts = new Set(likedPosts);
+          newLikedPosts.delete(postId);
+          setLikedPosts(newLikedPosts);
+
+          // Update post like count
+          setPosts(posts.map(p => 
+            p.id === postId 
+              ? { ...p, like_count: Math.max(0, p.like_count - 1) }
+              : p
+          ));
+        }
+      } else {
+        // Like
+        const { error } = await supabase
+          .from('likes')
+          .insert({
+            user_id: user.id,
+            post_id: postId
+          });
+
+        if (!error) {
+          // Update local state
+          const newLikedPosts = new Set(likedPosts);
+          newLikedPosts.add(postId);
+          setLikedPosts(newLikedPosts);
+
+          // Update post like count
+          setPosts(posts.map(p => 
+            p.id === postId 
+              ? { ...p, like_count: p.like_count + 1 }
+              : p
+          ));
+        }
+      }
+    } catch (error) {
+      console.error('Error liking post:', error);
+    } finally {
+      setLikingPost(null);
+    }
+  };
+
+  const handleEventRSVP = async (eventId, currentStatus) => {
+    if (!user || rsvpingEvent) return;
+
+    setRsvpingEvent(eventId);
+    try {
+      // Check if user already has an RSVP
+      const { data: existingRSVP } = await supabase
+        .from('event_rsvps')
+        .select('id, status')
+        .eq('user_id', user.id)
+        .eq('event_id', eventId)
+        .single();
+
+      let newStatus;
+      if (currentStatus === 'going') {
+        newStatus = 'interested';
+      } else if (currentStatus === 'interested') {
+        newStatus = 'cant_go';
+      } else {
+        newStatus = 'going';
+      }
+
+      if (existingRSVP) {
+        // Update existing RSVP
+        const { error } = await supabase
+          .from('event_rsvps')
+          .update({ status: newStatus })
+          .eq('id', existingRSVP.id);
+
+        if (!error) {
+          setEventRSVPs(prev => new Map(prev.set(eventId, newStatus)));
+        }
+      } else {
+        // Create new RSVP
+        const { error } = await supabase
+          .from('event_rsvps')
+          .insert({
+            user_id: user.id,
+            event_id: eventId,
+            status: newStatus
+          });
+
+        if (!error) {
+          setEventRSVPs(prev => new Map(prev.set(eventId, newStatus)));
+        }
+      }
+    } catch (error) {
+      console.error('Error updating RSVP:', error);
+    } finally {
+      setRsvpingEvent(null);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await loadPosts(communityId);
+      await loadEvents(communityId);
+    } catch (error) {
+      console.error('Error refreshing:', error);
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -350,20 +552,28 @@ export default function CommunityPage() {
   return (
     <SidebarLayout currentPage="community">
       <div className="mobile-container">
+        {/* Success Message */}
+        {showSuccessMessage && (
+          <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-slide-down">
+            ✅ Post created successfully!
+          </div>
+        )}
+        
         <div className="mobile-section">
           {/* Community Header */}
-          <div className="mobile-card animate-fade-in">
-            <div className="minimal-flex mb-4">
+          <div className="mobile-card animate-fade-in" style={{ marginBottom: '20px' }}>
+            <div className="minimal-flex" style={{ marginBottom: '20px', gap: '12px' }}>
               <button
                 onClick={() => router.back()}
-                className="mobile-btn-secondary mr-3"
+                className="mobile-btn-secondary"
+                style={{ padding: '12px' }}
               >
                 <ArrowLeft className="minimal-icon" />
               </button>
               <div className="flex-1">
-                <h1 className="mobile-card-title">{community.name}</h1>
-                <div className="minimal-flex mobile-text-xs text-gray-400">
-                  <MapPin className="minimal-icon mr-1" />
+                <h1 className="mobile-card-title" style={{ marginBottom: '6px' }}>{community.name}</h1>
+                <div className="minimal-flex" style={{ fontSize: '13px', color: '#9ca3af' }}>
+                  <MapPin className="minimal-icon" style={{ marginRight: '4px' }} />
                   <span>{community.gyms?.city}, {community.gyms?.country}</span>
                 </div>
               </div>
@@ -383,25 +593,25 @@ export default function CommunityPage() {
               )}
             </div>
 
-            <div className="minimal-flex justify-around py-4 border-t border-gray-700">
+            <div className="minimal-flex justify-around py-4" style={{ borderTop: '1px solid #374151', marginTop: '16px' }}>
               <div className="text-center">
-                <div className="minimal-heading text-2xl">{community.member_count}</div>
-                <div className="minimal-text text-xs">Members</div>
+                <div className="minimal-heading" style={{ fontSize: '24px', marginBottom: '4px' }}>{community.member_count}</div>
+                <div className="minimal-text" style={{ fontSize: '12px', color: '#9ca3af' }}>Members</div>
               </div>
               <div className="text-center">
-                <div className="minimal-heading text-2xl">{posts.length}</div>
-                <div className="minimal-text text-xs">Posts</div>
+                <div className="minimal-heading" style={{ fontSize: '24px', marginBottom: '4px' }}>{posts.length}</div>
+                <div className="minimal-text" style={{ fontSize: '12px', color: '#9ca3af' }}>Posts</div>
               </div>
               <div className="text-center">
-                <div className="minimal-heading text-2xl">{events.length}</div>
-                <div className="minimal-text text-xs">Events</div>
+                <div className="minimal-heading" style={{ fontSize: '24px', marginBottom: '4px' }}>{events.length}</div>
+                <div className="minimal-text" style={{ fontSize: '12px', color: '#9ca3af' }}>Events</div>
               </div>
             </div>
           </div>
 
           {/* Tab Navigation */}
-          <div className="mobile-card animate-slide-up">
-            <div className="minimal-flex justify-around">
+          <div className="mobile-card animate-slide-up" style={{ marginBottom: '20px', marginTop: '20px' }}>
+            <div className="minimal-flex justify-around" style={{ gap: '8px' }}>
               {[
                 { id: 'feed', label: 'Feed', icon: MessageSquare },
                 { id: 'events', label: 'Events', icon: Calendar },
@@ -411,11 +621,12 @@ export default function CommunityPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`minimal-flex flex-col gap-1 py-2 px-3 rounded-lg transition-colors ${
+                  className={`minimal-flex flex-col py-3 px-4 rounded-lg transition-colors ${
                     activeTab === tab.id 
-                      ? 'bg-blue-600 text-white' 
+                      ? 'bg-indigo-600 text-white' 
                       : 'text-gray-400 hover:text-white hover:bg-gray-700'
                   }`}
+                  style={{ gap: '6px' }}
                 >
                   <tab.icon className="minimal-icon" />
                   <span className="mobile-text-xs">{tab.label}</span>
@@ -448,26 +659,49 @@ export default function CommunityPage() {
 
               {/* New Post Button */}
               {isMember && (
-                <div className="mobile-card animate-slide-up">
+                <div className="mobile-card animate-slide-up minimal-flex gap-2">
                   <button
-                    onClick={() => setShowNewPost(true)}
-                    className="w-full mobile-btn-primary"
+                    onClick={() => setShowNewPostModal(true)}
+                    className="flex-1 mobile-btn-primary"
                   >
                     <Plus className="minimal-icon mr-2" />
                     Create New Post
+                  </button>
+                  <button
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                    className="mobile-btn-secondary p-3"
+                  >
+                    <RefreshCw className={`minimal-icon ${refreshing ? 'animate-spin' : ''}`} />
                   </button>
                 </div>
               )}
 
               {/* Posts Feed */}
               <div className="space-y-3">
-                {filteredPosts.map((post, index) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    onOpen={() => openPost(post)}
-                  />
-                ))}
+                {filteredPosts.length === 0 ? (
+                  <div className="mobile-card-flat p-8 text-center">
+                    <MessageCircle className="minimal-icon mx-auto mb-3 text-gray-500" />
+                    <p className="minimal-text">No posts yet. Be the first to post!</p>
+                  </div>
+                ) : (
+                  filteredPosts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      currentUserId={user?.id}
+                      liked={likedPosts.has(post.id)}
+                      loadingLike={likingPost === post.id}
+                      onOpen={handleOpenPost}
+                      onLike={handleLikePost}
+                      onEdit={(post) => {
+                        setEditingPost(post);
+                        setShowEditPostModal(true);
+                      }}
+                      onDelete={handleDeletePost}
+                    />
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -475,18 +709,41 @@ export default function CommunityPage() {
           {/* Events Tab */}
           {activeTab === 'events' && (
             <div className="mobile-section">
+              <div className="mobile-card mb-4">
+                <button
+                  onClick={() => setShowNewEventModal(true)}
+                  className="mobile-btn-primary w-full minimal-flex-center"
+                >
+                  <Calendar className="minimal-icon mr-2" />
+                  Create New Event
+                </button>
+              </div>
+              
               <div className="space-y-3">
-                {events.map((event, index) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    onRSVP={(eventId, currentStatus) => {
-                      // Handle RSVP logic here
-                      console.log('RSVP for event:', eventId, currentStatus);
-                    }}
-                    className={`animate-stagger-${Math.min(index + 1, 3)}`}
-                  />
-                ))}
+                {events.length === 0 ? (
+                  <div className="mobile-card">
+                    <div className="minimal-flex-center py-8">
+                      <div className="text-center">
+                        <Calendar className="minimal-icon mx-auto mb-3 text-gray-500" />
+                        <p className="minimal-text">No events scheduled yet.</p>
+                        {isMember && (
+                          <p className="minimal-text text-sm text-gray-400 mt-1">
+                            Create the first event for this community!
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  events.map((event, index) => (
+                    <SimpleEventCard
+                      key={event.id}
+                      event={event}
+                      rsvpStatus={eventRSVPs.get(event.id) || null}
+                      onRSVP={handleEventRSVP}
+                    />
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -558,8 +815,42 @@ export default function CommunityPage() {
             </div>
           )}
 
-          {/* New Post Modal */}
-          {showNewPost && (
+          {/* Create Post Modal */}
+          {showNewPostModal && (
+            <CreatePostModal
+              communityId={communityId}
+              onClose={() => setShowNewPostModal(false)}
+              onSubmit={handleCreatePost}
+            />
+          )}
+
+          {/* Edit Post Modal */}
+          {showEditPostModal && editingPost && (
+            <CreatePostModal
+              communityId={communityId}
+              onClose={() => {
+                setShowEditPostModal(false);
+                setEditingPost(null);
+              }}
+              onSubmit={handleEditPost}
+              editMode={true}
+              initialData={editingPost}
+            />
+          )}
+
+          {/* Create Event Modal */}
+          {showNewEventModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <CreateEventModal
+                communityId={communityId}
+                onClose={() => setShowNewEventModal(false)}
+                onSubmit={handleCreateEvent}
+              />
+            </div>
+          )}
+
+          {/* Old Modal - Keeping for reference, can be removed */}
+          {false && showNewPostModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 minimal-flex-center z-50 animate-fade-in">
               <div className="minimal-card p-6 max-w-2xl w-full mx-4 animate-scale-in">
                 <div className="minimal-flex-between mb-4">
@@ -572,7 +863,7 @@ export default function CommunityPage() {
                   </button>
                 </div>
                 <form onSubmit={handleNewPost}>
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                     <div>
                       <input
                         type="text"

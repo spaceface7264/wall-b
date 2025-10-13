@@ -23,10 +23,11 @@ CREATE TABLE IF NOT EXISTS comments (
   user_email TEXT NOT NULL,
   user_name TEXT NOT NULL,
   content TEXT NOT NULL,
-  parent_id UUID REFERENCES comments(id) ON DELETE CASCADE, -- For nested replies
+  parent_comment_id UUID REFERENCES comments(id) ON DELETE CASCADE, -- For nested replies
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  like_count INTEGER DEFAULT 0
+  like_count INTEGER DEFAULT 0,
+  reply_count INTEGER DEFAULT 0
 );
 
 -- Create likes table
@@ -45,7 +46,7 @@ CREATE INDEX IF NOT EXISTS posts_created_at_idx ON posts(created_at DESC);
 CREATE INDEX IF NOT EXISTS posts_user_id_idx ON posts(user_id);
 CREATE INDEX IF NOT EXISTS comments_post_id_idx ON comments(post_id);
 CREATE INDEX IF NOT EXISTS comments_user_id_idx ON comments(user_id);
-CREATE INDEX IF NOT EXISTS comments_parent_id_idx ON comments(parent_id);
+CREATE INDEX IF NOT EXISTS comments_parent_comment_id_idx ON comments(parent_comment_id);
 CREATE INDEX IF NOT EXISTS likes_post_id_idx ON likes(post_id);
 CREATE INDEX IF NOT EXISTS likes_comment_id_idx ON likes(comment_id);
 CREATE INDEX IF NOT EXISTS likes_user_id_idx ON likes(user_id);
@@ -128,6 +129,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION update_comment_reply_count()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' AND NEW.parent_comment_id IS NOT NULL THEN
+    UPDATE comments SET reply_count = reply_count + 1 WHERE id = NEW.parent_comment_id;
+  ELSIF TG_OP = 'DELETE' AND OLD.parent_comment_id IS NOT NULL THEN
+    UPDATE comments SET reply_count = reply_count - 1 WHERE id = OLD.parent_comment_id;
+  END IF;
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
 -- Create triggers
 CREATE TRIGGER update_post_like_count_trigger
   AFTER INSERT OR DELETE ON likes
@@ -140,6 +153,10 @@ CREATE TRIGGER update_comment_like_count_trigger
 CREATE TRIGGER update_post_comment_count_trigger
   AFTER INSERT OR DELETE ON comments
   FOR EACH ROW EXECUTE FUNCTION update_post_comment_count();
+
+CREATE TRIGGER update_comment_reply_count_trigger
+  AFTER INSERT OR DELETE ON comments
+  FOR EACH ROW EXECUTE FUNCTION update_comment_reply_count();
 
 -- Grant permissions
 GRANT ALL ON posts TO authenticated;

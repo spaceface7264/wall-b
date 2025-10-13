@@ -22,7 +22,27 @@ export default function Profile() {
     company: '',
     role: '',
     created_at: '',
-    avatar_url: ''
+    avatar_url: '',
+    // Extended profile fields
+    bio: '',
+    climbing_grade: '',
+    years_climbing: '',
+    favorite_style: '',
+    social_links: {
+      instagram: '',
+      twitter: '',
+      website: ''
+    },
+    privacy_settings: {
+      show_email: true,
+      show_activity: true,
+      show_location: true
+    },
+    // Activity counters
+    posts_count: 0,
+    comments_count: 0,
+    likes_count: 0,
+    events_attended_count: 0
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -36,14 +56,56 @@ export default function Profile() {
       setUser(user);
       if (user) {
         console.log('Loading user profile data:', user.user_metadata);
-        setProfileData({
-          email: user.email || '',
-          full_name: user.user_metadata?.full_name || '',
-          company: user.user_metadata?.company || '',
-          role: user.user_metadata?.role || '',
-          created_at: user.created_at || '',
-          avatar_url: user.user_metadata?.avatar_url || ''
-        });
+        
+        // Load extended profile data from profiles table
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error loading profile:', profileError);
+          // Fallback to basic user metadata
+          setProfileData({
+            email: user.email || '',
+            full_name: user.user_metadata?.full_name || '',
+            company: user.user_metadata?.company || '',
+            role: user.user_metadata?.role || '',
+            created_at: user.created_at || '',
+            avatar_url: user.user_metadata?.avatar_url || '',
+            bio: '',
+            climbing_grade: '',
+            years_climbing: '',
+            favorite_style: '',
+            social_links: { instagram: '', twitter: '', website: '' },
+            privacy_settings: { show_email: true, show_activity: true, show_location: true },
+            posts_count: 0,
+            comments_count: 0,
+            likes_count: 0,
+            events_attended_count: 0
+          });
+        } else {
+          console.log('Loaded extended profile:', profile);
+          setProfileData({
+            email: user.email || '',
+            full_name: profile.full_name || user.user_metadata?.full_name || '',
+            company: profile.company || user.user_metadata?.company || '',
+            role: profile.role || user.user_metadata?.role || '',
+            created_at: user.created_at || '',
+            avatar_url: profile.avatar_url || user.user_metadata?.avatar_url || '',
+            bio: profile.bio || '',
+            climbing_grade: profile.climbing_grade || '',
+            years_climbing: profile.years_climbing || '',
+            favorite_style: profile.favorite_style || '',
+            social_links: profile.social_links || { instagram: '', twitter: '', website: '' },
+            privacy_settings: profile.privacy_settings || { show_email: true, show_activity: true, show_location: true },
+            posts_count: profile.posts_count || 0,
+            comments_count: profile.comments_count || 0,
+            likes_count: profile.likes_count || 0,
+            events_attended_count: profile.events_attended_count || 0
+          });
+        }
       }
       setLoading(false);
     };
@@ -51,18 +113,60 @@ export default function Profile() {
     getUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setUser(session?.user ?? null);
         if (session?.user) {
           console.log('Auth state changed, loading profile data:', session.user.user_metadata);
-          setProfileData({
-            email: session.user.email || '',
-            full_name: session.user.user_metadata?.full_name || '',
-            company: session.user.user_metadata?.company || '',
-            role: session.user.user_metadata?.role || '',
-            created_at: session.user.created_at || '',
-            avatar_url: session.user.user_metadata?.avatar_url || ''
-          });
+          
+          // Load extended profile data from profiles table
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+
+          if (profileError) {
+            console.error('Error loading profile:', profileError);
+            // Fallback to basic user metadata
+            setProfileData({
+              email: session.user.email || '',
+              full_name: session.user.user_metadata?.full_name || '',
+              company: session.user.user_metadata?.company || '',
+              role: session.user.user_metadata?.role || '',
+              created_at: session.user.created_at || '',
+              avatar_url: session.user.user_metadata?.avatar_url || '',
+              bio: '',
+              climbing_grade: '',
+              years_climbing: '',
+              favorite_style: '',
+              social_links: { instagram: '', twitter: '', website: '' },
+              privacy_settings: { show_email: true, show_activity: true, show_location: true },
+              posts_count: 0,
+              comments_count: 0,
+              likes_count: 0,
+              events_attended_count: 0
+            });
+          } else {
+            console.log('Loaded extended profile:', profile);
+            setProfileData({
+              email: session.user.email || '',
+              full_name: profile.full_name || session.user.user_metadata?.full_name || '',
+              company: profile.company || session.user.user_metadata?.company || '',
+              role: profile.role || session.user.user_metadata?.role || '',
+              created_at: session.user.created_at || '',
+              avatar_url: profile.avatar_url || session.user.user_metadata?.avatar_url || '',
+              bio: profile.bio || '',
+              climbing_grade: profile.climbing_grade || '',
+              years_climbing: profile.years_climbing || '',
+              favorite_style: profile.favorite_style || '',
+              social_links: profile.social_links || { instagram: '', twitter: '', website: '' },
+              privacy_settings: profile.privacy_settings || { show_email: true, show_activity: true, show_location: true },
+              posts_count: profile.posts_count || 0,
+              comments_count: profile.comments_count || 0,
+              likes_count: profile.likes_count || 0,
+              events_attended_count: profile.events_attended_count || 0
+            });
+          }
         }
         setLoading(false);
       }
@@ -84,13 +188,38 @@ export default function Profile() {
     if (success) setSuccess('');
   };
 
+  const handleSocialLinkChange = (platform, value) => {
+    setProfileData(prev => ({
+      ...prev,
+      social_links: {
+        ...prev.social_links,
+        [platform]: value
+      }
+    }));
+    if (error) setError('');
+    if (success) setSuccess('');
+  };
+
+  const handlePrivacySettingChange = (setting, value) => {
+    setProfileData(prev => ({
+      ...prev,
+      privacy_settings: {
+        ...prev.privacy_settings,
+        [setting]: value
+      }
+    }));
+    if (error) setError('');
+    if (success) setSuccess('');
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     setError('');
     setSuccess('');
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      // Update user metadata for basic fields
+      const { error: authError } = await supabase.auth.updateUser({
         data: {
           full_name: profileData.full_name,
           company: profileData.company,
@@ -99,8 +228,31 @@ export default function Profile() {
         }
       });
 
-      if (error) {
-        setError(error.message);
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
+
+      // Update or insert extended profile data
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
+          full_name: profileData.full_name,
+          company: profileData.company,
+          role: profileData.role,
+          avatar_url: profileData.avatar_url,
+          bio: profileData.bio,
+          climbing_grade: profileData.climbing_grade,
+          years_climbing: profileData.years_climbing ? parseInt(profileData.years_climbing) : null,
+          favorite_style: profileData.favorite_style,
+          social_links: profileData.social_links,
+          privacy_settings: profileData.privacy_settings,
+          updated_at: new Date().toISOString()
+        });
+
+      if (profileError) {
+        setError(profileError.message);
       } else {
         setSuccess('Profile updated successfully!');
         setIsEditing(false);
@@ -132,35 +284,25 @@ export default function Profile() {
     setError('');
 
     try {
-      // Create a unique filename
+      // Create a unique filename using the proper structure
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = fileName; // Remove 'avatars/' since we're already uploading to the avatars bucket
-
-      // First, let's check if the bucket exists
-      console.log('Checking bucket...');
-      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-      console.log('Available buckets:', buckets);
-      console.log('Bucket error:', bucketError);
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
       // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file);
+        .upload(fileName, file);
 
       if (uploadError) {
         console.error('Upload error details:', uploadError);
-        if (uploadError.message.includes('Bucket not found')) {
-          setError(`Storage bucket not found. Available buckets: ${buckets?.map(b => b.name).join(', ')}`);
-          return;
-        }
-        throw uploadError;
+        setError(`Failed to upload image: ${uploadError.message}`);
+        return;
       }
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
 
       // Update profile with new avatar URL locally
       console.log('Setting avatar URL:', publicUrl);
@@ -400,6 +542,118 @@ export default function Profile() {
                 placeholder="Enter your role"
               />
             </div>
+
+            {/* Bio */}
+            <div className="col-span-2">
+              <label className="minimal-text block mb-1">Bio</label>
+              <textarea
+                name="bio"
+                value={profileData.bio}
+                onChange={handleInputChange}
+                disabled={!isEditing}
+                className={`minimal-input w-full h-20 resize-none ${!isEditing ? 'cursor-not-allowed' : ''}`}
+                placeholder="Tell us about yourself and your climbing journey..."
+              />
+            </div>
+
+            {/* Climbing Stats */}
+            <div>
+              <label className="minimal-text block mb-1">Climbing Grade</label>
+              <select
+                name="climbing_grade"
+                value={profileData.climbing_grade}
+                onChange={handleInputChange}
+                disabled={!isEditing}
+                className={`minimal-input w-full ${!isEditing ? 'cursor-not-allowed' : ''}`}
+              >
+                <option value="">Select grade</option>
+                <option value="V0">V0</option>
+                <option value="V1">V1</option>
+                <option value="V2">V2</option>
+                <option value="V3">V3</option>
+                <option value="V4">V4</option>
+                <option value="V5">V5</option>
+                <option value="V6">V6</option>
+                <option value="V7">V7</option>
+                <option value="V8">V8</option>
+                <option value="V9">V9</option>
+                <option value="V10+">V10+</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="minimal-text block mb-1">Years Climbing</label>
+              <input
+                type="number"
+                name="years_climbing"
+                value={profileData.years_climbing}
+                onChange={handleInputChange}
+                disabled={!isEditing}
+                className={`minimal-input w-full ${!isEditing ? 'cursor-not-allowed' : ''}`}
+                placeholder="0"
+                min="0"
+                max="50"
+              />
+            </div>
+
+            <div>
+              <label className="minimal-text block mb-1">Favorite Style</label>
+              <select
+                name="favorite_style"
+                value={profileData.favorite_style}
+                onChange={handleInputChange}
+                disabled={!isEditing}
+                className={`minimal-input w-full ${!isEditing ? 'cursor-not-allowed' : ''}`}
+              >
+                <option value="">Select style</option>
+                <option value="bouldering">Bouldering</option>
+                <option value="sport">Sport Climbing</option>
+                <option value="trad">Traditional</option>
+                <option value="indoor">Indoor</option>
+                <option value="outdoor">Outdoor</option>
+                <option value="mixed">Mixed</option>
+              </select>
+            </div>
+
+            {/* Social Links */}
+            <div className="col-span-2">
+              <h3 className="minimal-text font-medium mb-2">Social Links</h3>
+              <div className="mobile-grid-3 gap-2">
+                <div>
+                  <label className="minimal-text text-xs block mb-1">Instagram</label>
+                  <input
+                    type="text"
+                    value={profileData.social_links.instagram}
+                    onChange={(e) => handleSocialLinkChange('instagram', e.target.value)}
+                    disabled={!isEditing}
+                    className={`minimal-input w-full text-sm ${!isEditing ? 'cursor-not-allowed' : ''}`}
+                    placeholder="@username"
+                  />
+                </div>
+                <div>
+                  <label className="minimal-text text-xs block mb-1">Twitter</label>
+                  <input
+                    type="text"
+                    value={profileData.social_links.twitter}
+                    onChange={(e) => handleSocialLinkChange('twitter', e.target.value)}
+                    disabled={!isEditing}
+                    className={`minimal-input w-full text-sm ${!isEditing ? 'cursor-not-allowed' : ''}`}
+                    placeholder="@username"
+                  />
+                </div>
+                <div>
+                  <label className="minimal-text text-xs block mb-1">Website</label>
+                  <input
+                    type="url"
+                    value={profileData.social_links.website}
+                    onChange={(e) => handleSocialLinkChange('website', e.target.value)}
+                    disabled={!isEditing}
+                    className={`minimal-input w-full text-sm ${!isEditing ? 'cursor-not-allowed' : ''}`}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Save Button */}
@@ -415,6 +669,29 @@ export default function Profile() {
               </button>
             </div>
           )}
+          </div>
+
+          {/* Activity Stats Card */}
+          <div className="mobile-card">
+            <h2 className="mobile-card-title mb-4">Activity Stats</h2>
+            <div className="mobile-grid-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-indigo-400">{profileData.posts_count}</div>
+                <div className="minimal-text text-xs">Posts</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-indigo-400">{profileData.comments_count}</div>
+                <div className="minimal-text text-xs">Comments</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-indigo-400">{profileData.likes_count}</div>
+                <div className="minimal-text text-xs">Likes</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-indigo-400">{profileData.events_attended_count}</div>
+                <div className="minimal-text text-xs">Events</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

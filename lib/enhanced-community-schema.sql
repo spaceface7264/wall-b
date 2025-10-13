@@ -107,6 +107,12 @@ ALTER TABLE posts ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE;
 ALTER TABLE posts ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT FALSE;
 ALTER TABLE posts ADD COLUMN IF NOT EXISTS post_type TEXT DEFAULT 'post' CHECK (post_type IN ('post', 'beta', 'event', 'question', 'gear', 'training', 'social'));
 
+-- Update comments table to use parent_comment_id consistently
+ALTER TABLE comments RENAME COLUMN parent_id TO parent_comment_id;
+
+-- Add reply_count column if it doesn't exist
+ALTER TABLE comments ADD COLUMN IF NOT EXISTS reply_count INTEGER DEFAULT 0;
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS communities_gym_id_idx ON communities(gym_id);
 CREATE INDEX IF NOT EXISTS community_members_community_id_idx ON community_members(community_id);
@@ -220,6 +226,24 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER update_community_member_count_trigger
   AFTER INSERT OR DELETE ON community_members
   FOR EACH ROW EXECUTE FUNCTION update_community_member_count();
+
+-- Function to update comment reply counts
+CREATE OR REPLACE FUNCTION update_comment_reply_count()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' AND NEW.parent_comment_id IS NOT NULL THEN
+    UPDATE comments SET reply_count = reply_count + 1 WHERE id = NEW.parent_comment_id;
+  ELSIF TG_OP = 'DELETE' AND OLD.parent_comment_id IS NOT NULL THEN
+    UPDATE comments SET reply_count = reply_count - 1 WHERE id = OLD.parent_comment_id;
+  END IF;
+  RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger for reply count updates
+CREATE TRIGGER update_comment_reply_count_trigger
+  AFTER INSERT OR DELETE ON comments
+  FOR EACH ROW EXECUTE FUNCTION update_comment_reply_count();
 
 -- Insert default post tags
 INSERT INTO post_tags (name, color, description) VALUES
