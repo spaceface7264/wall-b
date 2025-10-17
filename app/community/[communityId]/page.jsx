@@ -399,6 +399,44 @@ export default function CommunityPage() {
     }
   };
 
+  const handleCreateEvent = async (eventData) => {
+    try {
+      console.log('🎉 Creating event with data:', eventData);
+      
+      const { data, error } = await supabase
+        .from('events')
+        .insert({
+          title: eventData.title,
+          description: eventData.description,
+          event_date: eventData.event_date,
+          location: eventData.location,
+          event_type: eventData.event_type,
+          max_participants: eventData.max_participants,
+          community_id: communityId,
+          created_by: user?.id,
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('❌ Error creating event:', error);
+        throw error;
+      }
+
+      console.log('✅ Event created successfully:', data);
+      
+      // Refresh events if we're on the events tab
+      if (activeTab === 'events') {
+        loadEvents(communityId);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error creating event:', error);
+      throw error;
+    }
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -730,9 +768,9 @@ export default function CommunityPage() {
         <CreateEventModal
           communityId={communityId}
           onClose={() => setShowNewEventModal(false)}
-          onEventCreated={() => {
+          onSubmit={async (eventData) => {
+            await handleCreateEvent(eventData);
             setShowNewEventModal(false);
-            loadEvents(communityId);
           }}
         />
       )}
