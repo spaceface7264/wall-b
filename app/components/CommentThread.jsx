@@ -12,6 +12,7 @@ export default function CommentThread({
   onLike,
   onEdit,
   onDelete,
+  isAdmin = false,
 }) {
   const [showReplies, setShowReplies] = useState(true);
   const [showReplyInput, setShowReplyInput] = useState(false);
@@ -21,6 +22,7 @@ export default function CommentThread({
   const [liked, setLiked] = useState(false);
 
   const isOwnComment = comment.user_id === userId;
+  const canModerate = isOwnComment || isAdmin;
   const hasReplies = (replies && replies.length > 0) || (comment.reply_count > 0);
   const canReply = depth === 0; // Only top-level comments can have replies
 
@@ -107,7 +109,7 @@ export default function CommentThread({
             </div>
           </div>
 
-          {isOwnComment && !isEditing && (
+          {canModerate && !isEditing && (
             <div className="minimal-flex gap-1">
               <button
                 onClick={() => setIsEditing(true)}
@@ -165,20 +167,18 @@ export default function CommentThread({
             <button
               onClick={handleLike}
               disabled={liking}
-              className={`minimal-flex gap-1 ${
-                liked ? 'text-red-400' : 'text-gray-400 hover:text-red-400'
-              }`}
+              className={`icon-button minimal-flex gap-1 text-white hover:text-red-400 ${liking ? 'opacity-50' : ''}`}
             >
-              <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
+              <Heart className={`w-4 h-4 ${liked ? 'fill-current text-red-400' : 'stroke-current'}`} />
               <span className="mobile-text-xs">{comment.like_count}</span>
             </button>
 
             {canReply && (
               <button
                 onClick={handleReply}
-                className="minimal-flex gap-1 text-gray-400 hover:text-indigo-400"
+                className="icon-button minimal-flex gap-1 text-white hover:text-indigo-400"
               >
-                <Reply className="w-4 h-4" />
+                <Reply className="w-4 h-4 stroke-current" />
                 <span className="mobile-text-xs">Reply</span>
               </button>
             )}
@@ -273,9 +273,9 @@ export default function CommentThread({
                     <div className="minimal-flex gap-4 items-center">
                       <button
                         onClick={() => onLike(reply.id)}
-                        className="minimal-flex gap-1 text-xs text-gray-400 hover:text-red-400"
+                        className="icon-button minimal-flex gap-1 text-xs text-white hover:text-red-400"
                       >
-                        <Heart className="w-3 h-3" />
+                        <Heart className="w-3 h-3 stroke-current" />
                         <span>{reply.like_count}</span>
                       </button>
                     </div>

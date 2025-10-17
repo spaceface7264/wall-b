@@ -11,6 +11,7 @@ export default function PostCard({
   onEdit,
   onDelete,
   currentUserId,
+  isAdmin = false,
   liked = false,
   loadingLike = false,
   showActions = true,
@@ -19,6 +20,8 @@ export default function PostCard({
   const [showReactions, setShowReactions] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const isOwnPost = post.user_id === currentUserId;
+  const canShowActions = showActions && (isOwnPost || isAdmin);
+  
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
@@ -120,16 +123,16 @@ export default function PostCard({
             </div>
           </div>
           <div className="minimal-flex gap-2">
-            <button 
+            <button
               onClick={handleLike}
               disabled={loadingLike}
-              className={`minimal-flex ${liked ? 'text-red-400' : 'text-gray-400'} ${loadingLike ? 'opacity-50' : ''}`}
+              className={`icon-button minimal-flex gap-1 text-white hover:text-red-400 ${loadingLike ? 'opacity-50' : ''}`}
             >
-              <Heart className={`w-3 h-3 mr-1 ${liked ? 'fill-current' : ''}`} />
+              <Heart className={`w-4 h-4 ${liked ? 'fill-current text-red-400' : 'stroke-current'}`} />
               <span className="mobile-text-xs">{post.like_count}</span>
             </button>
-            <button className="minimal-flex text-gray-400">
-              <MessageCircle className="w-3 h-3 mr-1" />
+            <button className="icon-button minimal-flex gap-1 text-white hover:text-indigo-400">
+              <MessageCircle className="w-4 h-4 stroke-current" />
               <span className="mobile-text-xs">{post.comment_count}</span>
             </button>
           </div>
@@ -145,9 +148,6 @@ export default function PostCard({
     >
       <div className="mobile-card-header">
         <div className="minimal-flex">
-          <div className="w-8 h-8 bg-gray-700 rounded-full minimal-flex-center mr-3">
-            <Users className="minimal-icon text-gray-300" />
-          </div>
           <div className="flex-1 min-w-0">
             <h3 className="mobile-subheading truncate">{post.title}</h3>
             <div className="minimal-flex mobile-text-xs text-gray-400">
@@ -161,7 +161,7 @@ export default function PostCard({
               </span>
             </div>
           </div>
-          {showActions && isOwnPost && (
+          {canShowActions && (
             <div className="relative">
               <button 
                 onClick={toggleMenu}
@@ -201,36 +201,61 @@ export default function PostCard({
         </p>
         
         {/* Media Files */}
-        {post.media_files && post.media_files.length > 0 && (
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            {post.media_files.slice(0, 4).map((file, index) => (
-              <div key={index} className="relative">
-                {file.type.startsWith('image/') ? (
-                  <img
-                    src={file.url}
-                    alt={file.name}
-                    className="w-full h-32 object-cover rounded-lg"
-                    loading="lazy"
-                  />
-                ) : file.type.startsWith('video/') ? (
-                  <video
-                    src={file.url}
-                    className="w-full h-32 object-cover rounded-lg"
-                    controls
-                    preload="metadata"
-                  />
-                ) : null}
-                {post.media_files.length > 4 && index === 3 && (
-                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">
-                      +{post.media_files.length - 4} more
-                    </span>
-                  </div>
-                )}
+        {(() => {
+          console.log('🖼️ PostCard rendering for post:', post.id);
+          console.log('📸 Media files in PostCard:', post.media_files);
+          console.log('📸 Media files type:', typeof post.media_files);
+          console.log('📸 Media files length:', post.media_files?.length);
+          
+          if (post.media_files && post.media_files.length > 0) {
+            console.log('✅ Rendering media files');
+            return (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {post.media_files.slice(0, 4).map((file, index) => {
+                  console.log(`📁 File ${index}:`, file);
+                  console.log(`📁 File ${index} keys:`, Object.keys(file));
+                  console.log(`📁 File ${index} url:`, file.url);
+                  console.log(`📁 File ${index} type:`, file.type);
+                  return (
+                    <div key={index} className="relative">
+                      {file && file.type && file.type.startsWith('image/') ? (
+                        <img
+                          src={file.url}
+                          alt={file.name}
+                          className="w-full h-32 object-cover rounded-lg"
+                          loading="lazy"
+                          onError={(e) => console.error('❌ Image failed to load:', file.url, e)}
+                          onLoad={() => console.log('✅ Image loaded successfully:', file.url)}
+                        />
+                      ) : file && file.type && file.type.startsWith('video/') ? (
+                        <video
+                          src={file.url}
+                          className="w-full h-32 object-cover rounded-lg"
+                          controls
+                          preload="metadata"
+                        />
+                      ) : (
+                        <div className="w-full h-32 bg-gray-700 rounded-lg flex items-center justify-center">
+                          <span className="text-gray-400 text-xs">Unknown file type</span>
+                        </div>
+                      )}
+                      {post.media_files.length > 4 && index === 3 && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                          <span className="text-white text-sm font-medium">
+                            +{post.media_files.length - 4} more
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
-        )}
+            );
+          } else {
+            console.log('❌ No media files to render');
+            return null;
+          }
+        })()}
       </div>
       
       <div className="mobile-card-actions">
@@ -238,20 +263,20 @@ export default function PostCard({
           <button 
             onClick={handleLike}
             disabled={loadingLike}
-            className={`minimal-flex ${liked ? 'text-red-400' : 'text-gray-400 hover:text-red-400'} ${loadingLike ? 'opacity-50' : ''}`}
+            className={`icon-button minimal-flex gap-1 text-white hover:text-red-400 ${loadingLike ? 'opacity-50' : ''}`}
           >
             {loadingLike ? (
-              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-1" />
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
             ) : (
-              <Heart className={`minimal-icon mr-1 ${liked ? 'fill-current' : ''}`} />
+              <Heart className={`w-4 h-4 ${liked ? 'fill-current text-red-400' : 'stroke-current'}`} />
             )}
             <span className="mobile-text-xs">{post.like_count}</span>
           </button>
           <button 
             onClick={handleComment}
-            className="minimal-flex text-gray-400 hover:text-indigo-400"
+            className="icon-button minimal-flex gap-1 text-white hover:text-indigo-400"
           >
-            <MessageCircle className="minimal-icon mr-1" />
+            <MessageCircle className="w-4 h-4 stroke-current" />
             <span className="mobile-text-xs">{post.comment_count}</span>
           </button>
           {onShare && (

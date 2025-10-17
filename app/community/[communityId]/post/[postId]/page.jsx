@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
-import { ArrowLeft, Heart, MessageCircle, Edit2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Edit2, Trash2, Shield, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import SidebarLayout from '../../../../components/SidebarLayout';
 import CommentThread from '../../../../components/CommentThread';
 import CommentInput from '../../../../components/CommentInput';
@@ -21,17 +21,49 @@ export default function PostDetailPage() {
   const { communityId, postId } = params;
 
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
   const [liking, setLiking] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   useEffect(() => {
     loadData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
+
+  // Keyboard navigation for image modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!showImageModal || !post?.media_files) return;
+      
+      if (e.key === 'Escape') {
+        setShowImageModal(false);
+      } else if (e.key === 'ArrowLeft') {
+        setSelectedImageIndex(prev => 
+          prev === 0 ? post.media_files.length - 1 : prev - 1
+        );
+      } else if (e.key === 'ArrowRight') {
+        setSelectedImageIndex(prev => 
+          prev === post.media_files.length - 1 ? 0 : prev + 1
+        );
+      }
+    };
+
+    if (showImageModal) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [showImageModal, post?.media_files]);
 
   const loadData = async () => {
     try {
@@ -40,6 +72,17 @@ export default function PostDetailPage() {
       // Get user
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+
+      // Check admin status
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
+        
+        setIsAdmin(profile?.is_admin || false);
+      }
 
       // Get post from Supabase
       const { data: postData, error: postError } = await supabase
@@ -118,6 +161,23 @@ export default function PostDetailPage() {
         if (!error) {
           setLiked(true);
           setPost({ ...post, like_count: post.like_count + 1 });
+
+          // Create notification for post author (if not the current user)
+          if (post.user_id !== user.id) {
+            try {
+              await supabase
+                .from('notifications')
+                .insert({
+                  user_id: post.user_id,
+                  type: 'post_like',
+                  title: 'New Like',
+                  message: `${user.user_metadata?.full_name || 'Someone'} liked your post`,
+                  data: { post_id: postId, liker_id: user.id, community_id: communityId }
+                });
+            } catch (notifError) {
+              console.error('Error creating like notification:', notifError);
+            }
+          }
         }
       }
     } catch (error) {
@@ -169,6 +229,43 @@ export default function PostDetailPage() {
           );
         }
 
+        // Create notification for post author (if not the current user)
+        if (post.user_id !== user.id) {
+          try {
+            await supabase
+              .from('notifications')
+              .insert({
+                user_id: post.user_id,
+                type: 'post_comment',
+                title: 'New Comment',
+                message: `${user.user_metadata?.full_name || 'Someone'} commented on your post`,
+                data: { post_id: postId, comment_id: newComment.id, commenter_id: user.id, community_id: communityId }
+              });
+          } catch (notifError) {
+            console.error('Error creating comment notification:', notifError);
+          }
+        }
+
+        // If this is a reply, also notify the parent comment author
+        if (commentData.parentCommentId) {
+          const parentComment = comments.find(c => c.id === commentData.parentCommentId);
+          if (parentComment && parentComment.user_id !== user.id) {
+            try {
+              await supabase
+                .from('notifications')
+                .insert({
+                  user_id: parentComment.user_id,
+                  type: 'comment_reply',
+                  title: 'New Reply',
+                  message: `${user.user_metadata?.full_name || 'Someone'} replied to your comment`,
+                  data: { post_id: postId, comment_id: newComment.id, parent_comment_id: commentData.parentCommentId, replier_id: user.id, community_id: communityId }
+                });
+            } catch (notifError) {
+              console.error('Error creating reply notification:', notifError);
+            }
+          }
+        }
+
       }
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -218,6 +315,24 @@ export default function PostDetailPage() {
               ? { ...c, like_count: c.like_count + 1 }
               : c
           ));
+
+          // Create notification for comment author (if not the current user)
+          const likedComment = comments.find(c => c.id === commentId);
+          if (likedComment && likedComment.user_id !== user.id) {
+            try {
+              await supabase
+                .from('notifications')
+                .insert({
+                  user_id: likedComment.user_id,
+                  type: 'comment_like',
+                  title: 'New Like',
+                  message: `${user.user_metadata?.full_name || 'Someone'} liked your comment`,
+                  data: { comment_id: commentId, liker_id: user.id, post_id: postId, community_id: communityId }
+                });
+            } catch (notifError) {
+              console.error('Error creating comment like notification:', notifError);
+            }
+          }
         }
       }
     } catch (error) {
@@ -230,14 +345,19 @@ export default function PostDetailPage() {
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      let query = supabase
         .from('comments')
         .update({
           content: content,
           updated_at: new Date().toISOString()
         })
-        .eq('id', commentId)
-        .eq('user_id', user.id);
+        .eq('id', commentId);
+
+      if (!isAdmin) {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { error } = await query;
 
       if (error) {
         console.error('Error updating comment:', error);
@@ -262,11 +382,16 @@ export default function PostDetailPage() {
       // Find the comment to get its parent_comment_id
       const commentToDelete = comments.find(c => c.id === commentId);
       
-      const { error } = await supabase
+      let query = supabase
         .from('comments')
         .delete()
-        .eq('id', commentId)
-        .eq('user_id', user.id);
+        .eq('id', commentId);
+
+      if (!isAdmin) {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { error } = await query;
 
       if (error) {
         console.error('Error deleting comment:', error);
@@ -329,11 +454,18 @@ export default function PostDetailPage() {
 
     if (confirm('Are you sure you want to delete this post?')) {
       try {
-        const { error } = await supabase
+        // For admins, don't check user_id - let RLS handle it
+        let query = supabase
           .from('posts')
           .delete()
-          .eq('id', postId)
-          .eq('user_id', user.id);
+          .eq('id', postId);
+
+        // Only add user_id check for non-admins
+        if (!isAdmin) {
+          query = query.eq('user_id', user.id);
+        }
+
+        const { error } = await query;
 
         if (error) {
           console.error('Error deleting post:', error);
@@ -422,18 +554,11 @@ export default function PostDetailPage() {
   }
 
   const isOwnPost = user && post.user_id === user.id;
+  const canModerate = isOwnPost || isAdmin;
 
   return (
     <SidebarLayout currentPage="community">
       <div className="mobile-container">
-        {/* Back Button */}
-        <button
-          onClick={() => router.push(`/community/${communityId}`)}
-          className="mobile-btn-secondary minimal-flex gap-2 mb-4"
-        >
-          <ArrowLeft className="minimal-icon" />
-          Back to Community
-        </button>
 
         {/* Post Card */}
         <div className="mobile-card animate-fade-in" style={{ marginBottom: '24px' }}>
@@ -461,7 +586,7 @@ export default function PostDetailPage() {
                 </span>
               </div>
 
-              {isOwnPost && (
+              {canModerate && (
                 <div className="minimal-flex gap-2">
                   <button
                     onClick={() => setShowEditModal(true)}
@@ -489,25 +614,75 @@ export default function PostDetailPage() {
             </p>
           </div>
 
+          {/* Media Files Display */}
+          {post.media_files && post.media_files.length > 0 && (
+            <div className="mb-6">
+              <div className="grid grid-cols-2 gap-2">
+                {post.media_files.slice(0, 4).map((file, index) => (
+                  <div 
+                    key={index} 
+                    className="relative cursor-pointer group"
+                    onClick={() => {
+                      setSelectedImageIndex(index);
+                      setShowImageModal(true);
+                    }}
+                  >
+                    {file && file.type && file.type.startsWith('image/') ? (
+                      <img
+                        src={file.url}
+                        alt={file.name || `Image ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg border border-gray-600 group-hover:opacity-90 transition-opacity"
+                        onError={(e) => {
+                          console.error('❌ Image failed to load:', file.url, e);
+                          e.target.style.display = 'none';
+                        }}
+                        onLoad={() => console.log('✅ Image loaded successfully:', file.url)}
+                      />
+                    ) : file && file.type && file.type.startsWith('video/') ? (
+                      <video
+                        src={file.url}
+                        className="w-full h-32 object-cover rounded-lg border border-gray-600 group-hover:opacity-90 transition-opacity"
+                        controls
+                        onError={(e) => {
+                          console.error('❌ Video failed to load:', file.url, e);
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-32 bg-gray-700 rounded-lg border border-gray-600 flex items-center justify-center group-hover:bg-gray-600 transition-colors">
+                        <span className="text-gray-400 text-sm">File</span>
+                      </div>
+                    )}
+                    {post.media_files.length > 4 && index === 3 && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                        <span className="text-white text-sm font-medium">
+                          +{post.media_files.length - 4} more
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="mobile-card-actions" style={{ paddingTop: '16px', marginTop: '16px' }}>
             <div className="minimal-flex" style={{ gap: '20px' }}>
               <button
                 onClick={handleLike}
                 disabled={liking}
-                className={`minimal-flex ${
-                  liked ? 'text-red-400' : 'text-gray-400 hover:text-red-400'
-                } ${liking ? 'opacity-50' : ''}`}
-                style={{ gap: '6px', transition: 'all 0.2s' }}
+                className={`icon-button minimal-flex text-white hover:text-red-400 ${liking ? 'opacity-50' : ''}`}
+                style={{ gap: '6px' }}
               >
                 {liking ? (
                   <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <Heart className={`minimal-icon ${liked ? 'fill-current' : ''}`} />
+                  <Heart className={`w-4 h-4 ${liked ? 'fill-current text-red-400' : 'stroke-current'}`} />
                 )}
                 <span>{post.like_count}</span>
               </button>
-              <div className="minimal-flex text-gray-400" style={{ gap: '6px' }}>
-                <MessageCircle className="minimal-icon" />
+              <div className="minimal-flex text-white" style={{ gap: '6px' }}>
+                <MessageCircle className="w-4 h-4 stroke-current" />
                 <span>{post.comment_count}</span>
               </div>
             </div>
@@ -527,9 +702,17 @@ export default function PostDetailPage() {
 
         {/* Comments Section */}
         <div className="mb-6">
-          <h3 className="mobile-subheading mb-3">
-            Comments ({topLevelCommentCount})
-          </h3>
+          <div className="minimal-flex justify-between items-center mb-3">
+            <h3 className="mobile-subheading">
+              Comments ({topLevelCommentCount})
+            </h3>
+            {isAdmin && (
+              <div className="minimal-flex items-center gap-1 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded text-xs text-amber-300">
+                <Shield className="w-3 h-3" />
+                <span>Admin Mode</span>
+              </div>
+            )}
+          </div>
 
           {topLevelComments.length === 0 ? (
             <div className="mobile-card-flat p-4 text-center">
@@ -549,6 +732,7 @@ export default function PostDetailPage() {
                   onLike={handleLikeComment}
                   onEdit={handleEditComment}
                   onDelete={handleDeleteComment}
+                  isAdmin={isAdmin}
                 />
               ))}
             </div>
@@ -565,6 +749,113 @@ export default function PostDetailPage() {
           editMode={true}
           initialData={post}
         />
+      )}
+
+      {/* Image Modal with Carousel */}
+      {showImageModal && post.media_files && post.media_files.length > 0 && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowImageModal(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-70 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* Navigation Arrows */}
+            {post.media_files.length > 1 && (
+              <>
+                <button
+                  onClick={() => setSelectedImageIndex(prev => 
+                    prev === 0 ? post.media_files.length - 1 : prev - 1
+                  )}
+                  className="absolute left-4 z-10 p-2 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-70 transition-colors"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button
+                  onClick={() => setSelectedImageIndex(prev => 
+                    prev === post.media_files.length - 1 ? 0 : prev + 1
+                  )}
+                  className="absolute right-4 z-10 p-2 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-70 transition-colors"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
+
+            {/* Main Image/Video */}
+            <div className="max-w-full max-h-full flex items-center justify-center">
+              {post.media_files[selectedImageIndex] && post.media_files[selectedImageIndex].type && post.media_files[selectedImageIndex].type.startsWith('image/') ? (
+                <img
+                  src={post.media_files[selectedImageIndex].url}
+                  alt={post.media_files[selectedImageIndex].name || `Image ${selectedImageIndex + 1}`}
+                  className="max-w-full max-h-full object-contain rounded-lg"
+                  onError={(e) => {
+                    console.error('❌ Full-size image failed to load:', post.media_files[selectedImageIndex].url, e);
+                    e.target.style.display = 'none';
+                  }}
+                />
+              ) : post.media_files[selectedImageIndex] && post.media_files[selectedImageIndex].type && post.media_files[selectedImageIndex].type.startsWith('video/') ? (
+                <video
+                  src={post.media_files[selectedImageIndex].url}
+                  className="max-w-full max-h-full rounded-lg"
+                  controls
+                  autoPlay
+                  onError={(e) => {
+                    console.error('❌ Full-size video failed to load:', post.media_files[selectedImageIndex].url, e);
+                    e.target.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div className="bg-gray-700 rounded-lg p-8 text-center">
+                  <span className="text-gray-400 text-lg">Unsupported file type</span>
+                </div>
+              )}
+            </div>
+
+            {/* Image Counter */}
+            {post.media_files.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 rounded-full px-3 py-1 text-white text-sm">
+                {selectedImageIndex + 1} / {post.media_files.length}
+              </div>
+            )}
+
+            {/* Thumbnail Strip */}
+            {post.media_files.length > 1 && (
+              <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 flex gap-2 max-w-full overflow-x-auto">
+                {post.media_files.map((file, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImageIndex(index)}
+                    className={`flex-shrink-0 w-12 h-12 rounded-lg border-2 overflow-hidden ${
+                      index === selectedImageIndex 
+                        ? 'border-white' 
+                        : 'border-gray-500 hover:border-gray-300'
+                    }`}
+                  >
+                    {file && file.type && file.type.startsWith('image/') ? (
+                      <img
+                        src={file.url}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : file && file.type && file.type.startsWith('video/') ? (
+                      <div className="w-full h-full bg-gray-600 flex items-center justify-center">
+                        <span className="text-white text-xs">📹</span>
+                      </div>
+                    ) : (
+                      <div className="w-full h-full bg-gray-600 flex items-center justify-center">
+                        <span className="text-white text-xs">📄</span>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </SidebarLayout>
   );

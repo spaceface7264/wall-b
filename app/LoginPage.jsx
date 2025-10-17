@@ -2,12 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-);
+import { supabase } from '../lib/supabase';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -15,6 +11,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const handleAuth = async (e) => {
@@ -40,154 +37,124 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#252526',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px'
+    <div className="min-h-screen flex items-center justify-center p-4" style={{
+      background: 'linear-gradient(135deg, #1a1a1b 0%, #252526 100%)'
     }}>
-      <div style={{ width: '100%', maxWidth: '360px' }}>
+      <div className="w-full max-w-sm">
         
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-          <p style={{ fontSize: '14px', color: '#8B8B8B' }}>
-            Welcome to Wall-B
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-white mb-2">Wall-B</h1>
+          <p className="mobile-text-sm text-gray-400">
+            {isSignUp ? 'Create your account' : 'Welcome back'}
           </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div style={{ 
-          display: 'flex', 
-          gap: '8px',
-          marginBottom: '32px',
-          background: '#1A1A1A',
-          padding: '4px',
-          borderRadius: '12px'
-        }}>
-          <button
-            onClick={() => { setIsSignUp(false); setError(''); }}
-            style={{
-              flex: 1,
-              padding: '12px',
-              fontSize: '14px',
-              fontWeight: '600',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              background: !isSignUp ? '#FFFFFF' : 'transparent',
-              color: !isSignUp ? '#0A0A0A' : '#8B8B8B'
-            }}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => { setIsSignUp(true); setError(''); }}
-            style={{
-              flex: 1,
-              padding: '12px',
-              fontSize: '14px',
-              fontWeight: '600',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              background: isSignUp ? '#FFFFFF' : 'transparent',
-              color: isSignUp ? '#0A0A0A' : '#8B8B8B'
-            }}
-          >
-            Sign Up
-          </button>
+        {/* Auth Card */}
+        <div className="mobile-card">
+          {/* Tab Switcher */}
+          <div className="flex gap-2 p-1 bg-gray-800/40 rounded-lg mb-6">
+            <button
+              type="button"
+              onClick={() => { setIsSignUp(false); setError(''); }}
+              className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${
+                !isSignUp 
+                  ? 'bg-indigo-600 text-white' 
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsSignUp(true); setError(''); }}
+              className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${
+                isSignUp 
+                  ? 'bg-indigo-600 text-white' 
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Sign Up
+            </button>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleAuth} className="space-y-4">
+            <div>
+              <label className="minimal-label flex items-center gap-2 mb-2">
+                <Mail className="w-4 h-4" />
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="minimal-input w-full"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="minimal-label flex items-center gap-2 mb-2">
+                <Lock className="w-4 h-4" />
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="minimal-input w-full pr-10"
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div className="p-3 bg-red-900/20 border border-red-700 rounded-lg">
+                <p className="text-red-300 text-sm">{error}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="mobile-btn-primary w-full justify-center"
+            >
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : (
+                isSignUp ? 'Create Account' : 'Sign In'
+              )}
+            </button>
+          </form>
         </div>
 
-        {/* Form */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              fontSize: '14px',
-              background: '#CCC',
-              border: '1px solid #999',
-              borderRadius: '8px',
-              color: '#000',
-              outline: 'none',
-              transition: 'border-color 0.2s ease'
-            }}
-            onFocus={(e) => e.target.style.borderColor = '#666'}
-            onBlur={(e) => e.target.style.borderColor = '#999'}
-          />
-
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              fontSize: '14px',
-              background: '#CCC',
-              border: '1px solid #999',
-              borderRadius: '8px',
-              color: '#000',
-              outline: 'none',
-              transition: 'border-color 0.2s ease'
-            }}
-            onFocus={(e) => e.target.style.borderColor = '#666'}
-            onBlur={(e) => e.target.style.borderColor = '#999'}
-          />
-
-          {error && (
-            <p style={{ 
-              fontSize: '13px', 
-              color: '#FF6B6B',
-              margin: '0'
-            }}>
-              {error}
-            </p>
-          )}
-
+        {/* Footer Link */}
+        <p className="text-center mobile-text-xs text-gray-500 mt-4">
+          {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+          {' '}
           <button
-            onClick={handleAuth}
-            disabled={isLoading}
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              fontSize: '14px',
-              fontWeight: '600',
-              background: '#FFFFFF',
-              color: '#0A0A0A',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              opacity: isLoading ? '0.6' : '1',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => !isLoading && (e.target.style.background = '#F0F0F0')}
-            onMouseLeave={(e) => !isLoading && (e.target.style.background = '#FFFFFF')}
+            type="button"
+            onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
+            className="text-indigo-400 hover:text-indigo-300"
           >
-            {isLoading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+            {isSignUp ? 'Sign in' : 'Sign up'}
           </button>
-        </div>
-
-        {/* Footer hint */}
-        <p style={{
-          textAlign: 'center',
-          fontSize: '12px',
-          color: '#5A5A5A',
-          marginTop: '24px',
-          lineHeight: '1.5',
-          minHeight: '36px',
-          visibility: isSignUp ? 'visible' : 'hidden'
-        }}>
-          By signing up, you agree to our Terms and Privacy Policy
         </p>
       </div>
     </div>

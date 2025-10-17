@@ -2,18 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-import { User as UserIcon, Home, Users, MessageCircle, MapPin, Menu, X, LogOut } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle } from 'lucide-react';
+import NotificationBell from './NotificationBell';
+import BottomNav from './BottomNav';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-);
-
-export default function SidebarLayout({ children, currentPage = 'dashboard' }) {
+export default function SidebarLayout({ children, currentPage = 'community', pageTitle = null }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [communities, setCommunities] = useState([]);
+  const [communitiesLoading, setCommunitiesLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchActive, setIsSearchActive] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -24,6 +26,19 @@ export default function SidebarLayout({ children, currentPage = 'dashboard' }) {
         const { data: { user } } = await supabase.auth.getUser();
         if (mounted) {
           setUser(user);
+          
+          // Check if user is admin and load communities
+          if (user) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('is_admin')
+              .eq('id', user.id)
+              .single();
+            
+            setIsAdmin(profile?.is_admin || false);
+            loadUserCommunities(user.id);
+          }
+          
           setLoading(false);
         }
       } catch (error) {
@@ -37,9 +52,30 @@ export default function SidebarLayout({ children, currentPage = 'dashboard' }) {
     getUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (mounted) {
           setUser(session?.user ?? null);
+          
+          // Check admin status when auth state changes
+          if (session?.user) {
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('is_admin')
+                .eq('id', session.user.id)
+                .single();
+              
+              setIsAdmin(profile?.is_admin || false);
+              loadUserCommunities(session.user.id);
+            } catch (error) {
+              console.error('Error checking admin status:', error);
+              setIsAdmin(false);
+            }
+          } else {
+            setIsAdmin(false);
+            setCommunities([]);
+          }
+          
           setLoading(false);
         }
       }
@@ -100,6 +136,100 @@ export default function SidebarLayout({ children, currentPage = 'dashboard' }) {
     closeDrawer();
   };
 
+  const loadUserCommunities = async (userId) => {
+    if (!userId) return;
+    
+    setCommunitiesLoading(true);
+    try {
+      console.log('Loading communities for user:', userId);
+      
+      // First, let's try a simple query to see if the table exists
+      const { data: testData, error: testError } = await supabase
+        .from('community_members')
+        .select('*')
+        .limit(1);
+      
+      if (testError) {
+        console.error('Table test error:', testError);
+        // If community_members doesn't exist, try communities directly
+        const { data: communitiesData, error: communitiesError } = await supabase
+          .from('communities')
+          .select('id, name, description, member_count')
+          .limit(10);
+        
+        if (communitiesError) {
+          console.error('Communities table error:', communitiesError);
+          return;
+        }
+        
+        console.log('Using communities table directly:', communitiesData);
+        setCommunities(communitiesData || []);
+        return;
+      }
+      
+      // If community_members exists, proceed with the original query
+      const { data, error } = await supabase
+        .from('community_members')
+        .select(`
+          communities (
+            id,
+            name,
+            description,
+            member_count
+          )
+        `)
+        .eq('user_id', userId)
+        .order('joined_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading communities:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        return;
+      }
+
+      console.log('Communities data:', data);
+      setCommunities(data?.map(item => item.communities).filter(Boolean) || []);
+    } catch (error) {
+      console.error('Error loading communities:', error);
+    } finally {
+      setCommunitiesLoading(false);
+    }
+  };
+
+  const navigateToCommunity = (communityId) => {
+    router.push(`/community/${communityId}`);
+    closeDrawer();
+  };
+
+  const navigateToJoinCommunity = () => {
+    router.push('/community');
+    closeDrawer();
+  };
+
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    setIsSearchActive(query.length > 0);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setIsSearchActive(false);
+  };
+
+  const handleSearchAllCommunities = () => {
+    if (searchQuery.trim()) {
+      router.push(`/community?search=${encodeURIComponent(searchQuery.trim())}`);
+      closeDrawer();
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearchAllCommunities();
+    }
+  };
+
 
   if (loading) {
     return (
@@ -132,10 +262,10 @@ export default function SidebarLayout({ children, currentPage = 'dashboard' }) {
           </div>
         </button>
         
-        <h1 className="mobile-header-title capitalize">{currentPage}</h1>
+        <h1 className="mobile-header-title capitalize">{pageTitle || currentPage}</h1>
         
         <div className="mobile-header-actions">
-          {/* Add any header actions here */}
+          <NotificationBell userId={user?.id} />
         </div>
       </div>
 
@@ -149,79 +279,121 @@ export default function SidebarLayout({ children, currentPage = 'dashboard' }) {
 
       {/* Drawer */}
       <div className={`mobile-drawer ${drawerOpen ? 'open' : ''}`}>
-        {/* Drawer Header */}
-        <div className="mobile-drawer-header">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center">
-              <UserIcon className="w-6 h-6 text-white" />
+
+        {/* Search Section */}
+        <div className="px-4 py-4 border-b border-gray-700">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
             </div>
-            <div>
-              <h3 className="text-white font-medium">
-                {user?.user_metadata?.full_name || user?.email || 'User'}
-              </h3>
-              <p className="text-gray-400 text-sm">
-                {user?.email}
-              </p>
-            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onKeyPress={handleKeyPress}
+              placeholder="Search communities..."
+              className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <X className="h-4 w-4 text-gray-400 hover:text-white" />
+              </button>
+            )}
           </div>
+          
+          {/* Search All Communities Button - Only show when search is active */}
+          {isSearchActive && (
+            <button
+              onClick={handleSearchAllCommunities}
+              className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+            >
+              <Search className="w-4 h-4" />
+              <span className="font-medium">Search all communities</span>
+            </button>
+          )}
         </div>
 
-        {/* Drawer Navigation */}
+        {/* Communities Section */}
         <div className="mobile-drawer-nav">
-          <button
-            onClick={() => navigateToPage('dashboard')}
-            onMouseDown={createRipple}
-            className={`mobile-drawer-item ripple-effect ${
-              currentPage === 'dashboard' ? 'active' : ''
-            }`}
-          >
-            <Home className="mobile-drawer-icon" />
-            <span className="mobile-drawer-text">Dashboard</span>
-          </button>
+          <div className="py-2">
+            {/* Create Community Button - Always at top */}
+            <button
+              onClick={() => {}}
+              onMouseDown={createRipple}
+              className="w-full flex items-center justify-between p-3 rounded-none transition-colors ripple-effect hover:bg-gray-700/50 text-gray-300"
+            >
+              <div className="flex-1 min-w-0 text-left">
+                <div className="flex items-center gap-2">
+                  <PlusCircle className="w-4 h-4 flex-shrink-0" />
+                  <span className="font-medium text-sm truncate">Create Community</span>
+                </div>
+              </div>
+            </button>
 
-          <button
-            onClick={() => navigateToPage('profile')}
-            onMouseDown={createRipple}
-            className={`mobile-drawer-item ripple-effect ${
-              currentPage === 'profile' ? 'active' : ''
-            }`}
-          >
-            <UserIcon className="mobile-drawer-icon" />
-            <span className="mobile-drawer-text">Profile</span>
-          </button>
+            {/* Explore Communities Button */}
+            <button
+              onClick={navigateToJoinCommunity}
+              onMouseDown={createRipple}
+              className="w-full flex items-center justify-between p-3 rounded-none transition-colors ripple-effect hover:bg-gray-700/50 text-gray-300"
+            >
+              <div className="flex-1 min-w-0 text-left">
+                <div className="flex items-center gap-2">
+                  <Compass className="w-4 h-4 flex-shrink-0" />
+                  <span className="font-medium text-sm truncate">Explore Communities</span>
+                </div>
+              </div>
+            </button>
 
-          <button
-            onClick={() => navigateToPage('community')}
-            onMouseDown={createRipple}
-            className={`mobile-drawer-item ripple-effect ${
-              currentPage === 'community' ? 'active' : ''
-            }`}
-          >
-            <Users className="mobile-drawer-icon" />
-            <span className="mobile-drawer-text">Community</span>
-          </button>
+            {communitiesLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : communities.length > 0 ? (
+              <div className="space-y-1 max-h-64 overflow-y-auto">
+                {communities.map((community) => (
+                  <button
+                    key={community.id}
+                    onClick={() => navigateToCommunity(community.id)}
+                    onMouseDown={createRipple}
+                    className={`w-full flex items-center justify-between p-3 rounded-none transition-colors ripple-effect ${
+                      currentPage === 'community' ? 'bg-indigo-500/20 text-indigo-300' : 'hover:bg-gray-700/50 text-gray-300'
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 flex-shrink-0" />
+                        <span className="font-medium text-sm truncate">{community.name}</span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <Users className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+                <p className="text-sm text-gray-400">No communities yet</p>
+              </div>
+            )}
 
-          <button
-            onClick={() => navigateToPage('chat')}
-            onMouseDown={createRipple}
-            className={`mobile-drawer-item ripple-effect ${
-              currentPage === 'chat' ? 'active' : ''
-            }`}
-          >
-            <MessageCircle className="mobile-drawer-icon" />
-            <span className="mobile-drawer-text">Chat</span>
-          </button>
-
-          <button
-            onClick={() => navigateToPage('gyms')}
-            onMouseDown={createRipple}
-            className={`mobile-drawer-item ripple-effect ${
-              currentPage === 'gyms' ? 'active' : ''
-            }`}
-          >
-            <MapPin className="mobile-drawer-icon" />
-            <span className="mobile-drawer-text">Gyms</span>
-          </button>
+            {/* Admin Panel - Only show if user is admin */}
+            {isAdmin && (
+              <button
+                onClick={() => navigateToPage('admin')}
+                onMouseDown={createRipple}
+                className={`w-full flex items-center gap-3 p-3 mt-2 rounded-none transition-colors ripple-effect ${
+                  currentPage === 'admin' 
+                    ? 'bg-amber-500/20 text-amber-300' 
+                    : 'hover:bg-gray-700/50 text-gray-300'
+                }`}
+              >
+                <Shield className="w-4 h-4" />
+                <span className="font-medium">Admin Panel</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Drawer Footer */}
@@ -238,11 +410,14 @@ export default function SidebarLayout({ children, currentPage = 'dashboard' }) {
       </div>
 
       {/* Main Content Area */}
-      <div className="mobile-content">
+      <div className="mobile-content mobile-content-with-cards">
         <div className="p-comfortable">
           {children}
         </div>
       </div>
+
+      {/* Bottom Navigation */}
+      <BottomNav />
     </div>
   );
 }

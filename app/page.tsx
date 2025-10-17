@@ -2,13 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
+import { getCurrentSession } from '../lib/auth-utils';
 import LoginPage from './LoginPage';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-);
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
@@ -18,20 +14,17 @@ export default function Home() {
   useEffect(() => {
     let mounted = true;
 
-    const getUser = async () => {
+    const initializeAuth = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (error) {
-          console.error('Auth error:', error);
-        }
+        // Use the safer auth utility
+        const session = await getCurrentSession();
         
         if (mounted) {
-          setUser(user);
+          setUser(session?.user ?? null);
           setLoading(false);
         }
       } catch (error) {
-        console.error('Error getting user:', error);
+        console.log('Auth initialization error:', error);
         if (mounted) {
           setUser(null);
           setLoading(false);
@@ -45,12 +38,13 @@ export default function Home() {
         setUser(null);
         setLoading(false);
       }
-    }, 2000);
+    }, 3000);
 
-    getUser();
+    initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         if (mounted) {
           setUser(session?.user ?? null);
           setLoading(false);
@@ -67,7 +61,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.push('/dashboard');
+      router.push('/community');
     }
   }, [user, loading, router]);
 
@@ -84,9 +78,9 @@ export default function Home() {
     );
   }
 
-  // If user exists, redirect to dashboard
+  // If user exists, redirect to community
   if (user) {
-    return null; // Will redirect to dashboard
+    return null; // Will redirect to community
   }
 
   // Default: Show login page (no user or any other state)

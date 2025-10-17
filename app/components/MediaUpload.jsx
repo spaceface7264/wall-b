@@ -21,7 +21,10 @@ export default function MediaUpload({
   const [error, setError] = useState('');
 
   const handleFileUpload = async (event) => {
+    console.log('📁 MediaUpload handleFileUpload called');
     const files = Array.from(event.target.files);
+    console.log('📁 Selected files:', files);
+    console.log('📁 Files length:', files.length);
     
     if (files.length + uploadedFiles.length > maxFiles) {
       setError(`Maximum ${maxFiles} files allowed`);
@@ -39,9 +42,9 @@ export default function MediaUpload({
           throw new Error(`File type ${file.type} not supported`);
         }
 
-        // Validate file size (max 10MB)
-        if (file.size > 10 * 1024 * 1024) {
-          throw new Error(`File ${file.name} is too large. Maximum size is 10MB`);
+        // Validate file size (max 25MB)
+        if (file.size > 25 * 1024 * 1024) {
+          throw new Error(`File ${file.name} is too large. Maximum size is 25MB`);
         }
 
         // Create unique filename
@@ -62,15 +65,25 @@ export default function MediaUpload({
           .from(bucket)
           .getPublicUrl(fileName);
 
-        return {
+        const fileObject = {
           name: file.name,
           url: publicUrl,
           type: file.type,
           size: file.size
         };
+        
+        console.log('📤 MediaUpload created file object:', fileObject);
+        console.log('📤 File name:', file.name);
+        console.log('📤 Public URL:', publicUrl);
+        console.log('📤 File type:', file.type);
+        
+        return fileObject;
       });
 
       const uploadedFiles = await Promise.all(uploadPromises);
+      
+      console.log('📤 MediaUpload all files uploaded:', uploadedFiles);
+      console.log('📤 MediaUpload calling onUpload with:', uploadedFiles);
       
       if (onUpload) {
         onUpload(uploadedFiles);
@@ -124,7 +137,7 @@ export default function MediaUpload({
             {isUploading ? 'Uploading...' : 'Click to upload media'}
           </p>
           <p className="text-xs text-gray-500">
-            Images and videos up to 10MB each. Max {maxFiles} files.
+            Images and videos up to 25MB each. Max {maxFiles} files.
           </p>
         </div>
       </div>

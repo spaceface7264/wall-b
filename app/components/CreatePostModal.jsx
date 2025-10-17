@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { X, Send } from 'lucide-react';
+import { X, Send, Paperclip } from 'lucide-react';
 import MediaUpload from './MediaUpload';
+import { useToast } from '../providers/ToastProvider';
 
 export default function CreatePostModal({
   communityId,
@@ -8,12 +9,15 @@ export default function CreatePostModal({
   onSubmit,
   editMode = false,
   initialData = null,
+  communityName = 'Community',
+  userName = 'User',
 }) {
   const [title, setTitle] = useState(initialData?.title || '');
   const [content, setContent] = useState(initialData?.content || '');
   const [tag, setTag] = useState(initialData?.tag || 'general');
   const [submitting, setSubmitting] = useState(false);
   const [mediaFiles, setMediaFiles] = useState(initialData?.media_files || []);
+  const { showToast } = useToast();
 
   const titleMaxLength = 200;
   const contentMaxLength = 2000;
@@ -34,19 +38,30 @@ export default function CreatePostModal({
       return;
     }
 
+    console.log('📝 CreatePostModal handleSubmit called');
+    console.log('📸 Media files in CreatePostModal:', mediaFiles);
+    console.log('📸 Media files type:', typeof mediaFiles);
+    console.log('📸 Media files length:', mediaFiles?.length);
+
     setSubmitting(true);
     try {
-      await onSubmit({
+      const postData = {
         title: title.trim(),
         content: content.trim(),
         tag,
         community_id: communityId,
         post_type: 'post', // Fixed: use 'post' instead of tag value
         media_files: mediaFiles,
-      });
+      };
+      
+      console.log('📤 Sending post data:', postData);
+      
+      await onSubmit(postData);
+      showToast('success', 'Posted!', 'Your post is now live! 📝');
       onClose();
     } catch (error) {
       console.error('Error submitting post:', error);
+      showToast('error', 'Failed', 'Failed to create post. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -63,150 +78,174 @@ export default function CreatePostModal({
 
   return (
     <div
-      className="minimal-modal-overlay open"
+      className="fixed inset-0 bg-gray-900 z-50"
       onClick={handleClose}
     >
-      <div className="minimal-modal-content" style={{ maxWidth: '600px', width: '90%' }}>
-        {/* Modal Header */}
-        <div className="minimal-modal-header">
-          <h2 className="minimal-modal-title">
-            {editMode ? 'Edit Post' : 'Create Post'}
-          </h2>
+      <div className="h-full flex flex-col" onClick={(e) => e.stopPropagation()}>
+        {/* Header - Who is posting where */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+              {userName.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div className="text-white font-medium text-sm">{userName}</div>
+              <div className="text-gray-400 text-xs">in {communityName}</div>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="minimal-modal-close"
+            className="text-gray-400 hover:text-white transition-colors"
             disabled={submitting}
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Modal Body */}
-        <div className="minimal-modal-body">
+        {/* Form Content */}
+        <div className="flex-1 p-4 flex flex-col min-h-0">
           {/* Title Input */}
-          <div className="minimal-form-group">
-            <label className="minimal-label">
-              Title *
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value.slice(0, titleMaxLength))}
-              placeholder="Enter post title..."
-              className="minimal-input"
-              disabled={submitting}
-            />
-            <div className="minimal-flex justify-between items-center mt-1">
-              <span className="mobile-text-xs text-gray-400">
-                {title.length < 5 && title.length > 0 && (
-                  <span className="text-yellow-400">Minimum 5 characters</span>
-                )}
-              </span>
-              {showTitleCharCount && (
-                <span className={`mobile-text-xs ${
-                  title.length >= titleMaxLength ? 'text-red-400' : 'text-gray-400'
-                }`}>
-                  {title.length}/{titleMaxLength}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Content Textarea */}
-          <div className="minimal-form-group">
-            <label className="minimal-label">
-              Content *
-            </label>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value.slice(0, contentMaxLength))}
-              placeholder="Share your thoughts, ask a question, or share some beta..."
-              className="minimal-textarea"
-              rows={8}
-              disabled={submitting}
-            />
-            <div className="minimal-flex justify-between items-center mt-1">
-              <span className="mobile-text-xs text-gray-400">
-                {content.length < 10 && content.length > 0 && (
-                  <span className="text-yellow-400">Minimum 10 characters</span>
-                )}
-              </span>
-              {showContentCharCount && (
-                <span className={`mobile-text-xs ${
-                  content.length >= contentMaxLength ? 'text-red-400' : 'text-gray-400'
-                }`}>
-                  {content.length}/{contentMaxLength}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Tag Selection */}
-          <div className="minimal-form-group">
-            <label className="minimal-label">
-              Tag *
-            </label>
-            <select
-              value={tag}
-              onChange={(e) => setTag(e.target.value)}
-              className="minimal-select"
-              disabled={submitting}
-            >
-              {tags.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-            <p className="mobile-text-xs text-gray-400 mt-1">
-              Choose the most appropriate tag for your post
-            </p>
-          </div>
-        </div>
-
-        {/* Media Upload */}
-        <div>
-          <label className="minimal-text block mb-2">Media (Optional)</label>
-          <MediaUpload
-            onUpload={(files) => setMediaFiles(prev => [...prev, ...files])}
-            onRemove={(index) => setMediaFiles(prev => prev.filter((_, i) => i !== index))}
-            uploadedFiles={mediaFiles}
-            maxFiles={5}
-            bucket="post-media"
-          />
-        </div>
-
-        {/* Modal Actions */}
-        <div className="minimal-modal-actions">
-          <button
-            onClick={onClose}
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value.slice(0, titleMaxLength))}
+            placeholder="Title"
+            className="w-full bg-transparent text-white text-2xl placeholder-gray-500 border-none outline-none resize-none flex-shrink-0"
             disabled={submitting}
-            className="mobile-btn-secondary"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={
-              title.trim().length < 5 ||
-              content.trim().length < 10 ||
-              submitting
-            }
-            className="mobile-btn-primary minimal-flex gap-2"
-          >
-            {submitting ? (
-              <>
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                {editMode ? 'Saving...' : 'Posting...'}
-              </>
-            ) : (
-              <>
-                <Send className="minimal-icon" />
-                {editMode ? 'Save Changes' : 'Post'}
-              </>
-            )}
-          </button>
+          />
+
+          {/* Content Textarea - 50% height */}
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value.slice(0, contentMaxLength))}
+            placeholder="Write something..."
+            className="w-full bg-transparent text-white placeholder-gray-500 border-none outline-none resize-none mt-4 text-lg"
+            style={{ height: '50vh' }}
+            disabled={submitting}
+          />
+
+          {/* Separator Line */}
+          <div className="border-t border-gray-700 my-4"></div>
+
+          {/* Paperclip and Post Button Section */}
+          <div className="flex items-center justify-between py-4">
+            <div className="relative">
+              <input
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files);
+                  console.log('📎 Paperclip file input selected files:', files);
+                  
+                  // Process files through MediaUpload logic
+                  const processedFiles = await Promise.all(files.map(async (file) => {
+                    // Validate file type
+                    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm'];
+                    if (!allowedTypes.includes(file.type)) {
+                      throw new Error(`File type ${file.type} not supported`);
+                    }
+
+                    // Validate file size (max 25MB)
+                    if (file.size > 25 * 1024 * 1024) {
+                      throw new Error(`File ${file.name} is too large. Maximum size is 25MB`);
+                    }
+
+                    // Create unique filename
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+
+                    // Upload to Supabase Storage
+                    const { createClient } = await import('@supabase/supabase-js');
+                    const supabase = createClient(
+                      process.env.NEXT_PUBLIC_SUPABASE_URL,
+                      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+                    );
+
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                      .from('post-media')
+                      .upload(fileName, file);
+
+                    if (uploadError) {
+                      throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`);
+                    }
+
+                    // Get public URL
+                    const { data: { publicUrl } } = supabase.storage
+                      .from('post-media')
+                      .getPublicUrl(fileName);
+
+                    return {
+                      name: file.name,
+                      url: publicUrl,
+                      type: file.type,
+                      size: file.size
+                    };
+                  }));
+
+                  console.log('📎 Processed files:', processedFiles);
+                  setMediaFiles(prev => [...prev, ...processedFiles]);
+                }}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                disabled={submitting}
+              />
+              <button
+                className="text-gray-400 hover:text-white transition-colors p-2"
+                disabled={submitting}
+              >
+                <Paperclip className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+            </div>
+
+            {/* Post Button */}
+            <button
+              onClick={handleSubmit}
+              disabled={
+                title.trim().length < 5 ||
+                content.trim().length < 10 ||
+                submitting
+              }
+              className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              {submitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  {editMode ? 'Saving...' : 'Posting...'}
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  {editMode ? 'Save' : 'Post'}
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Media Upload Area */}
+          <div className="mt-4 flex-shrink-0">
+            <MediaUpload
+              onUpload={(files) => {
+                console.log('📥 CreatePostModal received files from MediaUpload:', files);
+                console.log('📥 Files type:', typeof files);
+                console.log('📥 Files length:', files?.length);
+                files?.forEach((file, index) => {
+                  console.log(`📥 File ${index}:`, file);
+                  console.log(`📥 File ${index} keys:`, Object.keys(file || {}));
+                });
+                setMediaFiles(prev => {
+                  const newFiles = [...prev, ...files];
+                  console.log('📥 CreatePostModal setting mediaFiles to:', newFiles);
+                  return newFiles;
+                });
+              }}
+              onRemove={(index) => setMediaFiles(prev => prev.filter((_, i) => i !== index))}
+              uploadedFiles={mediaFiles}
+              maxFiles={5}
+              bucket="post-media"
+            />
+          </div>
         </div>
+
       </div>
     </div>
   );

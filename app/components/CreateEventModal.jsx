@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, Calendar, MapPin, Users, Clock } from 'lucide-react';
+import { useToast } from '../providers/ToastProvider';
 
 export default function CreateEventModal({
   communityId,
@@ -20,7 +21,7 @@ export default function CreateEventModal({
   const [maxParticipants, setMaxParticipants] = useState(initialData?.max_participants || '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const { showToast } = useToast();
 
   const eventTypes = [
     { value: 'meetup', label: 'Meetup', icon: '📅', color: '#3b82f6' },
@@ -64,11 +65,10 @@ export default function CreateEventModal({
       
       await onSubmit(eventData);
       
-      setSuccess(true);
-      setTimeout(() => {
-        onClose();
-      }, 1500);
+      showToast('success', 'Event Created!', `${title} has been scheduled! 🎉`);
+      onClose();
     } catch (error) {
+      showToast('error', 'Failed', error.message || 'Please try again');
       setError(error.message || 'Failed to create event. Please try again.');
     } finally {
       setSubmitting(false);
@@ -90,13 +90,14 @@ export default function CreateEventModal({
   };
 
   return (
-    <div className="minimal-modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="minimal-modal-overlay open" onClick={handleClose}>
+      <div className="minimal-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="minimal-modal-header">
           <h2 className="minimal-modal-title">
             {editMode ? 'Edit Event' : 'Create New Event'}
           </h2>
-          <button onClick={onClose} className="minimal-modal-close-btn">
-            <X size={20} />
+          <button onClick={onClose} className="minimal-modal-close">
+            <X className="w-6 h-6" />
           </button>
         </div>
 
@@ -107,15 +108,10 @@ export default function CreateEventModal({
             </div>
           )}
           
-          {success && (
-            <div className="mb-4 p-3 bg-green-900/20 border border-green-700 rounded-lg">
-              <p className="text-green-300 text-sm">Event created successfully! 🎉</p>
-            </div>
-          )}
           
-          <div className="mb-4">
-            <label htmlFor="title" className="minimal-text block mb-2">
-              Event Title
+          <div className="minimal-form-group">
+            <label htmlFor="title" className="minimal-label">
+              Event Title *
             </label>
             <input
               type="text"
@@ -125,29 +121,30 @@ export default function CreateEventModal({
               className="minimal-input"
               placeholder="Enter event title"
               maxLength={100}
-              disabled={submitting || success}
+              disabled={submitting}
             />
           </div>
 
-          <div className="mb-4">
-            <label htmlFor="description" className="minimal-text block mb-2">
-              Description
+          <div className="minimal-form-group">
+            <label htmlFor="description" className="minimal-label">
+              Description *
             </label>
             <textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="minimal-input h-24 resize-y"
+              className="minimal-textarea"
+              rows={6}
               placeholder="Describe your event..."
               maxLength={500}
-              disabled={submitting || success}
+              disabled={submitting}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label htmlFor="eventDate" className="minimal-text block mb-2">
-                Date
+            <div className="minimal-form-group">
+              <label htmlFor="eventDate" className="minimal-label">
+                Date *
               </label>
               <input
                 type="date"
@@ -156,12 +153,12 @@ export default function CreateEventModal({
                 onChange={(e) => setEventDate(e.target.value)}
                 className="minimal-input"
                 min={getMinDateTime()}
-                disabled={submitting || success}
+                disabled={submitting}
               />
             </div>
-            <div>
-              <label htmlFor="eventTime" className="minimal-text block mb-2">
-                Time
+            <div className="minimal-form-group">
+              <label htmlFor="eventTime" className="minimal-label">
+                Time *
               </label>
               <input
                 type="time"
@@ -169,13 +166,13 @@ export default function CreateEventModal({
                 value={eventTime}
                 onChange={(e) => setEventTime(e.target.value)}
                 className="minimal-input"
-                disabled={submitting || success}
+                disabled={submitting}
               />
             </div>
           </div>
 
-          <div className="mb-4">
-            <label htmlFor="location" className="minimal-text block mb-2">
+          <div className="minimal-form-group">
+            <label htmlFor="location" className="minimal-label">
               Location (Optional)
             </label>
             <input
@@ -186,20 +183,20 @@ export default function CreateEventModal({
               className="minimal-input"
               placeholder="Where will this event take place?"
               maxLength={200}
-              disabled={submitting || success}
+              disabled={submitting}
             />
           </div>
 
-          <div className="mb-4">
-            <label htmlFor="eventType" className="minimal-text block mb-2">
-              Event Type
+          <div className="minimal-form-group">
+            <label htmlFor="eventType" className="minimal-label">
+              Event Type *
             </label>
             <select
               id="eventType"
               value={eventType}
               onChange={(e) => setEventType(e.target.value)}
-              className="minimal-input"
-              disabled={submitting || success}
+              className="minimal-select"
+              disabled={submitting}
             >
               {eventTypes.map((type) => (
                 <option key={type.value} value={type.value}>
@@ -209,8 +206,8 @@ export default function CreateEventModal({
             </select>
           </div>
 
-          <div className="mb-6">
-            <label htmlFor="maxParticipants" className="minimal-text block mb-2">
+          <div className="minimal-form-group">
+            <label htmlFor="maxParticipants" className="minimal-label">
               Max Participants (Optional)
             </label>
             <input
@@ -222,7 +219,7 @@ export default function CreateEventModal({
               placeholder="Leave empty for unlimited"
               min="1"
               max="1000"
-              disabled={submitting || success}
+              disabled={submitting}
             />
           </div>
         </div>
@@ -242,15 +239,24 @@ export default function CreateEventModal({
               description.trim().length < 10 ||
               !eventDate ||
               !eventTime ||
-              submitting ||
-              success
+              submitting
             }
-            className="mobile-btn-primary"
+            className="mobile-btn-primary minimal-flex gap-2"
           >
-            {success ? 'Event Created! 🎉' : submitting ? 'Creating...' : (editMode ? 'Save Changes' : 'Create Event')}
-            {!success && <Calendar size={16} />}
+            {submitting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <Calendar className="minimal-icon" />
+                {editMode ? 'Save Changes' : 'Create Event'}
+              </>
+            )}
           </button>
         </div>
+      </div>
     </div>
   );
 }

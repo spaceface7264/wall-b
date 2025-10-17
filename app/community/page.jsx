@@ -6,8 +6,7 @@ import {
   Plus,
   Search,
   Filter,
-  TrendingUp,
-  Star
+  TrendingUp
 } from 'lucide-react';
 import SidebarLayout from '../components/SidebarLayout';
 import CommunityCard from '../components/CommunityCard';
@@ -25,8 +24,10 @@ export default function CommunityHub() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLocation, setFilterLocation] = useState('');
+  const [filterType, setFilterType] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   const [joiningCommunity, setJoiningCommunity] = useState(null);
+  const [leavingCommunity, setLeavingCommunity] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -63,6 +64,21 @@ export default function CommunityHub() {
     loadAllData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Check for last visited community redirect
+  useEffect(() => {
+    const checkLastVisitedCommunity = async () => {
+      const lastCommunityId = localStorage.getItem('lastVisitedCommunity');
+      const fromHomeButton = sessionStorage.getItem('fromHomeButton');
+      
+      if (fromHomeButton && lastCommunityId) {
+        sessionStorage.removeItem('fromHomeButton');
+        router.push(`/community/${lastCommunityId}`);
+      }
+    };
+    
+    checkLastVisitedCommunity();
+  }, [router]);
 
   // Load communities from Supabase
   const loadCommunitiesData = async () => {
@@ -135,9 +151,13 @@ export default function CommunityHub() {
                               community.gyms?.city.toLowerCase().includes(filterLocation.toLowerCase()) ||
                               community.gyms?.country.toLowerCase().includes(filterLocation.toLowerCase());
 
-      return matchesSearch && matchesLocation;
+      const matchesType = filterType === 'all' || 
+                          (filterType === 'gym' && community.community_type === 'gym') ||
+                          (filterType === 'general' && community.community_type === 'general');
+
+      return matchesSearch && matchesLocation && matchesType;
     });
-  }, [communities, searchTerm, filterLocation]);
+  }, [communities, searchTerm, filterLocation, filterType]);
 
   const joinCommunity = useCallback(async (communityId) => {
     if (!user) return;
@@ -164,16 +184,26 @@ export default function CommunityHub() {
   const leaveCommunity = useCallback(async (communityId) => {
     if (!user) return;
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 600));
+    // Confirm before leaving
+    if (!confirm('Are you sure you want to leave this community? You will no longer be able to see posts or participate in discussions.')) {
+      return;
+    }
 
-    // Update local state
-    setMyCommunities(prev => prev.filter(c => c.id !== communityId));
-    setCommunities(prev => prev.map(c => 
-      c.id === communityId 
-        ? { ...c, member_count: Math.max(0, c.member_count - 1) }
-        : c
-    ));
+    setLeavingCommunity(communityId);
+    try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 600));
+
+      // Update local state
+      setMyCommunities(prev => prev.filter(c => c.id !== communityId));
+      setCommunities(prev => prev.map(c => 
+        c.id === communityId 
+          ? { ...c, member_count: Math.max(0, c.member_count - 1) }
+          : c
+      ));
+    } finally {
+      setLeavingCommunity(null);
+    }
   }, [user]);
 
   const isMemberOfCommunity = useCallback((communityId) => {
@@ -185,13 +215,12 @@ export default function CommunityHub() {
   }, [router]);
 
   return (
-    <SidebarLayout currentPage="community">
+    <SidebarLayout currentPage="community" pageTitle="Communities">
       <div className="mobile-container">
-        {/* Header Card */}
-        <div className="mobile-card animate-fade-in" style={{ marginBottom: '24px', position: 'relative' }}>
+        {/* Header */}
+        <div className="animate-fade-in" style={{ marginBottom: '24px', position: 'relative' }}>
           <div className="mobile-card-header" style={{ marginBottom: '16px' }}>
             <div className="animate-slide-up" style={{ paddingRight: '70px' }}>
-              <h1 className="mobile-card-title" style={{ marginBottom: '4px' }}>Communities</h1>
               <p className="mobile-card-subtitle">
                 Connect with climbers at your favorite gyms
               </p>
@@ -236,69 +265,71 @@ export default function CommunityHub() {
         {/* Search and Filters */}
         {showFilters && (
           <div className="mobile-card animate-slide-down" style={{ marginBottom: '24px' }}>
-            <div className="space-y-2">
+            <div className="space-y-4">
+              {/* Search Bar */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 minimal-icon text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search communities..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="minimal-input pl-10"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
-              <div>
-                <label className="minimal-text block mb-2 font-medium">Filter by Location</label>
-                <input
-                  type="text"
-                  placeholder="City or country..."
-                  value={filterLocation}
-                  onChange={(e) => setFilterLocation(e.target.value)}
-                  className="minimal-input w-full"
-                />
+              
+              {/* Filter Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Filter by Location
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="City or country..."
+                    value={filterLocation}
+                    onChange={(e) => setFilterLocation(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Filter by Type
+                  </label>
+                  <select
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                  >
+                    <option value="all">All Communities</option>
+                    <option value="gym">Gym Communities</option>
+                    <option value="general">General Communities</option>
+                  </select>
+                </div>
               </div>
+              
+              {/* Clear Filters Button */}
+              {(searchTerm || filterLocation || filterType !== 'all') && (
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setFilterLocation('');
+                      setFilterType('all');
+                    }}
+                    className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors duration-200"
+                  >
+                    Clear all filters
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* My Communities */}
-        {myCommunities.length > 0 && (
-          <div style={{ marginBottom: '32px' }}>
-            <div className="minimal-flex-between items-center mb-4">
-              <h2 className="mobile-subheading minimal-flex">
-                <Star className="minimal-icon mr-2 text-yellow-400" />
-                My Communities
-              </h2>
-              <span className="minimal-text text-sm text-gray-400">
-                {myCommunities.length} joined
-              </span>
-            </div>
-            <div className="space-y-2">
-              {myCommunities.map((community, index) => (
-                <CommunityCard
-                  key={community.id}
-                  community={community}
-                  isMember={true}
-                  onOpen={openCommunity}
-                  showJoinButton={false}
-                  className={`animate-stagger-${Math.min(index + 1, 3)}`}
-                />
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* Discover Communities */}
+        {/* Communities List */}
         <div style={{ marginBottom: '24px' }}>
-          <div className="minimal-flex-between items-center mb-4">
-            <h2 className="mobile-subheading minimal-flex">
-              <TrendingUp className="minimal-icon mr-2 text-indigo-400" />
-              Discover Communities
-            </h2>
-            <span className="minimal-text text-sm text-gray-400">
-              {filteredCommunities.length} available
-            </span>
-          </div>
 
           {loading ? (
                    <div className="space-y-2">
@@ -338,6 +369,7 @@ export default function CommunityHub() {
                          onLeave={leaveCommunity}
                          onOpen={openCommunity}
                          joining={joiningCommunity === community.id}
+                         leaving={leavingCommunity === community.id}
                          className={`animate-stagger-${Math.min(index + 1, 5)}`}
                        />
                      ))}

@@ -2,15 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-import { MapPin } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { MapPin, Heart, Plus, MoreHorizontal } from 'lucide-react';
 import SidebarLayout from '../components/SidebarLayout';
 import GymCard from '../components/GymCard';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-);
+import { useToast } from '../providers/ToastProvider';
 
 export default function Gyms() {
   const [gyms, setGyms] = useState([]);
@@ -18,11 +14,47 @@ export default function Gyms() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCountry, setFilterCountry] = useState('');
   const [countries, setCountries] = useState([]);
+  const [favoriteGymIds, setFavoriteGymIds] = useState(new Set());
+  const [user, setUser] = useState(null);
+  const [showMenu, setShowMenu] = useState(false);
   const router = useRouter();
+  const { showToast } = useToast();
 
   useEffect(() => {
+    getUser();
     fetchGyms();
   }, []);
+
+  const getUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      if (user) {
+        await loadFavoriteGyms(user.id);
+      }
+    } catch (error) {
+      console.log('Error getting user:', error);
+    }
+  };
+
+  const loadFavoriteGyms = async (userId) => {
+    try {
+      const { data: favorites, error } = await supabase
+        .from('user_favorite_gyms')
+        .select('gym_id')
+        .eq('user_id', userId);
+
+      if (error) {
+        console.log('Error loading favorite gyms:', error);
+        return;
+      }
+
+      const favoriteIds = new Set(favorites?.map(fav => fav.gym_id) || []);
+      setFavoriteGymIds(favoriteIds);
+    } catch (error) {
+      console.log('Error loading favorite gyms:', error);
+    }
+  };
 
   const fetchGyms = async () => {
     try {
@@ -144,47 +176,122 @@ export default function Gyms() {
     router.push(`/gyms/${gym.id}`);
   };
 
+  const toggleFavorite = async (gymId) => {
+    if (!user) {
+      showToast('error', 'Login Required', 'Please log in to save favorites');
+      return;
+    }
+
+    try {
+      const isFavorite = favoriteGymIds.has(gymId);
+      
+      if (isFavorite) {
+        // Remove from favorites
+        const { error } = await supabase
+          .from('user_favorite_gyms')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('gym_id', gymId);
+
+        if (error) {
+          console.error('Error removing favorite:', error);
+          showToast('error', 'Error', 'Failed to remove from favorites');
+          return;
+        }
+
+        setFavoriteGymIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(gymId);
+          return newSet;
+        });
+
+        showToast('success', 'Removed', 'Gym removed from favorites');
+      } else {
+        // Add to favorites
+        const { error } = await supabase
+          .from('user_favorite_gyms')
+          .insert({
+            user_id: user.id,
+            gym_id: gymId
+          });
+
+        if (error) {
+          console.error('Error adding favorite:', error);
+          showToast('error', 'Error', 'Failed to add to favorites');
+          return;
+        }
+
+        setFavoriteGymIds(prev => new Set([...prev, gymId]));
+        showToast('success', 'Added!', 'Gym added to favorites');
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      showToast('error', 'Error', 'Something went wrong');
+    }
+  };
+
 
   return (
-    <SidebarLayout currentPage="gyms">
+    <SidebarLayout currentPage="gyms" pageTitle="Gyms">
       <div className="mobile-container">
-        {/* Header Card */}
-        <div className="mobile-card animate-fade-in mb-6">
+        {/* Header */}
+        <div className="animate-fade-in mb-6">
           <div className="mobile-card-header">
             <div className="animate-slide-up">
-              <h1 className="mobile-card-title">Bouldering Gyms</h1>
-              <p className="mobile-card-subtitle">
-                Discover bouldering gyms around the world
-              </p>
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="mobile-card-subtitle text-center mt-4">
+                    Discover bouldering gyms around the world
+                  </p>
+                </div>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowMenu(!showMenu)}
+                    className="mobile-btn-secondary p-2"
+                  >
+                    <MoreHorizontal className="minimal-icon" />
+                  </button>
+                  
+                  {showMenu && (
+                    <>
+                      {/* Backdrop */}
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setShowMenu(false)}
+                      />
+                      
+                      {/* Menu */}
+                      <div className="absolute right-0 top-12 z-50 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl">
+                        <div className="py-1">
+                          <button
+                            onClick={() => {
+                              router.push('/gyms/request');
+                              setShowMenu(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span>Is your gym missing?</span>
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Search and Filter */}
-        <div className="mobile-card animate-slide-up mb-6">
-          <div className="space-y-2">
-            <div>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search gyms by name, city, or country..."
-                className="w-full minimal-input"
-              />
-            </div>
-            <div>
-              <select
-                value={filterCountry}
-                onChange={(e) => setFilterCountry(e.target.value)}
-                className="w-full minimal-input"
-              >
-                <option value="">All Countries</option>
-                {countries.map(country => (
-                  <option key={country} value={country}>{country}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+        {/* Search */}
+        <div className="mobile-card animate-slide-up mb-4">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search gyms..."
+            className="w-full minimal-input"
+          />
         </div>
 
         {/* Gyms List */}
@@ -229,6 +336,8 @@ export default function Gyms() {
                   key={gym.id}
                   gym={gym}
                   onOpen={openGym}
+                  isFavorite={favoriteGymIds.has(gym.id)}
+                  onToggleFavorite={toggleFavorite}
                 />
               ))
             )}

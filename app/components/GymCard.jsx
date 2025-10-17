@@ -1,9 +1,11 @@
 import React from 'react';
-import { MapPin, Star, Clock, Users, ChevronRight } from 'lucide-react';
+import { MapPin, Star, Clock, Users, ChevronRight, Heart } from 'lucide-react';
 
 const GymCard = React.memo(function GymCard({
   gym,
-  onOpen
+  onOpen,
+  isFavorite = false,
+  onToggleFavorite
 }) {
   const getFacilityIcon = (facility) => {
     const iconMap = {
@@ -68,9 +70,27 @@ const GymCard = React.memo(function GymCard({
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end', flexShrink: 0 }}>
-          <div className="minimal-flex mobile-text-xs text-gray-400" style={{ marginBottom: '8px' }}>
-            <span className="font-medium">{gym.boulder_count} problems</span>
-          </div>
+          {/* Heart Favorite Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite?.(gym.id);
+            }}
+            className={`mobile-touch-target p-2 rounded-full transition-all duration-200 ${
+              isFavorite 
+                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
+                : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600/50 hover:text-red-400'
+            }`}
+            style={{ marginBottom: '8px' }}
+            title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <Heart 
+              className={`minimal-icon transition-all duration-200 ${
+                isFavorite ? 'fill-current' : ''
+              }`} 
+              style={{ width: '18px', height: '18px' }} 
+            />
+          </button>
 
           <div className="minimal-flex mobile-text-xs text-indigo-400" style={{ marginBottom: '8px' }}>
             <span className="font-medium">{gym.price_range}</span>
