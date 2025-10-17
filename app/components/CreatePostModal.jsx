@@ -126,63 +126,16 @@ export default function CreatePostModal({
           {/* Paperclip and Post Button Section */}
           <div className="flex items-center justify-between py-4">
             <div className="relative">
-              <input
-                type="file"
-                multiple
-                accept="image/*,video/*"
-                onChange={async (e) => {
-                  const files = Array.from(e.target.files);
-                  console.log('📎 Paperclip file input selected files:', files);
-                  
-                  // Process files through MediaUpload logic
-                  const processedFiles = await Promise.all(files.map(async (file) => {
-                    // Validate file type
-                    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm'];
-                    if (!allowedTypes.includes(file.type)) {
-                      throw new Error(`File type ${file.type} not supported`);
-                    }
-
-                    // Validate file size (max 25MB)
-                    if (file.size > 25 * 1024 * 1024) {
-                      throw new Error(`File ${file.name} is too large. Maximum size is 25MB`);
-                    }
-
-                    // Create unique filename
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-
-                    // Upload to Supabase Storage
-
-                    const { data: uploadData, error: uploadError } = await supabase.storage
-                      .from('post-media')
-                      .upload(fileName, file);
-
-                    if (uploadError) {
-                      throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`);
-                    }
-
-                    // Get public URL
-                    const { data: { publicUrl } } = supabase.storage
-                      .from('post-media')
-                      .getPublicUrl(fileName);
-
-                    return {
-                      name: file.name,
-                      url: publicUrl,
-                      type: file.type,
-                      size: file.size
-                    };
-                  }));
-
-                  console.log('📎 Processed files:', processedFiles);
-                  setMediaFiles(prev => [...prev, ...processedFiles]);
-                }}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                disabled={submitting}
-              />
               <button
                 className="text-gray-400 hover:text-white transition-colors p-2"
                 disabled={submitting}
+                onClick={() => {
+                  // Trigger the MediaUpload component's file input
+                  const fileInput = document.querySelector('input[type="file"]');
+                  if (fileInput) {
+                    fileInput.click();
+                  }
+                }}
               >
                 <Paperclip className="w-4 h-4" strokeWidth={1.5} />
               </button>
