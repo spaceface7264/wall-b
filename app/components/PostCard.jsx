@@ -202,20 +202,11 @@ export default function PostCard({
         
         {/* Media Files */}
         {(() => {
-          console.log('🖼️ PostCard rendering for post:', post.id);
-          console.log('📸 Media files in PostCard:', post.media_files);
-          console.log('📸 Media files type:', typeof post.media_files);
-          console.log('📸 Media files length:', post.media_files?.length);
           
           if (post.media_files && post.media_files.length > 0) {
-            console.log('✅ Rendering media files');
             return (
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {post.media_files.slice(0, 4).map((file, index) => {
-                  console.log(`📁 File ${index}:`, file);
-                  console.log(`📁 File ${index} keys:`, Object.keys(file));
-                  console.log(`📁 File ${index} url:`, file.url);
-                  console.log(`📁 File ${index} type:`, file.type);
                   return (
                     <div key={index} className="relative">
                       {file && file.type && file.type.startsWith('image/') ? (
@@ -224,8 +215,7 @@ export default function PostCard({
                           alt={file.name}
                           className="w-full h-32 object-cover rounded-lg"
                           loading="lazy"
-                          onError={(e) => console.error('❌ Image failed to load:', file.url, e)}
-                          onLoad={() => console.log('✅ Image loaded successfully:', file.url)}
+                          onError={(e) => e.target.style.display = 'none'}
                         />
                       ) : file && file.type && file.type.startsWith('video/') ? (
                         <video
@@ -252,7 +242,6 @@ export default function PostCard({
               </div>
             );
           } else {
-            console.log('❌ No media files to render');
             return null;
           }
         })()}

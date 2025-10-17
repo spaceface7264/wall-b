@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import {
   Plus,
   Search,
@@ -11,11 +10,7 @@ import {
 import SidebarLayout from '../components/SidebarLayout';
 import CommunityCard from '../components/CommunityCard';
 import { useRouter } from 'next/navigation';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-);
+import { supabase } from '../../lib/supabase';
 
 export default function CommunityHub() {
   const [user, setUser] = useState(null);

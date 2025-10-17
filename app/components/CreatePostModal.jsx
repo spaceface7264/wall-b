@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Send, Paperclip } from 'lucide-react';
 import MediaUpload from './MediaUpload';
 import { useToast } from '../providers/ToastProvider';
+import { supabase } from '../../lib/supabase';
 
 export default function CreatePostModal({
   communityId,
@@ -38,10 +39,6 @@ export default function CreatePostModal({
       return;
     }
 
-    console.log('📝 CreatePostModal handleSubmit called');
-    console.log('📸 Media files in CreatePostModal:', mediaFiles);
-    console.log('📸 Media files type:', typeof mediaFiles);
-    console.log('📸 Media files length:', mediaFiles?.length);
 
     setSubmitting(true);
     try {
@@ -54,7 +51,6 @@ export default function CreatePostModal({
         media_files: mediaFiles,
       };
       
-      console.log('📤 Sending post data:', postData);
       
       await onSubmit(postData);
       showToast('success', 'Posted!', 'Your post is now live! 📝');
@@ -156,11 +152,6 @@ export default function CreatePostModal({
                     const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
 
                     // Upload to Supabase Storage
-                    const { createClient } = await import('@supabase/supabase-js');
-                    const supabase = createClient(
-                      process.env.NEXT_PUBLIC_SUPABASE_URL,
-                      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-                    );
 
                     const { data: uploadData, error: uploadError } = await supabase.storage
                       .from('post-media')
@@ -225,16 +216,8 @@ export default function CreatePostModal({
           <div className="mt-4 flex-shrink-0">
             <MediaUpload
               onUpload={(files) => {
-                console.log('📥 CreatePostModal received files from MediaUpload:', files);
-                console.log('📥 Files type:', typeof files);
-                console.log('📥 Files length:', files?.length);
-                files?.forEach((file, index) => {
-                  console.log(`📥 File ${index}:`, file);
-                  console.log(`📥 File ${index} keys:`, Object.keys(file || {}));
-                });
                 setMediaFiles(prev => {
                   const newFiles = [...prev, ...files];
-                  console.log('📥 CreatePostModal setting mediaFiles to:', newFiles);
                   return newFiles;
                 });
               }}

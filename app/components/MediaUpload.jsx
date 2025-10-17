@@ -1,13 +1,8 @@
 'use client'
 
 import { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { Upload, X, Image as ImageIcon, Video, File } from 'lucide-react';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+import { supabase } from '../../lib/supabase';
 
 export default function MediaUpload({ 
   onUpload, 
@@ -21,10 +16,7 @@ export default function MediaUpload({
   const [error, setError] = useState('');
 
   const handleFileUpload = async (event) => {
-    console.log('📁 MediaUpload handleFileUpload called');
     const files = Array.from(event.target.files);
-    console.log('📁 Selected files:', files);
-    console.log('📁 Files length:', files.length);
     
     if (files.length + uploadedFiles.length > maxFiles) {
       setError(`Maximum ${maxFiles} files allowed`);
@@ -72,18 +64,12 @@ export default function MediaUpload({
           size: file.size
         };
         
-        console.log('📤 MediaUpload created file object:', fileObject);
-        console.log('📤 File name:', file.name);
-        console.log('📤 Public URL:', publicUrl);
-        console.log('📤 File type:', file.type);
         
         return fileObject;
       });
 
       const uploadedFiles = await Promise.all(uploadPromises);
       
-      console.log('📤 MediaUpload all files uploaded:', uploadedFiles);
-      console.log('📤 MediaUpload calling onUpload with:', uploadedFiles);
       
       if (onUpload) {
         onUpload(uploadedFiles);

@@ -2,18 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
 import { ArrowLeft, Heart, MessageCircle, Edit2, Trash2, Shield, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import SidebarLayout from '../../../../components/SidebarLayout';
 import CommentThread from '../../../../components/CommentThread';
 import CommentInput from '../../../../components/CommentInput';
 import CreatePostModal from '../../../../components/CreatePostModal';
-// Removed mock data imports - now using Supabase directly
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-);
+import { supabase } from '../../../../lib/supabase';
 
 export default function PostDetailPage() {
   const router = useRouter();

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { ToastProvider } from "./providers/ToastProvider"; 
+import { ToastProvider } from "./providers/ToastProvider";
+import ErrorBoundary from "./components/ErrorBoundary"; 
 
 
 const inter = Inter({
@@ -38,9 +39,11 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased mobile-app`}
       >
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <ErrorBoundary>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

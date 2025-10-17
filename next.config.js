@@ -4,8 +4,13 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
+  experimental: {
+    turbo: {
+      root: '/Users/rami/Desktop/html/Proj/proj'
+    }
+  }
 }
 
 module.exports = nextConfig

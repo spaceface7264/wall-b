@@ -112,7 +112,6 @@ export default function CommunityPage() {
 
   const loadPosts = async (commId) => {
     try {
-      console.log('🔄 Loading posts for community:', commId);
       
       const { data: postsData, error } = await supabase
         .from('posts')
@@ -364,8 +363,6 @@ export default function CommunityPage() {
 
   const handleCreatePost = async (postData) => {
     try {
-      console.log('🔍 Creating post with data:', postData);
-      console.log('📸 Media files being sent:', postData.media_files);
       
       const { data, error } = await supabase
         .from('posts')
@@ -386,8 +383,6 @@ export default function CommunityPage() {
         throw error;
       }
 
-      console.log('✅ Post created successfully:', data);
-      console.log('📸 Media files in created post:', data.media_files);
 
       // Add the new post to the beginning of the posts array
       setPosts(prev => [data, ...prev]);
