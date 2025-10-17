@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Send, Paperclip } from 'lucide-react';
+import { X, Send } from 'lucide-react';
 import MediaUpload from './MediaUpload';
 import { useToast } from '../providers/ToastProvider';
 import { supabase } from '../../lib/supabase';
@@ -123,24 +123,8 @@ export default function CreatePostModal({
           {/* Separator Line */}
           <div className="border-t border-gray-700 my-4"></div>
 
-          {/* Paperclip and Post Button Section */}
-          <div className="flex items-center justify-between py-4">
-            <div className="relative">
-              <button
-                className="text-gray-400 hover:text-white transition-colors p-2"
-                disabled={submitting}
-                onClick={() => {
-                  // Trigger the MediaUpload component's file input
-                  const fileInput = document.querySelector('input[type="file"]');
-                  if (fileInput) {
-                    fileInput.click();
-                  }
-                }}
-              >
-                <Paperclip className="w-4 h-4" strokeWidth={1.5} />
-              </button>
-            </div>
-
+          {/* Post Button Section */}
+          <div className="flex justify-end py-4">
             {/* Post Button */}
             <button
               onClick={handleSubmit}
