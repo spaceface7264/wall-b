@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { X, Send } from 'lucide-react';
-import MediaUpload from './MediaUpload';
+import { X, Send, Paperclip } from 'lucide-react';
 import { useToast } from '../providers/ToastProvider';
 import { supabase } from '../../lib/supabase';
 
@@ -120,11 +119,103 @@ export default function CreatePostModal({
             disabled={submitting}
           />
 
+          {/* Media Files Preview */}
+          {mediaFiles.length > 0 && (
+            <div className="mt-4">
+              <div className="grid grid-cols-2 gap-2">
+                {mediaFiles.map((file, index) => (
+                  <div key={index} className="relative group">
+                    {file.type.startsWith('image/') ? (
+                      <img
+                        src={file.url}
+                        alt={file.name}
+                        className="w-full h-20 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-full h-20 bg-gray-700 rounded-lg flex items-center justify-center">
+                        <span className="text-gray-400 text-sm">📹</span>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => setMediaFiles(prev => prev.filter((_, i) => i !== index))}
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Separator Line */}
           <div className="border-t border-gray-700 my-4"></div>
 
-          {/* Post Button Section */}
-          <div className="flex justify-end py-4">
+          {/* Paperclip and Post Button Section */}
+          <div className="flex items-center justify-between py-4">
+            <div className="relative">
+              <input
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files);
+                  console.log('📎 Paperclip file input selected files:', files);
+                  
+                  // Process files through MediaUpload logic
+                  const processedFiles = await Promise.all(files.map(async (file) => {
+                    // Validate file type
+                    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm'];
+                    if (!allowedTypes.includes(file.type)) {
+                      throw new Error(`File type ${file.type} not supported`);
+                    }
+
+                    // Validate file size (max 25MB)
+                    if (file.size > 25 * 1024 * 1024) {
+                      throw new Error(`File ${file.name} is too large. Maximum size is 25MB`);
+                    }
+
+                    // Create unique filename
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+
+                    // Upload to Supabase Storage
+
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                      .from('post-media')
+                      .upload(fileName, file);
+
+                    if (uploadError) {
+                      throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`);
+                    }
+
+                    // Get public URL
+                    const { data: { publicUrl } } = supabase.storage
+                      .from('post-media')
+                      .getPublicUrl(fileName);
+
+                    return {
+                      name: file.name,
+                      url: publicUrl,
+                      type: file.type,
+                      size: file.size
+                    };
+                  }));
+
+                  console.log('📎 Processed files:', processedFiles);
+                  setMediaFiles(prev => [...prev, ...processedFiles]);
+                }}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                disabled={submitting}
+              />
+              <button
+                className="text-gray-400 hover:text-white transition-colors p-2"
+                disabled={submitting}
+              >
+                <Paperclip className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+            </div>
+
             {/* Post Button */}
             <button
               onClick={handleSubmit}
@@ -149,21 +240,6 @@ export default function CreatePostModal({
             </button>
           </div>
 
-          {/* Media Upload Area */}
-          <div className="mt-4 flex-shrink-0">
-            <MediaUpload
-              onUpload={(files) => {
-                setMediaFiles(prev => {
-                  const newFiles = [...prev, ...files];
-                  return newFiles;
-                });
-              }}
-              onRemove={(index) => setMediaFiles(prev => prev.filter((_, i) => i !== index))}
-              uploadedFiles={mediaFiles}
-              maxFiles={5}
-              bucket="post-media"
-            />
-          </div>
         </div>
 
       </div>
