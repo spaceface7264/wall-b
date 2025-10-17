@@ -29,15 +29,22 @@ export default function CalendarView({ communityId, userId }) {
         .from('events')
         .select(`
           *,
-          profiles (
+          profiles!created_by (
             full_name
           )
         `)
         .eq('community_id', communityId)
         .order('event_date', { ascending: true });
 
-      if (error && Object.keys(error).length > 0) {
+      if (error) {
         console.error('Error loading events:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        setEvents([]);
         return;
       }
 

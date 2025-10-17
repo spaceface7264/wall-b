@@ -228,7 +228,7 @@ export default function GymDetail() {
         .from('events')
         .select(`
           *,
-          profiles(full_name)
+          profiles!created_by(full_name)
         `)
         .in('community_id', communityIds)
         .order('event_date', { ascending: true });
