@@ -25,6 +25,29 @@ export default function CalendarView({ communityId, userId }) {
     try {
       setLoading(true);
       
+      console.log('🔍 Loading events for community:', communityId);
+      
+      // First, let's test if the events table exists and is accessible
+      const { data: testData, error: testError } = await supabase
+        .from('events')
+        .select('id, title, event_date')
+        .limit(1);
+      
+      if (testError) {
+        console.error('❌ Events table test failed:', testError);
+        console.error('❌ Test error details:', {
+          message: testError.message,
+          details: testError.details,
+          hint: testError.hint,
+          code: testError.code
+        });
+        setEvents([]);
+        return;
+      }
+      
+      console.log('✅ Events table accessible, test data:', testData);
+      
+      // Now try the full query
       const { data, error } = await supabase
         .from('events')
         .select(`
@@ -37,8 +60,8 @@ export default function CalendarView({ communityId, userId }) {
         .order('event_date', { ascending: true });
 
       if (error) {
-        console.error('Error loading events:', error);
-        console.error('Error details:', {
+        console.error('❌ Error loading events:', error);
+        console.error('❌ Error details:', {
           message: error.message,
           details: error.details,
           hint: error.hint,
@@ -48,9 +71,11 @@ export default function CalendarView({ communityId, userId }) {
         return;
       }
 
+      console.log('✅ Events loaded successfully:', data);
       setEvents(data || []);
     } catch (error) {
-      console.error('Error loading events:', error);
+      console.error('❌ Exception in loadEvents:', error);
+      setEvents([]);
     } finally {
       setLoading(false);
     }
