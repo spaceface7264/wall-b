@@ -7,7 +7,7 @@ import SidebarLayout from '../../../../components/SidebarLayout';
 import CommentThread from '../../../../components/CommentThread';
 import CommentInput from '../../../../components/CommentInput';
 import CreatePostModal from '../../../../components/CreatePostModal';
-import { supabase } from '../../../../lib/supabase';
+import { supabase } from '../../../../../lib/supabase';
 
 export default function PostDetailPage() {
   const router = useRouter();

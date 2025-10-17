@@ -77,7 +77,7 @@ export default function CreatePostModal({
       className="fixed inset-0 bg-gray-900 z-50"
       onClick={handleClose}
     >
-      <div className="h-full flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="h-full flex flex-col pb-20" onClick={(e) => e.stopPropagation()}>
         {/* Header - Who is posting where */}
         <div className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -99,7 +99,7 @@ export default function CreatePostModal({
         </div>
 
         {/* Form Content */}
-        <div className="flex-1 p-4 flex flex-col min-h-0">
+        <div className="flex-1 p-4 flex flex-col min-h-0 overflow-y-auto">
           {/* Title Input */}
           <input
             type="text"
@@ -116,7 +116,7 @@ export default function CreatePostModal({
             onChange={(e) => setContent(e.target.value.slice(0, contentMaxLength))}
             placeholder="Write something..."
             className="w-full bg-transparent text-white placeholder-gray-500 border-none outline-none resize-none mt-4 text-lg"
-            style={{ height: '50vh' }}
+            style={{ height: '30vh', minHeight: '120px' }}
             disabled={submitting}
           />
 
