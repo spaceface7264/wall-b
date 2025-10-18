@@ -411,7 +411,9 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
 
       {/* Main Content Area */}
       <div className="mobile-content mobile-content-with-cards">
-        {children}
+        <div className="p-comfortable">
+          {children}
+        </div>
       </div>
 
       {/* Bottom Navigation */}

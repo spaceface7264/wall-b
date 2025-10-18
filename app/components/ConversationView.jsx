@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Send, ArrowLeft, Users, MoreHorizontal, Paperclip, Smile, CheckCheck } from 'lucide-react';
+import { Send, ArrowLeft, Users, MoreHorizontal, Paperclip, Smile, CheckCheck, Trash2 } from 'lucide-react';
 import ErrorRetry from './ErrorRetry';
 
 export default function ConversationView({ conversation, currentUserId, onBack }) {
@@ -16,6 +16,8 @@ export default function ConversationView({ conversation, currentUserId, onBack }
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesStartRef = useRef(null);
   const typingChannelRef = useRef(null);
@@ -342,6 +344,35 @@ export default function ConversationView({ conversation, currentUserId, onBack }
     return date.toLocaleDateString();
   };
 
+  const handleDeleteConversation = async () => {
+    if (!conversation?.id) return;
+
+    try {
+      setDeleting(true);
+      
+      const { error } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', conversation.id);
+
+      if (error) {
+        console.error('Error deleting conversation:', error);
+        setError(error);
+        return;
+      }
+
+      // Go back to conversation list after successful deletion
+      onBack();
+      
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      setError(error);
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   const getConversationName = () => {
     if (conversation.name) return conversation.name;
     
@@ -463,9 +494,15 @@ export default function ConversationView({ conversation, currentUserId, onBack }
             </p>
           </div>
           
-          <button className="p-3 text-slate-400 hover:text-white transition-all duration-300 hover:bg-slate-700/50 rounded-xl group">
-            <MoreHorizontal className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-3 text-slate-400 hover:text-red-400 transition-all duration-300 hover:bg-red-500/10 rounded-xl group"
+              title="Delete conversation"
+            >
+              <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -658,6 +695,55 @@ export default function ConversationView({ conversation, currentUserId, onBack }
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-700/50">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Delete Conversation</h3>
+                <p className="text-sm text-slate-400">This action cannot be undone</p>
+              </div>
+            </div>
+            
+            <p className="text-slate-300 mb-6">
+              Are you sure you want to delete "{getConversationName()}"? 
+              All messages in this conversation will be permanently removed.
+            </p>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConversation}
+                disabled={deleting}
+                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {deleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { MessageCircle, Users, Clock, Search, Plus } from 'lucide-react';
+import { MessageCircle, Users, Clock, Search, Plus, Trash2 } from 'lucide-react';
 import UserDiscovery from './UserDiscovery';
 import UnreadBadge from './UnreadBadge';
 import GroupChatModal from './GroupChatModal';
@@ -15,6 +15,8 @@ export default function ConversationList({ onSelectConversation, currentUserId }
   const [showUserDiscovery, setShowUserDiscovery] = useState(false);
   const [showGroupChat, setShowGroupChat] = useState(false);
   const [error, setError] = useState(null);
+  const [conversationToDelete, setConversationToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (currentUserId) {
@@ -123,6 +125,33 @@ export default function ConversationList({ onSelectConversation, currentUserId }
     if (diffInMinutes < 60) return `${diffInMinutes}m`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h`;
     return date.toLocaleDateString();
+  };
+
+  const handleDeleteConversation = async (conversationId) => {
+    try {
+      setDeleting(true);
+      
+      const { error } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', conversationId);
+
+      if (error) {
+        console.error('Error deleting conversation:', error);
+        setError(error);
+        return;
+      }
+
+      // Remove from local state
+      setConversations(prev => prev.filter(conv => conv.id !== conversationId));
+      setConversationToDelete(null);
+      
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      setError(error);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const getConversationName = (conversation) => {
@@ -240,10 +269,9 @@ export default function ConversationList({ onSelectConversation, currentUserId }
         ) : (
           <div className="p-2 space-y-1.5">
             {filteredConversations.map((conversation) => (
-              <button
+              <div
                 key={conversation.id}
-                onClick={() => onSelectConversation(conversation)}
-                className="w-full p-3 text-left hover:bg-slate-700/40 transition-all duration-300 rounded-2xl group border border-transparent hover:border-slate-600/30 hover:shadow-lg hover:shadow-slate-900/20 hover:scale-[1.01] active:scale-[0.99]"
+                className="w-full p-3 hover:bg-slate-700/40 transition-all duration-300 rounded-2xl group border border-transparent hover:border-slate-600/30 hover:shadow-lg hover:shadow-slate-900/20 hover:scale-[1.01] active:scale-[0.99]"
               >
                 <div className="flex items-center gap-4">
                   {/* Avatar */}
@@ -263,8 +291,11 @@ export default function ConversationList({ onSelectConversation, currentUserId }
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-slate-800 shadow-lg"></div>
                   </div>
 
-                  {/* Conversation Info */}
-                  <div className="flex-1 min-w-0">
+                  {/* Conversation Info - Clickable */}
+                  <button
+                    onClick={() => onSelectConversation(conversation)}
+                    className="flex-1 min-w-0 text-left"
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-bold text-white truncate text-lg group-hover:text-indigo-200 transition-colors duration-200">
                         {getConversationName(conversation)}
@@ -287,14 +318,27 @@ export default function ConversationList({ onSelectConversation, currentUserId }
                         <span className="italic text-slate-500">No messages yet</span>
                       )}
                     </p>
-                  </div>
+                  </button>
 
-                  {/* Unread indicator */}
-                  <div className="flex-shrink-0">
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Unread indicator */}
                     <UnreadBadge userId={currentUserId} conversationId={conversation.id} />
+                    
+                    {/* Delete button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConversationToDelete(conversation);
+                      }}
+                      className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100"
+                      title="Delete conversation"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
@@ -322,6 +366,55 @@ export default function ConversationList({ onSelectConversation, currentUserId }
         }}
         currentUserId={currentUserId}
       />
+
+      {/* Delete Confirmation Modal */}
+      {conversationToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-700/50">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Delete Conversation</h3>
+                <p className="text-sm text-slate-400">This action cannot be undone</p>
+              </div>
+            </div>
+            
+            <p className="text-slate-300 mb-6">
+              Are you sure you want to delete "{getConversationName(conversationToDelete)}"? 
+              All messages in this conversation will be permanently removed.
+            </p>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConversationToDelete(null)}
+                disabled={deleting}
+                className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteConversation(conversationToDelete.id)}
+                disabled={deleting}
+                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {deleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
