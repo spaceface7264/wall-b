@@ -1,4 +1,4 @@
-import { Users, Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
+import { Users, Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal, Edit2, Trash2, Calendar } from 'lucide-react';
 import { useState } from 'react';
 
 export default function PostCard({ 
@@ -21,6 +21,46 @@ export default function PostCard({
   const [showMenu, setShowMenu] = useState(false);
   const isOwnPost = post.user_id === currentUserId;
   const canShowActions = showActions && (isOwnPost || isAdmin);
+
+  // Parse event mentions in content
+  const parseEventMentions = (content) => {
+    const eventMentionRegex = /@event:([^@\s]+)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = eventMentionRegex.exec(content)) !== null) {
+      // Add text before the mention
+      if (match.index > lastIndex) {
+        parts.push(content.substring(lastIndex, match.index));
+      }
+      
+      // Add the event mention as a clickable element
+      const eventTitle = match[1];
+      parts.push(
+        <span
+          key={match.index}
+          className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-900/30 text-indigo-300 rounded-md text-sm font-medium hover:bg-indigo-800/40 transition-colors cursor-pointer"
+          onClick={() => {
+            // You could add navigation to event here
+            console.log('Event mentioned:', eventTitle);
+          }}
+        >
+          <Calendar className="w-3 h-3" />
+          {eventTitle}
+        </span>
+      );
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIndex < content.length) {
+      parts.push(content.substring(lastIndex));
+    }
+    
+    return parts;
+  };
   
 
   const formatTime = (timestamp) => {
@@ -195,8 +235,8 @@ export default function PostCard({
       <div className="mb-4">
         <p className="mobile-card-content">
           {post.content.length > 150 
-            ? `${post.content.substring(0, 150)}...` 
-            : post.content
+            ? parseEventMentions(`${post.content.substring(0, 150)}...`)
+            : parseEventMentions(post.content)
           }
         </p>
         

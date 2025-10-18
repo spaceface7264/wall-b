@@ -1,11 +1,32 @@
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { Home, MapPin, MessageCircle, User } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import UnreadBadge from './UnreadBadge';
 
 export default function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+
+    getUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const navItems = [
     {
@@ -59,13 +80,18 @@ export default function BottomNav() {
             <button
               key={item.id}
               onClick={() => handleNavigation(item.path)}
-              className={`flex flex-col items-center justify-center min-w-0 flex-1 py-2 px-1 transition-colors duration-200 ${
+              className={`flex flex-col items-center justify-center min-w-0 flex-1 py-2 px-1 transition-colors duration-200 relative ${
                 active
                   ? 'text-indigo-400'
                   : 'text-gray-400 hover:text-gray-300'
               }`}
             >
-              <Icon className={`w-6 h-6 mb-1 ${active ? 'text-indigo-400' : ''}`} />
+              <div className="relative">
+                <Icon className={`w-6 h-6 mb-1 ${active ? 'text-indigo-400' : ''}`} />
+                {item.id === 'chats' && user && (
+                  <UnreadBadge userId={user.id} />
+                )}
+              </div>
               <span className={`text-xs font-medium truncate ${
                 active ? 'text-indigo-400' : 'text-gray-400'
               }`}>

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, Send, Paperclip } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Send, Paperclip, Calendar } from 'lucide-react';
 import { useToast } from '../providers/ToastProvider';
 import { supabase } from '../../lib/supabase';
 
@@ -17,10 +17,94 @@ export default function CreatePostModal({
   const [tag, setTag] = useState(initialData?.tag || 'general');
   const [submitting, setSubmitting] = useState(false);
   const [mediaFiles, setMediaFiles] = useState(initialData?.media_files || []);
+  const [events, setEvents] = useState([]);
+  const [showEventPicker, setShowEventPicker] = useState(false);
+  const [eventMentionPosition, setEventMentionPosition] = useState(0);
+  const [filteredEvents, setFilteredEvents] = useState([]);
+  const [selectedEventIndex, setSelectedEventIndex] = useState(0);
   const { showToast } = useToast();
 
   const titleMaxLength = 200;
   const contentMaxLength = 2000;
+
+  // Load events for mentions
+  useEffect(() => {
+    if (communityId) {
+      loadEvents();
+    }
+  }, [communityId]);
+
+  const loadEvents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('id, title, event_date')
+        .eq('community_id', communityId)
+        .order('event_date', { ascending: true });
+
+      if (error) {
+        console.error('Error loading events:', error);
+        return;
+      }
+
+      setEvents(data || []);
+    } catch (error) {
+      console.error('Error loading events:', error);
+    }
+  };
+
+  // Event mention detection and handling
+  const handleContentChange = (e) => {
+    const value = e.target.value.slice(0, contentMaxLength);
+    const cursorPosition = e.target.selectionStart;
+    
+    setContent(value);
+    
+    // Check for @event mention
+    const textBeforeCursor = value.substring(0, cursorPosition);
+    const mentionMatch = textBeforeCursor.match(/@event\s*$/);
+    
+    if (mentionMatch) {
+      setShowEventPicker(true);
+      setEventMentionPosition(cursorPosition - 7); // Position after @event
+      setFilteredEvents(events);
+      setSelectedEventIndex(0);
+    } else {
+      setShowEventPicker(false);
+    }
+  };
+
+  const handleEventSelect = (event) => {
+    const beforeMention = content.substring(0, eventMentionPosition);
+    const afterMention = content.substring(eventMentionPosition + 7);
+    const newContent = `${beforeMention}@event:${event.title}${afterMention}`;
+    
+    setContent(newContent);
+    setShowEventPicker(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (showEventPicker) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedEventIndex(prev => 
+          prev < filteredEvents.length - 1 ? prev + 1 : 0
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedEventIndex(prev => 
+          prev > 0 ? prev - 1 : filteredEvents.length - 1
+        );
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (filteredEvents[selectedEventIndex]) {
+          handleEventSelect(filteredEvents[selectedEventIndex]);
+        }
+      } else if (e.key === 'Escape') {
+        setShowEventPicker(false);
+      }
+    }
+  };
 
   const tags = [
     { value: 'general', label: 'General', color: '#6b7280' },
@@ -112,12 +196,45 @@ export default function CreatePostModal({
           {/* Content Textarea - 50% height */}
           <textarea
             value={content}
-            onChange={(e) => setContent(e.target.value.slice(0, contentMaxLength))}
-            placeholder="Write something..."
+            onChange={handleContentChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Write something... (Type @event to mention an event)"
             className="w-full bg-transparent text-white placeholder-gray-500 border-none outline-none resize-none mt-4 text-lg"
             style={{ height: '30vh', minHeight: '120px' }}
             disabled={submitting}
           />
+
+          {/* Event Mention Picker */}
+          {showEventPicker && (
+            <div className="absolute z-10 mt-2 w-full max-w-md bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+              <div className="p-2">
+                <div className="text-xs text-gray-400 mb-2 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  Select an event to mention
+                </div>
+                {filteredEvents.length === 0 ? (
+                  <div className="text-gray-400 text-sm py-2">No events available</div>
+                ) : (
+                  filteredEvents.map((event, index) => (
+                    <button
+                      key={event.id}
+                      onClick={() => handleEventSelect(event)}
+                      className={`w-full text-left p-2 rounded text-sm transition-colors ${
+                        index === selectedEventIndex
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-gray-300 hover:bg-gray-700'
+                      }`}
+                    >
+                      <div className="font-medium">{event.title}</div>
+                      <div className="text-xs text-gray-400">
+                        {new Date(event.event_date).toLocaleDateString()}
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Media Files Preview */}
           {mediaFiles.length > 0 && (

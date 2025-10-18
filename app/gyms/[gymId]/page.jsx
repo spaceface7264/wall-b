@@ -226,10 +226,7 @@ export default function GymDetail() {
       const communityIds = communities.map(c => c.id);
       const { data, error } = await supabase
         .from('events')
-        .select(`
-          *,
-          profiles!created_by(full_name)
-        `)
+        .select('*')
         .in('community_id', communityIds)
         .order('event_date', { ascending: true });
 

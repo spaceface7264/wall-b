@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "./providers/ToastProvider";
-import ErrorBoundary from "./components/ErrorBoundary"; 
+import ErrorBoundary from "./components/ErrorBoundary";
+import ChatNotification from "./components/ChatNotification"; 
 
 
 const inter = Inter({
@@ -42,6 +43,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <ToastProvider>
             {children}
+            <ChatNotification userId={null} />
           </ToastProvider>
         </ErrorBoundary>
       </body>

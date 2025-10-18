@@ -3,14 +3,17 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin, Users, CheckCircle } from 'lucide-react';
+import EventRSVPList from './EventRSVPList';
 
-export default function CalendarView({ communityId, userId }) {
+export default function CalendarView({ communityId, userId, searchTerm = '' }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [viewMode, setViewMode] = useState('month'); // 'month' or 'list'
   const [rsvps, setRsvps] = useState(new Map());
+  const [showRSVPList, setShowRSVPList] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState(null);
 
   useEffect(() => {
     if (communityId) {
@@ -47,15 +50,10 @@ export default function CalendarView({ communityId, userId }) {
       
       console.log('✅ Events table accessible, test data:', testData);
       
-      // Now try the full query
+      // Now try the full query - simplified without profile join for now
       const { data, error } = await supabase
         .from('events')
-        .select(`
-          *,
-          profiles!created_by (
-            full_name
-          )
-        `)
+        .select('*')
         .eq('community_id', communityId)
         .order('event_date', { ascending: true });
 
@@ -111,7 +109,9 @@ export default function CalendarView({ communityId, userId }) {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
+    // Adjust for Monday as first day (0=Sunday, 1=Monday, etc.)
+    // Convert Sunday (0) to 6, Monday (1) to 0, Tuesday (2) to 1, etc.
+    const startingDayOfWeek = (firstDay.getDay() + 6) % 7;
     
     const days = [];
     
@@ -128,11 +128,22 @@ export default function CalendarView({ communityId, userId }) {
     return days;
   };
 
+  const getFilteredEvents = () => {
+    if (!searchTerm.trim()) return events;
+    
+    return events.filter(event => 
+      event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      event.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      event.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      event.event_type?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
   const getEventsForDate = (date) => {
     if (!date) return [];
     
     const dateStr = date.toISOString().split('T')[0];
-    return events.filter(event => {
+    return getFilteredEvents().filter(event => {
       const eventDate = new Date(event.event_date).toISOString().split('T')[0];
       return eventDate === dateStr;
     });
@@ -188,12 +199,17 @@ export default function CalendarView({ communityId, userId }) {
     }
   };
 
+  const handleViewRSVPs = (eventId) => {
+    setSelectedEventId(eventId);
+    setShowRSVPList(true);
+  };
+
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   if (loading) {
     return (
@@ -341,6 +357,13 @@ export default function CalendarView({ communityId, userId }) {
                               {getRSVPStatus(event.id)}
                             </span>
                           )}
+                          <button 
+                            onClick={() => handleViewRSVPs(event.id)}
+                            className="p-1 text-gray-400 hover:text-indigo-400 transition-colors"
+                            title="View RSVPs"
+                          >
+                            <Users className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -353,13 +376,15 @@ export default function CalendarView({ communityId, userId }) {
       ) : (
         /* List View */
         <div className="space-y-3">
-          {events.length === 0 ? (
+          {getFilteredEvents().length === 0 ? (
             <div className="text-center py-8">
               <Calendar className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-              <p className="text-gray-400">No events scheduled</p>
+              <p className="text-gray-400">
+                {searchTerm.trim() ? 'No events found matching your search' : 'No events scheduled'}
+              </p>
             </div>
           ) : (
-            events.map(event => (
+            getFilteredEvents().map(event => (
               <div key={event.id} className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -387,7 +412,7 @@ export default function CalendarView({ communityId, userId }) {
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-xs text-gray-500">
-                        Created by {event.profiles?.full_name || 'Unknown'}
+                        Created by {event.profiles?.full_name || 'Community Member'}
                       </span>
                       <span className="text-xs text-gray-500">•</span>
                       <span className="text-xs text-gray-500">
@@ -401,8 +426,12 @@ export default function CalendarView({ communityId, userId }) {
                         {getRSVPStatus(event.id)}
                       </span>
                     )}
-                    <button className="p-1 text-gray-400 hover:text-indigo-400 transition-colors">
-                      <CheckCircle className="w-4 h-4" />
+                    <button 
+                      onClick={() => handleViewRSVPs(event.id)}
+                      className="p-1 text-gray-400 hover:text-indigo-400 transition-colors"
+                      title="View RSVPs"
+                    >
+                      <Users className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -411,6 +440,16 @@ export default function CalendarView({ communityId, userId }) {
           )}
         </div>
       )}
+
+      {/* RSVP List Modal */}
+      <EventRSVPList
+        eventId={selectedEventId}
+        isOpen={showRSVPList}
+        onClose={() => {
+          setShowRSVPList(false);
+          setSelectedEventId(null);
+        }}
+      />
     </div>
   );
 }

@@ -37,6 +37,7 @@ export default function CommunityPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showMenu, setShowMenu] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [eventSearchTerm, setEventSearchTerm] = useState('');
   const router = useRouter();
   const params = useParams();
   const communityId = params.communityId;
@@ -536,20 +537,42 @@ export default function CommunityPage() {
       case 'calendar':
         return (
           <div className="space-y-4">
-            {/* Create Event Button */}
-            {isMember && (
-              <div className="mobile-card animate-slide-up">
+            {/* Search and Create Event */}
+            <div className="flex gap-3 items-center">
+              {/* Search Bar */}
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="Search events..."
+                  value={eventSearchTerm}
+                  onChange={(e) => setEventSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                    <path d="m21 21-4.34-4.34"></path>
+                    <circle cx="11" cy="11" r="8"></circle>
+                  </svg>
+                </div>
+              </div>
+              
+              {/* Create Event Button */}
+              {isMember && (
                 <button
                   onClick={() => setShowNewEventModal(true)}
-                  className="w-full mobile-btn-primary minimal-flex gap-2 justify-center"
+                  className="mobile-btn-secondary minimal-flex gap-2 text-sm px-4 py-2"
                 >
-                  <Plus className="minimal-icon" />
+                  <Plus className="minimal-icon w-4 h-4" />
                   Create Event
                 </button>
-              </div>
-            )}
+              )}
+            </div>
             
-            <CalendarView communityId={communityId} userId={user?.id} />
+            <CalendarView 
+              communityId={communityId} 
+              userId={user?.id} 
+              searchTerm={eventSearchTerm}
+            />
           </div>
         );
 
