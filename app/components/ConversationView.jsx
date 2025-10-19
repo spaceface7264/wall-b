@@ -505,7 +505,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
       </div>
 
       {/* Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-4 pt-[120px] pb-24 md:pt-4 md:pb-4" onScroll={handleScroll}>
+      <div className="flex-1 overflow-y-auto p-4 pt-[140px] pb-24 md:pt-4 md:pb-4" onScroll={handleScroll}>
         {/* Load More Button */}
         {hasMoreMessages && !loadingMore && (
           <div className="flex justify-center mb-6">
