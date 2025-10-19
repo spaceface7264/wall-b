@@ -248,6 +248,11 @@ body {
   padding-bottom: 100px; /* Extra padding for pages with cards */
 }
 
+/* Chat page - no extra bottom padding needed due to fixed positioning */
+.mobile-content-chat {
+  padding-bottom: 0px;
+}
+
 /* ============================================
    RIPPLE EFFECT
    ============================================ */

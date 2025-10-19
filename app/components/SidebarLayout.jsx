@@ -410,7 +410,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       </div>
 
       {/* Main Content Area */}
-      <div className="mobile-content mobile-content-with-cards">
+      <div className={`mobile-content ${currentPage === 'chat' ? 'mobile-content-chat' : 'mobile-content-with-cards'}`}>
         <div className="p-comfortable">
           {children}
         </div>
