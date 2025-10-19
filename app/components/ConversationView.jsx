@@ -460,7 +460,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
   return (
     <div className="flex flex-col h-full bg-slate-900 rounded-lg overflow-hidden border border-slate-700 w-full">
       {/* Header - Fixed */}
-      <div className="fixed top-14 left-0 right-0 md:left-auto md:right-auto md:relative md:top-0 p-3 border-b border-slate-700 bg-slate-800 z-20">
+      <div className="fixed top-14 left-0 right-0 md:static md:flex-shrink-0 p-3 border-b border-slate-700 bg-slate-800 z-20">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
@@ -505,7 +505,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
       </div>
 
       {/* Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-4 pt-20 md:pt-4" onScroll={handleScroll}>
+      <div className="flex-1 overflow-y-auto p-4 pt-20 pb-24 md:pt-4 md:pb-4" onScroll={handleScroll}>
         {/* Load More Button */}
         {hasMoreMessages && !loadingMore && (
           <div className="flex justify-center mb-6">
@@ -641,7 +641,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
       </div>
 
       {/* Input - Fixed */}
-      <div className="flex-shrink-0 p-3 border-t border-slate-700 bg-slate-800 sticky bottom-0 z-10">
+      <div className="fixed bottom-16 left-0 right-0 md:static md:flex-shrink-0 p-3 border-t border-slate-700 bg-slate-800 z-20">
         <form onSubmit={sendMessage} className="flex gap-2">
           {/* Attachment Button */}
           <button

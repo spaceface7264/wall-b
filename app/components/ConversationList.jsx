@@ -204,7 +204,7 @@ export default function ConversationList({ onSelectConversation, currentUserId }
   return (
     <div className="flex flex-col h-full bg-slate-900 rounded-lg overflow-hidden border border-slate-700 w-full">
       {/* Header - Fixed */}
-      <div className="fixed top-14 left-0 right-0 md:left-auto md:right-auto md:relative md:top-0 p-3 border-b border-slate-700 bg-slate-800 z-20">
+      <div className="fixed top-14 left-0 right-0 md:static md:flex-shrink-0 p-3 border-b border-slate-700 bg-slate-800 z-20">
         <div className="flex items-center justify-between mb-3">
           <div>
             <h2 className="text-lg font-semibold text-white">Messages</h2>
