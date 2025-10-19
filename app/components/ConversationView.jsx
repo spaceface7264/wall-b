@@ -458,54 +458,51 @@ export default function ConversationView({ conversation, currentUserId, onBack }
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div>
       {/* Header */}
-      <div className="p-4 border-b border-slate-700/50 bg-slate-800">
-        <div className="flex items-center gap-3">
+      <div>
+        <div>
           <button
             onClick={onBack}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg md:hidden transition-colors"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft />
           </button>
           
-          <div className="relative">
-            <div className="w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+          <div>
+            <div>
               {getConversationAvatar() ? (
                 <img
                   src={getConversationAvatar()}
                   alt={getConversationName()}
-                  className="w-12 h-12 rounded-lg object-cover"
                 />
               ) : (
-                <Users className="w-6 h-6 text-white" />
+                <Users />
               )}
             </div>
             {/* Online indicator */}
-            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-800"></div>
+            <div></div>
           </div>
           
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-semibold text-white truncate">
+          <div>
+            <h2>
               {getConversationName()}
             </h2>
-            <p className="text-sm text-slate-400">
+            <p>
               {conversation.type === 'direct' ? 'Direct message' : 'Group conversation'}
             </p>
           </div>
           
           <button 
             onClick={() => setShowDeleteConfirm(true)}
-            className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
             title="Delete conversation"
           >
-            <Trash2 className="w-5 h-5" />
+            <Trash2 />
           </button>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-800/30 scrollbar-thin scrollbar-thumb-slate-600/50 scrollbar-track-transparent" onScroll={handleScroll}>
+      <div onScroll={handleScroll}>
         {/* Load More Button */}
         {hasMoreMessages && !loadingMore && (
           <div className="flex justify-center mb-6">
@@ -641,15 +638,14 @@ export default function ConversationView({ conversation, currentUserId, onBack }
       </div>
 
       {/* Message Input */}
-      <div className="p-4 border-t border-slate-700/50 bg-slate-800">
-        <form onSubmit={sendMessage} className="flex gap-2">
+      <div>
+        <form onSubmit={sendMessage}>
           {/* Attachment Button */}
           <button
             type="button"
-            className="p-2.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-700/50 rounded-lg transition-colors"
             title="Attach file"
           >
-            <Paperclip className="w-5 h-5" />
+            <Paperclip />
           </button>
           
           {/* Message Input */}
@@ -658,7 +654,6 @@ export default function ConversationView({ conversation, currentUserId, onBack }
             value={newMessage}
             onChange={handleTyping}
             placeholder="Type your message..."
-            className="flex-1 px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-sm"
             disabled={!currentUserId || sendingMessage}
             maxLength={500}
           />
@@ -666,29 +661,27 @@ export default function ConversationView({ conversation, currentUserId, onBack }
           {/* Emoji Button */}
           <button
             type="button"
-            className="p-2.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-700/50 rounded-lg transition-colors"
             title="Add emoji"
           >
-            <Smile className="w-5 h-5" />
+            <Smile />
           </button>
           
           {/* Send Button */}
           <button
             type="submit"
             disabled={!newMessage.trim() || !currentUserId || sendingMessage}
-            className="px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
           >
             {sendingMessage ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <div></div>
             ) : (
-              <Send className="w-4 h-4" />
+              <Send />
             )}
           </button>
         </form>
         
         {/* Character Count */}
         {newMessage.length > 400 && (
-          <div className="mt-3 text-xs text-slate-400 text-right font-medium">
+          <div>
             {newMessage.length}/500 characters
           </div>
         )}

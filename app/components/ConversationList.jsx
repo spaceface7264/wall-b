@@ -202,62 +202,56 @@ export default function ConversationList({ onSelectConversation, currentUserId }
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div>
       {/* Header */}
-      <div className="p-4 border-b border-slate-700/50 bg-slate-800">
-        <div className="flex items-center justify-between mb-4">
+      <div>
+        <div>
           <div>
-            <h2 className="text-xl font-bold text-white mb-1">Messages</h2>
-            <p className="text-slate-400 text-sm">Connect with your community</p>
+            <h2>Messages</h2>
+            <p>Connect with your community</p>
           </div>
-          <div className="flex gap-2">
+          <div>
             <button
               onClick={() => setShowGroupChat(true)}
-              className="p-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
               title="New group chat"
             >
-              <Users className="w-4 h-4" />
+              <Users />
             </button>
             <button
               onClick={() => setShowUserDiscovery(true)}
-              className="p-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
               title="New conversation"
             >
-              <Plus className="w-4 h-4" />
+              <Plus />
             </button>
           </div>
         </div>
         
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <div>
+          <Search />
           <input
             type="text"
             placeholder="Search conversations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-sm"
           />
         </div>
       </div>
 
       {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600/50 scrollbar-track-transparent">
+      <div>
         {filteredConversations.length === 0 ? (
-          <div className="h-full flex items-center justify-center p-8">
-            <div className="text-center max-w-sm">
-              <div className="w-16 h-16 bg-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <MessageCircle className="w-8 h-8 text-slate-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">
+          <div>
+            <div>
+              <MessageCircle />
+              <h3>
                 {searchTerm ? 'No conversations found' : 'No conversations yet'}
               </h3>
-              <p className="text-slate-400 text-sm mb-6">
+              <p>
                 {searchTerm ? 'Try a different search term' : 'Start a conversation with someone!'}
               </p>
               {!searchTerm && (
                 <button
                   onClick={() => setShowUserDiscovery(true)}
-                  className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
                 >
                   Start Chatting
                 </button>
@@ -265,61 +259,56 @@ export default function ConversationList({ onSelectConversation, currentUserId }
             </div>
           </div>
         ) : (
-          <div className="p-2 space-y-1.5">
+          <div>
             {filteredConversations.map((conversation) => (
-              <div
-                key={conversation.id}
-                className="w-full p-3 hover:bg-slate-700/50 transition-colors rounded-lg group"
-              >
-                <div className="flex items-center gap-3">
+              <div key={conversation.id}>
+                <div>
                   {/* Avatar */}
-                  <div className="relative">
-                    <div className="w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div>
+                    <div>
                       {getConversationAvatar(conversation) ? (
                         <img
                           src={getConversationAvatar(conversation)}
                           alt={getConversationName(conversation)}
-                          className="w-12 h-12 rounded-lg object-cover"
                         />
                       ) : (
-                        <Users className="w-6 h-6 text-white" />
+                        <Users />
                       )}
                     </div>
                     {/* Online indicator */}
-                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-800"></div>
+                    <div></div>
                   </div>
 
                   {/* Conversation Info - Clickable */}
                   <button
                     onClick={() => onSelectConversation(conversation)}
-                    className="flex-1 min-w-0 text-left"
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-semibold text-white truncate">
+                    <div>
+                      <h3>
                         {getConversationName(conversation)}
                       </h3>
-                      <div className="flex items-center gap-1 text-xs text-slate-400">
-                        <Clock className="w-3 h-3" />
+                      <div>
+                        <Clock />
                         <span>{formatTime(conversation.lastMessage?.created_at)}</span>
                       </div>
                     </div>
                     
-                    <p className="text-sm text-slate-400 truncate">
+                    <p>
                       {conversation.lastMessage ? (
                         <>
-                          <span className="text-slate-300">
+                          <span>
                             {conversation.lastMessage.sender_id === currentUserId ? 'You: ' : ''}
                           </span>
                           {conversation.lastMessage.message}
                         </>
                       ) : (
-                        <span className="italic text-slate-500">No messages yet</span>
+                        <span>No messages yet</span>
                       )}
                     </p>
                   </button>
 
                   {/* Action Buttons */}
-                  <div className="flex items-center gap-1 flex-shrink-0">
+                  <div>
                     {/* Unread indicator */}
                     <UnreadBadge userId={currentUserId} conversationId={conversation.id} />
                     
@@ -329,10 +318,9 @@ export default function ConversationList({ onSelectConversation, currentUserId }
                         e.stopPropagation();
                         setConversationToDelete(conversation);
                       }}
-                      className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors opacity-0 group-hover:opacity-100"
                       title="Delete conversation"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 />
                     </button>
                   </div>
                 </div>
