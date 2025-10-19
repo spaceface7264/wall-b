@@ -458,56 +458,54 @@ export default function ConversationView({ conversation, currentUserId, onBack }
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-slate-800/40 via-slate-800/20 to-slate-900/40 backdrop-blur-sm">
+    <div className="h-full flex flex-col bg-slate-800/50">
       {/* Header */}
-      <div className="p-4 border-b border-slate-700/30 bg-gradient-to-r from-slate-800/90 via-slate-700/80 to-slate-800/90 backdrop-blur-md">
-        <div className="flex items-center gap-4">
+      <div className="p-4 border-b border-slate-700/50 bg-slate-800">
+        <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-3 text-slate-400 hover:text-white transition-all duration-300 hover:bg-slate-700/50 rounded-xl md:hidden group"
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg md:hidden transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
+            <ArrowLeft className="w-5 h-5" />
           </button>
           
-          <div className="relative group">
-            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500/90 to-indigo-600/90 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg group-hover:shadow-indigo-500/30 transition-all duration-300 group-hover:scale-105">
+          <div className="relative">
+            <div className="w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
               {getConversationAvatar() ? (
                 <img
                   src={getConversationAvatar()}
                   alt={getConversationName()}
-                  className="w-16 h-16 rounded-2xl object-cover"
+                  className="w-12 h-12 rounded-lg object-cover"
                 />
               ) : (
-                <Users className="w-8 h-8 text-white" />
+                <Users className="w-6 h-6 text-white" />
               )}
             </div>
             {/* Online indicator */}
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-slate-800 shadow-lg"></div>
+            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-800"></div>
           </div>
           
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-bold bg-gradient-to-r from-white to-slate-200 bg-clip-text text-transparent truncate mb-1">
+            <h2 className="text-lg font-semibold text-white truncate">
               {getConversationName()}
             </h2>
-            <p className="text-sm text-slate-400 font-medium">
+            <p className="text-sm text-slate-400">
               {conversation.type === 'direct' ? 'Direct message' : 'Group conversation'}
             </p>
           </div>
           
-          <div className="relative">
-            <button 
-              onClick={() => setShowDeleteConfirm(true)}
-              className="p-3 text-slate-400 hover:text-red-400 transition-all duration-300 hover:bg-red-500/10 rounded-xl group"
-              title="Delete conversation"
-            >
-              <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
-            </button>
-          </div>
+          <button 
+            onClick={() => setShowDeleteConfirm(true)}
+            className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+            title="Delete conversation"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-slate-800/30 via-slate-800/20 to-slate-900/30 scrollbar-thin scrollbar-thumb-slate-600/50 scrollbar-track-transparent" onScroll={handleScroll}>
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-800/30 scrollbar-thin scrollbar-thumb-slate-600/50 scrollbar-track-transparent" onScroll={handleScroll}>
         {/* Load More Button */}
         {hasMoreMessages && !loadingMore && (
           <div className="flex justify-center mb-6">
@@ -569,24 +567,24 @@ export default function ConversationView({ conversation, currentUserId, onBack }
                 >
               <div className={`flex gap-3 max-w-xs lg:max-w-md ${message.sender_id === currentUserId ? 'flex-row-reverse' : ''}`}>
                 {message.sender_id !== currentUserId && (
-                  <div className="w-12 h-12 bg-gradient-to-br from-slate-600/90 to-slate-700/90 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                  <div className="w-10 h-10 bg-slate-600 rounded-lg flex items-center justify-center flex-shrink-0">
                     {message.profiles?.avatar_url ? (
                       <img
                         src={message.profiles.avatar_url}
                         alt={message.profiles.full_name}
-                        className="w-12 h-12 rounded-2xl object-cover"
+                        className="w-10 h-10 rounded-lg object-cover"
                       />
                     ) : (
-                      <Users className="w-6 h-6 text-white" />
+                      <Users className="w-5 h-5 text-white" />
                     )}
                   </div>
                 )}
                 
                 <div
-                  className={`px-5 py-3 rounded-2xl text-sm shadow-lg backdrop-blur-sm transition-all duration-200 ${
+                  className={`px-4 py-2.5 rounded-lg text-sm ${
                     message.sender_id === currentUserId
-                      ? 'bg-gradient-to-br from-indigo-500/90 to-indigo-600/90 text-white shadow-indigo-500/25'
-                      : 'bg-slate-700/70 text-white border border-slate-600/50 shadow-slate-900/30'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-700 text-white'
                   }`}
                 >
                   {message.sender_id !== currentUserId && (
@@ -616,11 +614,11 @@ export default function ConversationView({ conversation, currentUserId, onBack }
         {/* Typing Indicator */}
         {typingUsers.length > 0 && (
           <div className="flex justify-start">
-            <div className="flex gap-3 max-w-xs lg:max-w-md">
-              <div className="w-10 h-10 bg-gradient-to-br from-slate-600/90 to-slate-700/90 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                <Users className="w-5 h-5 text-white" />
+            <div className="flex gap-2 max-w-xs lg:max-w-md">
+              <div className="w-8 h-8 bg-slate-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Users className="w-4 h-4 text-white" />
               </div>
-              <div className="px-4 py-3 rounded-2xl text-sm bg-slate-700/60 text-white border border-slate-600/40 backdrop-blur-sm shadow-lg">
+              <div className="px-3 py-2 rounded-lg text-sm bg-slate-700 text-white">
                 <div className="flex items-center gap-2">
                   <div className="flex space-x-1">
                     <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></div>
@@ -628,7 +626,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
                     <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                   <span className="text-xs text-slate-300">
-                    {typingUsers.length === 1 
+                    {typingUsers.length === 1
                       ? `${typingUsers[0]} is typing...`
                       : `${typingUsers.join(', ')} are typing...`
                     }
@@ -643,15 +641,15 @@ export default function ConversationView({ conversation, currentUserId, onBack }
       </div>
 
       {/* Message Input */}
-      <div className="p-4 border-t border-slate-700/30 bg-gradient-to-r from-slate-800/90 via-slate-700/80 to-slate-800/90 backdrop-blur-md">
+      <div className="p-4 border-t border-slate-700/50 bg-slate-800">
         <form onSubmit={sendMessage} className="flex gap-2">
           {/* Attachment Button */}
           <button
             type="button"
-            className="p-3.5 text-slate-400 hover:text-indigo-400 transition-all duration-300 hover:bg-slate-700/50 rounded-xl group"
+            className="p-2.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-700/50 rounded-lg transition-colors"
             title="Attach file"
           >
-            <Paperclip className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
+            <Paperclip className="w-5 h-5" />
           </button>
           
           {/* Message Input */}
@@ -660,7 +658,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
             value={newMessage}
             onChange={handleTyping}
             placeholder="Type your message..."
-            className="flex-1 px-5 py-3.5 bg-slate-700/60 border border-slate-600/40 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500/60 transition-all duration-300 backdrop-blur-sm hover:bg-slate-700/70 hover:border-slate-600/60 text-sm"
+            className="flex-1 px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-sm"
             disabled={!currentUserId || sendingMessage}
             maxLength={500}
           />
@@ -668,22 +666,22 @@ export default function ConversationView({ conversation, currentUserId, onBack }
           {/* Emoji Button */}
           <button
             type="button"
-            className="p-3.5 text-slate-400 hover:text-indigo-400 transition-all duration-300 hover:bg-slate-700/50 rounded-xl group"
+            className="p-2.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-700/50 rounded-lg transition-colors"
             title="Add emoji"
           >
-            <Smile className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
+            <Smile className="w-5 h-5" />
           </button>
           
           {/* Send Button */}
           <button
             type="submit"
             disabled={!newMessage.trim() || !currentUserId || sendingMessage}
-            className="px-5 py-3.5 bg-gradient-to-r from-indigo-500/90 to-indigo-600/90 text-white rounded-xl hover:from-indigo-600 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-indigo-500/30 hover:scale-105 active:scale-95 disabled:hover:scale-100 disabled:hover:shadow-none group"
+            className="px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
           >
             {sendingMessage ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
-              <Send className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
+              <Send className="w-4 h-4" />
             )}
           </button>
         </form>

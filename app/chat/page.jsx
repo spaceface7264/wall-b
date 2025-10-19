@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Loader2 } from 'lucide-react';
 import SidebarLayout from '../components/SidebarLayout';
 import ConversationList from '../components/ConversationList';
 import ConversationView from '../components/ConversationView';
@@ -43,14 +43,13 @@ export default function Chat() {
     setSelectedConversation(null);
   };
 
-
   if (loading) {
     return (
       <SidebarLayout currentPage="chat">
-        <div className="minimal-flex-center h-64">
+        <div className="flex items-center justify-center h-[calc(100vh-12rem)]">
           <div className="text-center">
-            <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="minimal-text">Loading chat...</p>
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mx-auto mb-4" />
+            <p className="text-slate-400">Loading chat...</p>
           </div>
         </div>
       </SidebarLayout>
@@ -60,8 +59,11 @@ export default function Chat() {
   if (!user) {
     return (
       <SidebarLayout currentPage="chat">
-        <div className="minimal-flex-center h-64">
-          <p className="minimal-text">Please log in to access chat</p>
+        <div className="flex items-center justify-center h-[calc(100vh-12rem)]">
+          <div className="text-center">
+            <MessageCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+            <p className="text-slate-400">Please log in to access chat</p>
+          </div>
         </div>
       </SidebarLayout>
     );
@@ -69,17 +71,18 @@ export default function Chat() {
 
   return (
     <SidebarLayout currentPage="chat">
-      <div className="h-[calc(100vh-8rem)] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="h-full flex rounded-2xl overflow-hidden shadow-2xl border border-slate-700/40 backdrop-blur-sm">
-          {/* Conversation List - Hidden on mobile when viewing conversation */}
-          <div className={`${showConversationList ? 'flex' : 'hidden'} md:flex w-full md:w-1/3 bg-slate-800/70 border-r border-slate-700/30`}>
+      <div className="h-[calc(100vh-12rem)] flex flex-col">
+        {/* Main Chat Container */}
+        <div className="flex-1 flex bg-slate-900 rounded-2xl overflow-hidden border border-slate-700/50 shadow-xl">
+          {/* Conversation List */}
+          <div className={`${showConversationList ? 'flex' : 'hidden'} md:flex w-full md:w-1/3 bg-slate-800 border-r border-slate-700/50`}>
             <ConversationList
               onSelectConversation={handleSelectConversation}
               currentUserId={user.id}
             />
           </div>
 
-          {/* Conversation View - Full width on mobile, 2/3 on desktop */}
+          {/* Conversation View */}
           <div className={`${!showConversationList ? 'flex' : 'hidden'} md:flex w-full md:w-2/3 bg-slate-800/50`}>
             <ConversationView
               conversation={selectedConversation}
@@ -89,8 +92,10 @@ export default function Chat() {
           </div>
         </div>
         
-        {/* Database Setup Guide */}
-        <DatabaseSetup />
+        {/* Database Setup - Only show if needed */}
+        <div className="mt-4">
+          <DatabaseSetup />
+        </div>
       </div>
     </SidebarLayout>
   );
