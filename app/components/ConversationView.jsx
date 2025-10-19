@@ -460,7 +460,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
   return (
     <div className="flex flex-col h-full bg-slate-900 rounded-lg overflow-hidden border border-slate-700 w-full">
       {/* Header - Fixed */}
-      <div className="flex-shrink-0 sticky top-0 z-10 p-3 border-b border-slate-700 bg-slate-800">
+      <div className="flex-shrink-0 p-3 border-b border-slate-700 bg-slate-800 sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
@@ -641,7 +641,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
       </div>
 
       {/* Input - Fixed */}
-      <div className="flex-shrink-0 sticky bottom-0 z-10 p-3 border-t border-slate-700 bg-slate-800">
+      <div className="flex-shrink-0 p-3 border-t border-slate-700 bg-slate-800 sticky bottom-0 z-10">
         <form onSubmit={sendMessage} className="flex gap-2">
           {/* Attachment Button */}
           <button
