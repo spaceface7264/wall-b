@@ -71,7 +71,7 @@ export default function Chat() {
 
   return (
     <SidebarLayout currentPage="chat">
-      <div className="flex flex-col md:flex-row h-[calc(100vh-200px)] gap-0 md:gap-4" style={{ margin: '-16px' }}>
+      <div className="flex flex-col md:flex-row h-[calc(100vh-200px)] gap-0 md:gap-4" style={{ margin: '12px 12px 0px 12px' }}>
         {/* Conversation List - Full width mobile, 1/3 desktop */}
         <div className={`${showConversationList ? 'flex' : 'hidden'} md:block md:w-1/3 md:flex md:flex-col`}>
           <ConversationList
