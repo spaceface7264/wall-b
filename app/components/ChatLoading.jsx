@@ -4,7 +4,7 @@ import { MessageCircle, Loader2 } from 'lucide-react';
 
 export default function ChatLoading() {
   return (
-    <div className="flex items-center justify-center h-full min-h-[400px]">
+    <div className="flex items-center justify-center h-[calc(100vh-56px)] w-full">
       <div className="text-center space-y-6">
         {/* Animated Message Icon */}
         <div className="relative">
