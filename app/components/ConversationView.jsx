@@ -458,7 +458,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-56px)] md:h-full bg-slate-900 rounded-lg overflow-hidden border border-slate-700 w-full">
+    <div className="flex flex-col h-[calc(100vh-56px)] md:h-full bg-slate-900 rounded-lg overflow-hidden border border-slate-700 w-full" style={{ marginTop: '56px' }}>
       {/* Header - Fixed */}
       <div className="fixed top-[56px] left-0 right-0 md:static md:flex-shrink-0 p-3 border-b border-slate-700 bg-slate-800 z-20">
         <div className="flex items-center gap-3">
@@ -505,7 +505,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
       </div>
 
       {/* Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-4 pt-[140px] pb-24 md:pt-4 md:pb-4" onScroll={handleScroll}>
+      <div className="flex-1 overflow-y-auto p-4 pb-24 md:pb-4" onScroll={handleScroll}>
         {/* Load More Button */}
         {hasMoreMessages && !loadingMore && (
           <div className="flex justify-center mb-6">
