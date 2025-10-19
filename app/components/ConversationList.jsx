@@ -268,7 +268,10 @@ export default function ConversationList({ onSelectConversation, currentUserId }
           <div className="p-2 space-y-1">
             {filteredConversations.map((conversation) => (
               <div key={conversation.id} className="group">
-                <div className="flex items-center gap-3 p-2 hover:bg-slate-700/50 transition-colors rounded-lg">
+                <button
+                  onClick={() => onSelectConversation(conversation)}
+                  className="w-full flex items-center gap-3 p-2 hover:bg-slate-700/50 transition-colors rounded-lg text-left"
+                >
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
                     <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
@@ -286,11 +289,8 @@ export default function ConversationList({ onSelectConversation, currentUserId }
                     <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900"></div>
                   </div>
 
-                  {/* Conversation Info - Clickable */}
-                  <button
-                    onClick={() => onSelectConversation(conversation)}
-                    className="flex-1 min-w-0 text-left"
-                  >
+                  {/* Conversation Info */}
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="font-medium text-white truncate">
                         {getConversationName(conversation)}
@@ -313,7 +313,7 @@ export default function ConversationList({ onSelectConversation, currentUserId }
                         <span className="italic text-slate-500">No messages yet</span>
                       )}
                     </p>
-                  </button>
+                  </div>
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-1 flex-shrink-0">
@@ -332,7 +332,7 @@ export default function ConversationList({ onSelectConversation, currentUserId }
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                </div>
+                </button>
               </div>
             ))}
           </div>
