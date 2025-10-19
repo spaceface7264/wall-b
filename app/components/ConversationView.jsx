@@ -460,43 +460,46 @@ export default function ConversationView({ conversation, currentUserId, onBack }
   return (
     <div className="flex flex-col h-full bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
       {/* Header - Fixed */}
-      <div className="flex-shrink-0 p-4 border-b border-slate-700 bg-slate-800">
-        <div>
+      <div className="flex-shrink-0 p-3 border-b border-slate-700 bg-slate-800">
+        <div className="flex items-center gap-3">
           <button
             onClick={onBack}
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors md:hidden"
           >
-            <ArrowLeft />
+            <ArrowLeft className="w-5 h-5" />
           </button>
           
-          <div>
-            <div>
+          <div className="relative flex-shrink-0">
+            <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
               {getConversationAvatar() ? (
                 <img
                   src={getConversationAvatar()}
                   alt={getConversationName()}
+                  className="w-10 h-10 rounded-lg object-cover"
                 />
               ) : (
-                <Users />
+                <Users className="w-5 h-5 text-white" />
               )}
             </div>
             {/* Online indicator */}
-            <div></div>
+            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900"></div>
           </div>
           
-          <div>
-            <h2>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-base font-semibold text-white truncate">
               {getConversationName()}
             </h2>
-            <p>
+            <p className="text-sm text-slate-400">
               {conversation.type === 'direct' ? 'Direct message' : 'Group conversation'}
             </p>
           </div>
           
           <button 
             onClick={() => setShowDeleteConfirm(true)}
+            className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
             title="Delete conversation"
           >
-            <Trash2 />
+            <Trash2 className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -564,21 +567,21 @@ export default function ConversationView({ conversation, currentUserId, onBack }
                 >
               <div className={`flex gap-3 max-w-xs lg:max-w-md ${message.sender_id === currentUserId ? 'flex-row-reverse' : ''}`}>
                 {message.sender_id !== currentUserId && (
-                  <div className="w-10 h-10 bg-slate-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-slate-600 rounded-lg flex items-center justify-center flex-shrink-0">
                     {message.profiles?.avatar_url ? (
                       <img
                         src={message.profiles.avatar_url}
                         alt={message.profiles.full_name}
-                        className="w-10 h-10 rounded-lg object-cover"
+                        className="w-8 h-8 rounded-lg object-cover"
                       />
                     ) : (
-                      <Users className="w-5 h-5 text-white" />
+                      <Users className="w-4 h-4 text-white" />
                     )}
                   </div>
                 )}
                 
                 <div
-                  className={`px-4 py-2.5 rounded-lg text-sm ${
+                  className={`px-3 py-2 rounded-lg text-sm max-w-xs ${
                     message.sender_id === currentUserId
                       ? 'bg-indigo-600 text-white'
                       : 'bg-slate-700 text-white'
@@ -611,7 +614,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
         {/* Typing Indicator */}
         {typingUsers.length > 0 && (
           <div className="flex justify-start">
-            <div className="flex gap-2 max-w-xs lg:max-w-md">
+            <div className="flex gap-2 max-w-xs">
               <div className="w-8 h-8 bg-slate-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Users className="w-4 h-4 text-white" />
               </div>
@@ -638,14 +641,15 @@ export default function ConversationView({ conversation, currentUserId, onBack }
       </div>
 
       {/* Input - Fixed */}
-      <div className="flex-shrink-0 p-4 border-t border-slate-700 bg-slate-800">
-        <form onSubmit={sendMessage}>
+      <div className="flex-shrink-0 p-3 border-t border-slate-700 bg-slate-800">
+        <form onSubmit={sendMessage} className="flex gap-2">
           {/* Attachment Button */}
           <button
             type="button"
+            className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-slate-700/50 rounded-lg transition-colors"
             title="Attach file"
           >
-            <Paperclip />
+            <Paperclip className="w-4 h-4" />
           </button>
           
           {/* Message Input */}
@@ -656,32 +660,35 @@ export default function ConversationView({ conversation, currentUserId, onBack }
             placeholder="Type your message..."
             disabled={!currentUserId || sendingMessage}
             maxLength={500}
+            className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-sm"
           />
           
           {/* Emoji Button */}
           <button
             type="button"
+            className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-slate-700/50 rounded-lg transition-colors"
             title="Add emoji"
           >
-            <Smile />
+            <Smile className="w-4 h-4" />
           </button>
           
           {/* Send Button */}
           <button
             type="submit"
             disabled={!newMessage.trim() || !currentUserId || sendingMessage}
+            className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
           >
             {sendingMessage ? (
-              <div></div>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
-              <Send />
+              <Send className="w-4 h-4" />
             )}
           </button>
         </form>
         
         {/* Character Count */}
         {newMessage.length > 400 && (
-          <div>
+          <div className="mt-2 text-xs text-slate-400 text-right">
             {newMessage.length}/500 characters
           </div>
         )}
