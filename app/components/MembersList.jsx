@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { Search, Users, Crown, Shield, User } from 'lucide-react';
 
@@ -12,6 +13,11 @@ export default function MembersList({ communityId, isAdmin = false }) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalMembers, setTotalMembers] = useState(0);
   const membersPerPage = 20;
+  const router = useRouter();
+
+  const handleProfileClick = (userId) => {
+    router.push(`/profile/${userId}`);
+  };
 
   useEffect(() => {
     if (communityId) {
@@ -218,9 +224,12 @@ export default function MembersList({ communityId, isAdmin = false }) {
                 {/* Member Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium text-white truncate">
+                    <button
+                      onClick={() => handleProfileClick(member.user_id)}
+                      className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors truncate text-left"
+                    >
                       {profile?.full_name || 'Unknown User'}
-                    </h4>
+                    </button>
                     <span className={`px-2 py-0.5 text-xs rounded-full ${getRoleColor(member.role)}`}>
                       {member.role}
                     </span>

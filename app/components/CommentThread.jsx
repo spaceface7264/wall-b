@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Heart, Reply, Edit2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import CommentInput from './CommentInput';
 
 export default function CommentThread({
@@ -20,11 +21,17 @@ export default function CommentThread({
   const [editContent, setEditContent] = useState(comment.content);
   const [liking, setLiking] = useState(false);
   const [liked, setLiked] = useState(false);
+  const router = useRouter();
 
   const isOwnComment = comment.user_id === userId;
   const canModerate = isOwnComment || isAdmin;
   const hasReplies = (replies && replies.length > 0) || (comment.reply_count > 0);
   const canReply = depth === 0; // Only top-level comments can have replies
+
+  const handleProfileClick = (e, userId) => {
+    e.stopPropagation();
+    router.push(`/profile/${userId}`);
+  };
 
 
 
@@ -97,9 +104,12 @@ export default function CommentThread({
               </span>
             </div>
             <div>
-              <h4 className="mobile-text-sm font-semibold text-white">
+              <button
+                onClick={(e) => handleProfileClick(e, comment.user_id)}
+                className="mobile-text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-colors text-left"
+              >
                 {comment.user_name}
-              </h4>
+              </button>
               <p className="mobile-text-xs text-gray-400">
                 {formatTime(comment.created_at)}
                 {comment.updated_at && comment.updated_at !== comment.created_at && (
@@ -234,9 +244,12 @@ export default function CommentThread({
                           </span>
                         </div>
                         <div>
-                          <h4 className="mobile-text-xs font-semibold text-white">
+                          <button
+                            onClick={(e) => handleProfileClick(e, reply.user_id)}
+                            className="mobile-text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors text-left"
+                          >
                             {reply.user_name}
-                          </h4>
+                          </button>
                           <p className="mobile-text-xs text-gray-400">
                             {formatTime(reply.created_at)}
                             {reply.updated_at && reply.updated_at !== reply.created_at && (

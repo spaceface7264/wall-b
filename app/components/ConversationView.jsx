@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { Send, ArrowLeft, Users, MoreHorizontal, Paperclip, Smile, CheckCheck, Trash2 } from 'lucide-react';
 import ErrorRetry from './ErrorRetry';
@@ -21,6 +22,14 @@ export default function ConversationView({ conversation, currentUserId, onBack }
   const messagesEndRef = useRef(null);
   const messagesStartRef = useRef(null);
   const typingChannelRef = useRef(null);
+  const router = useRouter();
+
+  const handleProfileClick = () => {
+    if (conversation.type === 'direct' && conversation.otherParticipants?.length > 0) {
+      const otherUserId = conversation.otherParticipants[0].user_id;
+      router.push(`/profile/${otherUserId}`);
+    }
+  };
 
   useEffect(() => {
     if (conversation) {
@@ -486,9 +495,18 @@ export default function ConversationView({ conversation, currentUserId, onBack }
           </div>
           
           <div className="flex-1 min-w-0">
-            <h2 className="text-base font-semibold text-white truncate">
-              {getConversationName()}
-            </h2>
+            {conversation.type === 'direct' ? (
+              <button
+                onClick={handleProfileClick}
+                className="text-base font-semibold text-indigo-400 hover:text-indigo-300 transition-colors truncate text-left"
+              >
+                {getConversationName()}
+              </button>
+            ) : (
+              <h2 className="text-base font-semibold text-white truncate">
+                {getConversationName()}
+              </h2>
+            )}
             <p className="text-sm text-slate-400">
               {conversation.type === 'direct' ? 'Direct message' : 'Group conversation'}
             </p>

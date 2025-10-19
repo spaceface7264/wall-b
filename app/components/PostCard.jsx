@@ -1,5 +1,6 @@
 import { Users, Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal, Edit2, Trash2, Calendar } from 'lucide-react';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function PostCard({ 
   post, 
@@ -19,8 +20,14 @@ export default function PostCard({
 }) {
   const [showReactions, setShowReactions] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const router = useRouter();
   const isOwnPost = post.user_id === currentUserId;
   const canShowActions = showActions && (isOwnPost || isAdmin);
+
+  const handleProfileClick = (e) => {
+    e.stopPropagation();
+    router.push(`/profile/${post.user_id}`);
+  };
 
   // Parse event mentions in content
   const parseEventMentions = (content) => {
@@ -156,7 +163,13 @@ export default function PostCard({
           <div className="flex-1 min-w-0">
             <h4 className="mobile-text-sm font-medium truncate">{post.title}</h4>
             <div className="minimal-flex mobile-text-xs text-gray-400">
-              <span>by {post.user_name}</span>
+              <span>by </span>
+              <button
+                onClick={handleProfileClick}
+                className="text-indigo-400 hover:text-indigo-300 transition-colors"
+              >
+                {post.user_name}
+              </button>
               <span className="mx-2">•</span>
               <Clock className="w-3 h-3 mr-1" />
               <span>{formatTime(post.created_at)}</span>
@@ -191,7 +204,13 @@ export default function PostCard({
           <div className="flex-1 min-w-0">
             <h3 className="mobile-subheading truncate">{post.title}</h3>
             <div className="minimal-flex mobile-text-xs text-gray-400">
-              <span>by {post.user_name}</span>
+              <span>by </span>
+              <button
+                onClick={handleProfileClick}
+                className="text-indigo-400 hover:text-indigo-300 transition-colors"
+              >
+                {post.user_name}
+              </button>
               <span className="mx-2">•</span>
               <Clock className="minimal-icon mr-1" />
               <span>{formatTime(post.created_at)}</span>
