@@ -46,7 +46,7 @@ export default function Chat() {
   if (loading) {
     return (
       <SidebarLayout currentPage="chat">
-        <div className="flex items-center justify-center h-[calc(100vh-12rem)]">
+        <div className="flex items-center justify-center h-[calc(100vh-7.5rem)]">
           <div className="text-center">
             <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mx-auto mb-4" />
             <p className="text-slate-400">Loading chat...</p>
@@ -59,7 +59,7 @@ export default function Chat() {
   if (!user) {
     return (
       <SidebarLayout currentPage="chat">
-        <div className="flex items-center justify-center h-[calc(100vh-12rem)]">
+        <div className="flex items-center justify-center h-[calc(100vh-7.5rem)]">
           <div className="text-center">
             <MessageCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
             <p className="text-slate-400">Please log in to access chat</p>
@@ -71,7 +71,7 @@ export default function Chat() {
 
   return (
     <SidebarLayout currentPage="chat">
-      <div className="h-[calc(100vh-12rem)] flex flex-col">
+      <div className="h-[calc(100vh-7.5rem)] flex flex-col">
         {/* Main Chat Container */}
         <div className="flex-1 flex bg-slate-900 rounded-2xl overflow-hidden border border-slate-700/50 shadow-xl">
           {/* Conversation List */}
