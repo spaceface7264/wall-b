@@ -458,9 +458,9 @@ export default function ConversationView({ conversation, currentUserId, onBack }
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div>
+    <div className="flex flex-col h-full bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
+      {/* Header - Fixed */}
+      <div className="flex-shrink-0 p-4 border-b border-slate-700 bg-slate-800">
         <div>
           <button
             onClick={onBack}
@@ -501,8 +501,8 @@ export default function ConversationView({ conversation, currentUserId, onBack }
         </div>
       </div>
 
-      {/* Messages */}
-      <div onScroll={handleScroll}>
+      {/* Messages - Scrollable */}
+      <div className="flex-1 overflow-y-auto p-4" onScroll={handleScroll}>
         {/* Load More Button */}
         {hasMoreMessages && !loadingMore && (
           <div className="flex justify-center mb-6">
@@ -637,8 +637,8 @@ export default function ConversationView({ conversation, currentUserId, onBack }
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input */}
-      <div>
+      {/* Input - Fixed */}
+      <div className="flex-shrink-0 p-4 border-t border-slate-700 bg-slate-800">
         <form onSubmit={sendMessage}>
           {/* Attachment Button */}
           <button

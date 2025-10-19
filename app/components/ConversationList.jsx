@@ -202,9 +202,9 @@ export default function ConversationList({ onSelectConversation, currentUserId }
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div>
+    <div className="flex flex-col h-full bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
+      {/* Header - Fixed */}
+      <div className="flex-shrink-0 p-4 border-b border-slate-700 bg-slate-800">
         <div>
           <div>
             <h2>Messages</h2>
@@ -237,8 +237,8 @@ export default function ConversationList({ onSelectConversation, currentUserId }
         </div>
       </div>
 
-      {/* Conversations List */}
-      <div>
+      {/* Conversations List - Scrollable */}
+      <div className="flex-1 overflow-y-auto">
         {filteredConversations.length === 0 ? (
           <div>
             <div>
