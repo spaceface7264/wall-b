@@ -6,7 +6,7 @@ import { MessageCircle, Loader2 } from 'lucide-react';
 import SidebarLayout from '../components/SidebarLayout';
 import ConversationList from '../components/ConversationList';
 import ConversationView from '../components/ConversationView';
-import DatabaseSetup from '../components/DatabaseSetup';
+import ChatLoading from '../components/ChatLoading';
 
 export default function Chat() {
   const [user, setUser] = useState(null);
@@ -46,12 +46,7 @@ export default function Chat() {
   if (loading) {
     return (
       <SidebarLayout currentPage="chat">
-        <div className="flex items-center justify-center h-full min-h-[400px]">
-          <div className="text-center space-y-3">
-            <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mx-auto" />
-            <p className="text-slate-400 text-sm">Loading your conversations...</p>
-          </div>
-        </div>
+        <ChatLoading />
       </SidebarLayout>
     );
   }
@@ -129,8 +124,6 @@ export default function Chat() {
         </div>
       </div>
       
-      {/* Database Setup Component */}
-      <DatabaseSetup />
     </SidebarLayout>
   );
 }
