@@ -71,7 +71,7 @@ export default function Chat() {
 
   return (
     <SidebarLayout currentPage="chat">
-      <div className="flex flex-col md:flex-row md:h-[calc(100vh-120px)] gap-0 md:gap-4">
+      <div className="flex flex-col md:flex-row h-[calc(100vh-120px)] gap-0 md:gap-4">
         {/* Conversation List - Full width mobile, 1/3 desktop */}
         <div className={`${showConversationList ? 'block' : 'hidden'} md:block md:w-1/3 md:flex md:flex-col`}>
           <ConversationList
@@ -81,7 +81,7 @@ export default function Chat() {
         </div>
 
         {/* Conversation View - Full width mobile, 2/3 desktop */}
-        <div className={`${!showConversationList ? 'block' : 'hidden'} md:block md:w-2/3 md:flex md:flex-col`}>
+        <div className={`${!showConversationList ? 'flex' : 'hidden'} md:block md:w-2/3 md:flex md:flex-col`}>
           <ConversationView
             conversation={selectedConversation}
             currentUserId={user.id}
