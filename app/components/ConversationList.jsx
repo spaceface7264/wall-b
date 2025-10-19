@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { MessageCircle, Users, Clock, Search, Plus, Trash2 } from 'lucide-react';
+import { MessageCircle, Users, Clock, Search, Plus } from 'lucide-react';
 import UserDiscovery from './UserDiscovery';
 import UnreadBadge from './UnreadBadge';
 import GroupChatModal from './GroupChatModal';
@@ -319,18 +319,6 @@ export default function ConversationList({ onSelectConversation, currentUserId }
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {/* Unread indicator */}
                     <UnreadBadge userId={currentUserId} conversationId={conversation.id} />
-                    
-                    {/* Delete button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConversationToDelete(conversation);
-                      }}
-                      className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors opacity-0 group-hover:opacity-100"
-                      title="Delete conversation"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
                 </button>
               </div>
