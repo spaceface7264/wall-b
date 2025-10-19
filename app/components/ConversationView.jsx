@@ -458,7 +458,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
   }
 
   return (
-    <div className="h-full flex flex-col bg-slate-800/50">
+    <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-slate-700/50 bg-slate-800">
         <div className="flex items-center gap-3">

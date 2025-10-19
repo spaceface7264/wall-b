@@ -46,14 +46,10 @@ export default function Chat() {
   if (loading) {
     return (
       <SidebarLayout currentPage="chat">
-        <div className="chat-page-container">
-          <div className="chat-main-container">
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mx-auto mb-4" />
-                <p className="text-slate-400">Loading chat...</p>
-              </div>
-            </div>
+        <div className="chat-loading">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mx-auto mb-4" />
+            <p className="text-slate-400">Loading chat...</p>
           </div>
         </div>
       </SidebarLayout>
@@ -63,14 +59,10 @@ export default function Chat() {
   if (!user) {
     return (
       <SidebarLayout currentPage="chat">
-        <div className="chat-page-container">
-          <div className="chat-main-container">
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <MessageCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                <p className="text-slate-400">Please log in to access chat</p>
-              </div>
-            </div>
+        <div className="chat-loading">
+          <div className="text-center">
+            <MessageCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+            <p className="text-slate-400">Please log in to access chat</p>
           </div>
         </div>
       </SidebarLayout>
@@ -79,11 +71,11 @@ export default function Chat() {
 
   return (
     <SidebarLayout currentPage="chat">
-      <div className="chat-page-container">
-        {/* Main Chat Container */}
-        <div className="chat-main-container">
+      <div className="chat-container">
+        {/* Main Chat Area */}
+        <div className="chat-main">
           {/* Conversation List */}
-          <div className={`chat-sidebar ${showConversationList ? 'flex' : 'hidden'} md:flex`}>
+          <div className={`chat-sidebar ${showConversationList ? 'chat-sidebar--visible' : 'chat-sidebar--hidden'}`}>
             <ConversationList
               onSelectConversation={handleSelectConversation}
               currentUserId={user.id}
@@ -91,7 +83,7 @@ export default function Chat() {
           </div>
 
           {/* Conversation View */}
-          <div className={`chat-content ${!showConversationList ? 'flex' : 'hidden'} md:flex`}>
+          <div className={`chat-content ${!showConversationList ? 'chat-content--visible' : 'chat-content--hidden'}`}>
             <ConversationView
               conversation={selectedConversation}
               currentUserId={user.id}
@@ -100,8 +92,8 @@ export default function Chat() {
           </div>
         </div>
         
-        {/* Database Setup - Only show if needed */}
-        <div className="chat-database-setup">
+        {/* Database Setup */}
+        <div className="chat-database">
           <DatabaseSetup />
         </div>
       </div>

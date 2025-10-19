@@ -202,7 +202,7 @@ export default function ConversationList({ onSelectConversation, currentUserId }
   }
 
   return (
-    <div className="h-full flex flex-col bg-slate-800">
+    <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-slate-700/50 bg-slate-800">
         <div className="flex items-center justify-between mb-4">
