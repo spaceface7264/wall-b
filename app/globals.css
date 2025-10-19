@@ -3015,3 +3015,80 @@ input[type="number"].minimal-input::-webkit-outer-spin-button {
     line-height: 20px;
   }
 }
+
+/* ============================================
+   CHAT PAGE LAYOUT
+   ============================================ */
+
+.chat-page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.chat-main-container {
+  display: flex;
+  flex: 1;
+  min-height: 0; /* Important for flexbox children to shrink */
+  background: #1e293b;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.chat-sidebar {
+  width: 100%;
+  background: #1e293b;
+  border-right: 1px solid rgba(71, 85, 105, 0.5);
+  min-height: 0;
+}
+
+.chat-content {
+  width: 100%;
+  background: rgba(30, 41, 59, 0.5);
+  min-height: 0;
+}
+
+.chat-database-setup {
+  margin-top: 16px;
+}
+
+/* Desktop layout */
+@media (min-width: 768px) {
+  .chat-page-container {
+    max-width: 1200px;
+  }
+  
+  .chat-sidebar {
+    width: 33.333333%; /* 1/3 */
+  }
+  
+  .chat-content {
+    width: 66.666667%; /* 2/3 */
+  }
+}
+
+/* Mobile layout adjustments */
+@media (max-width: 767px) {
+  .chat-page-container {
+    height: calc(100vh - 120px); /* Account for header + bottom nav */
+  }
+}
+
+/* Ensure proper height inheritance */
+.mobile-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.mobile-content .p-comfortable {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+}
