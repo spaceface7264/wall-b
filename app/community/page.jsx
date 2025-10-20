@@ -26,11 +26,16 @@ export default function CommunityHub() {
   const [showFilters, setShowFilters] = useState(false);
   const [joiningCommunity, setJoiningCommunity] = useState(null);
   const [leavingCommunity, setLeavingCommunity] = useState(null);
+  const [isLoadingData, setIsLoadingData] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const loadAllData = async () => {
+      // Prevent multiple simultaneous calls
+      if (isLoadingData) return;
+      
       try {
+        setIsLoadingData(true);
         setLoading(true);
 
         // Parallel data loading for better performance
@@ -56,12 +61,12 @@ export default function CommunityHub() {
         console.error('Error loading initial data:', error);
       } finally {
         setLoading(false);
+        setIsLoadingData(false);
       }
     };
 
     loadAllData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadCommunitiesData, isLoadingData]);
 
   // Check for last visited community redirect
   useEffect(() => {
@@ -86,7 +91,7 @@ export default function CommunityHub() {
   }, [router]);
 
   // Load communities from Supabase
-  const loadCommunitiesData = async () => {
+  const loadCommunitiesData = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('communities')
@@ -111,7 +116,7 @@ export default function CommunityHub() {
       console.error('Error fetching communities:', error);
       return [];
     }
-  };
+  }, []);
 
   const loadUserCommunities = useCallback(async (userId) => {
     try {
