@@ -15,10 +15,11 @@ import { supabase } from '../../lib/supabase';
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
-// Global flag to prevent duplicate data loading across component instances
+// Global state manager to prevent any duplicate API calls
 let globalDataLoaded = false;
 let globalCommunitiesData = null;
 let globalUserData = null;
+let globalLoadingPromise = null;
 
 export default function CommunityHub() {
   const [user, setUser] = useState(null);
@@ -52,6 +53,21 @@ export default function CommunityHub() {
         console.log('♻️ Using cached user data');
         setUser(globalUserData);
       }
+      return;
+    }
+    
+    // If there's already a loading promise, wait for it instead of starting a new one
+    if (globalLoadingPromise) {
+      console.log('⏳ Waiting for existing loading promise...');
+      globalLoadingPromise.then(() => {
+        if (globalCommunitiesData) {
+          setCommunities(globalCommunitiesData);
+          setLoading(false);
+        }
+        if (globalUserData) {
+          setUser(globalUserData);
+        }
+      });
       return;
     }
     
@@ -103,10 +119,12 @@ export default function CommunityHub() {
         console.log('✅ Data load completed');
         setLoading(false);
         isLoadingDataRef.current = false;
+        globalLoadingPromise = null; // Clear the promise
       }
     };
 
-    loadAllData();
+    // Store the promise globally to prevent duplicate calls
+    globalLoadingPromise = loadAllData();
   }, []); // Empty dependency array - only run once
 
   // REMOVED: This useEffect can cause routing conflicts
