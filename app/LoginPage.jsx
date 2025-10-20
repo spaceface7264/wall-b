@@ -27,7 +27,7 @@ export default function LoginPage() {
       if (result.error) {
         setError(result.error.message);
       } else {
-        router.push('/dashboard');
+        router.push('/community');
       }
     } catch {
       setError('Authentication failed');

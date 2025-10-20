@@ -88,9 +88,15 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
   }, []);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/');
-    }
+    // Add a small delay to prevent race conditions with initial auth check
+    const timer = setTimeout(() => {
+      if (!loading && !user) {
+        console.log('🔒 No authenticated user, redirecting to login...');
+        router.push('/');
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [loading, user, router]);
 
   // Ripple effect function

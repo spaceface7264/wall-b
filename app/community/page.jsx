@@ -109,27 +109,10 @@ export default function CommunityHub() {
     loadAllData();
   }, []); // Empty dependency array - only run once
 
-  // Check for last visited community redirect
-  useEffect(() => {
-    const checkLastVisitedCommunity = async () => {
-      // Only run in browser environment
-      if (typeof window === 'undefined') return;
-      
-      try {
-        const lastCommunityId = localStorage.getItem('lastVisitedCommunity');
-        const fromHomeButton = sessionStorage.getItem('fromHomeButton');
-        
-        if (fromHomeButton && lastCommunityId) {
-          sessionStorage.removeItem('fromHomeButton');
-          router.push(`/community/${lastCommunityId}`);
-        }
-      } catch (error) {
-        console.error('Error checking last visited community:', error);
-      }
-    };
-    
-    checkLastVisitedCommunity();
-  }, [router]);
+  // REMOVED: This useEffect can cause routing conflicts
+  // useEffect(() => {
+  //   const checkLastVisitedCommunity = async () => { ... }
+  // }, [router]);
 
 
   const loadUserCommunities = useCallback(async (userId) => {
