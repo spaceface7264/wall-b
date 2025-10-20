@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Plus,
   Search,
@@ -26,16 +26,16 @@ export default function CommunityHub() {
   const [showFilters, setShowFilters] = useState(false);
   const [joiningCommunity, setJoiningCommunity] = useState(null);
   const [leavingCommunity, setLeavingCommunity] = useState(null);
-  const [isLoadingData, setIsLoadingData] = useState(false);
+  const isLoadingDataRef = useRef(false);
   const router = useRouter();
 
   useEffect(() => {
     const loadAllData = async () => {
-      // Prevent multiple simultaneous calls
-      if (isLoadingData) return;
+      // Prevent multiple simultaneous calls using ref
+      if (isLoadingDataRef.current) return;
       
       try {
-        setIsLoadingData(true);
+        isLoadingDataRef.current = true;
         setLoading(true);
 
         // Parallel data loading for better performance
@@ -61,12 +61,12 @@ export default function CommunityHub() {
         console.error('Error loading initial data:', error);
       } finally {
         setLoading(false);
-        setIsLoadingData(false);
+        isLoadingDataRef.current = false;
       }
     };
 
     loadAllData();
-  }, [loadCommunitiesData, isLoadingData]);
+  }, [loadCommunitiesData]);
 
   // Check for last visited community redirect
   useEffect(() => {
