@@ -30,10 +30,15 @@ export default function CommunityHub() {
   const router = useRouter();
 
   useEffect(() => {
+    console.log('🔄 Main useEffect triggered');
     const loadAllData = async () => {
       // Prevent multiple simultaneous calls using ref
-      if (isLoadingDataRef.current) return;
+      if (isLoadingDataRef.current) {
+        console.log('⏸️ Already loading, skipping...');
+        return;
+      }
       
+      console.log('🚀 Starting data load...');
       try {
         isLoadingDataRef.current = true;
         setLoading(true);
@@ -60,6 +65,7 @@ export default function CommunityHub() {
       } catch (error) {
         console.error('Error loading initial data:', error);
       } finally {
+        console.log('✅ Data load completed');
         setLoading(false);
         isLoadingDataRef.current = false;
       }
@@ -92,6 +98,7 @@ export default function CommunityHub() {
 
   // Load communities from Supabase
   const loadCommunitiesData = useCallback(async () => {
+    console.log('🔄 loadCommunitiesData called');
     try {
       const { data, error } = await supabase
         .from('communities')
@@ -111,6 +118,7 @@ export default function CommunityHub() {
         return [];
       }
 
+      console.log('✅ Communities loaded successfully:', data?.length || 0);
       return data || [];
     } catch (error) {
       console.error('Error fetching communities:', error);
