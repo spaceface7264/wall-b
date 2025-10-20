@@ -4,7 +4,25 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  NODE_ENV = "production"
 
+# Environment Variables (set these in Netlify dashboard)
+# NEXT_PUBLIC_SUPABASE_URL
+# NEXT_PUBLIC_SUPABASE_ANON_KEY
+# SUPABASE_SERVICE_ROLE_KEY
+# NEXT_PUBLIC_APP_NAME
+# NEXT_PUBLIC_APP_URL
+
+# Headers for security and performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Redirects for SPA routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
