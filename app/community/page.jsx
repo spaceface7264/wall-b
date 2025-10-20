@@ -15,6 +15,9 @@ import { supabase } from '../../lib/supabase';
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
+// Global flag to prevent duplicate data loading across component instances
+let globalDataLoaded = false;
+
 export default function CommunityHub() {
   const [user, setUser] = useState(null);
   const [communities, setCommunities] = useState([]);
@@ -27,14 +30,15 @@ export default function CommunityHub() {
   const [joiningCommunity, setJoiningCommunity] = useState(null);
   const [leavingCommunity, setLeavingCommunity] = useState(null);
   const isLoadingDataRef = useRef(false);
+  const hasLoadedRef = useRef(false);
   const router = useRouter();
 
   useEffect(() => {
-    console.log('🔄 Main useEffect triggered');
+    console.log('🔄 Main useEffect triggered, hasLoaded:', hasLoadedRef.current, 'globalLoaded:', globalDataLoaded);
     
-    // Only run once on mount - no dependencies
-    if (isLoadingDataRef.current) {
-      console.log('⏸️ Already loading, skipping...');
+    // CRITICAL: Only run once ever - even if component remounts or multiple instances
+    if (hasLoadedRef.current || isLoadingDataRef.current || globalDataLoaded) {
+      console.log('⏸️ Already loaded or loading, skipping...');
       return;
     }
     
@@ -42,6 +46,8 @@ export default function CommunityHub() {
       console.log('🚀 Starting data load...');
       try {
         isLoadingDataRef.current = true;
+        hasLoadedRef.current = true; // Mark as loaded immediately
+        globalDataLoaded = true; // Mark globally as loaded
         setLoading(true);
 
         // Load communities directly without useCallback
