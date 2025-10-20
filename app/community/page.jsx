@@ -66,12 +66,19 @@ export default function CommunityHub() {
   // Check for last visited community redirect
   useEffect(() => {
     const checkLastVisitedCommunity = async () => {
-      const lastCommunityId = localStorage.getItem('lastVisitedCommunity');
-      const fromHomeButton = sessionStorage.getItem('fromHomeButton');
+      // Only run in browser environment
+      if (typeof window === 'undefined') return;
       
-      if (fromHomeButton && lastCommunityId) {
-        sessionStorage.removeItem('fromHomeButton');
-        router.push(`/community/${lastCommunityId}`);
+      try {
+        const lastCommunityId = localStorage.getItem('lastVisitedCommunity');
+        const fromHomeButton = sessionStorage.getItem('fromHomeButton');
+        
+        if (fromHomeButton && lastCommunityId) {
+          sessionStorage.removeItem('fromHomeButton');
+          router.push(`/community/${lastCommunityId}`);
+        }
+      } catch (error) {
+        console.error('Error checking last visited community:', error);
       }
     };
     
@@ -211,6 +218,22 @@ export default function CommunityHub() {
   const openCommunity = useCallback((communityId) => {
     router.push(`/community/${communityId}`);
   }, [router]);
+
+  // Show loading state while data is being fetched
+  if (loading) {
+    return (
+      <SidebarLayout currentPage="community" pageTitle="Communities">
+        <div className="mobile-container">
+          <div className="minimal-flex-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+              <p className="text-white">Loading communities...</p>
+            </div>
+          </div>
+        </div>
+      </SidebarLayout>
+    );
+  }
 
   return (
     <SidebarLayout currentPage="community" pageTitle="Communities">
