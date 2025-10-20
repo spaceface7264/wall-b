@@ -12,6 +12,9 @@ import CommunityCard from '../components/CommunityCard';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default function CommunityHub() {
   const [user, setUser] = useState(null);
   const [communities, setCommunities] = useState([]);

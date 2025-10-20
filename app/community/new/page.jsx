@@ -7,6 +7,9 @@ import { Users, MapPin, Info, ArrowLeft, CheckCircle, AlertCircle, Building } fr
 import SidebarLayout from '../../components/SidebarLayout';
 import { useToast } from '../../providers/ToastProvider';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default function CreateCommunityPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);

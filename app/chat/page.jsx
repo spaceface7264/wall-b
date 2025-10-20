@@ -8,6 +8,9 @@ import ConversationList from '../components/ConversationList';
 import ConversationView from '../components/ConversationView';
 import ChatLoading from '../components/ChatLoading';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default function Chat() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
