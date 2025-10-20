@@ -31,37 +31,51 @@ export default function CommunityHub() {
 
   useEffect(() => {
     console.log('🔄 Main useEffect triggered');
+    
+    // Only run once on mount - no dependencies
+    if (isLoadingDataRef.current) {
+      console.log('⏸️ Already loading, skipping...');
+      return;
+    }
+    
     const loadAllData = async () => {
-      // Prevent multiple simultaneous calls using ref
-      if (isLoadingDataRef.current) {
-        console.log('⏸️ Already loading, skipping...');
-        return;
-      }
-      
       console.log('🚀 Starting data load...');
       try {
         isLoadingDataRef.current = true;
         setLoading(true);
 
-        // Parallel data loading for better performance
-        const [userResult, communitiesResult] = await Promise.allSettled([
-          supabase.auth.getUser(),
-          loadCommunitiesData()
-        ]);
+        // Load communities directly without useCallback
+        console.log('🔄 Loading communities...');
+        const { data: communitiesData, error: communitiesError } = await supabase
+          .from('communities')
+          .select(`
+            *,
+            gyms (
+              name,
+              city,
+              country,
+              address
+            )
+          `)
+          .order('created_at', { ascending: false });
 
-        // Handle user data
-        if (userResult.status === 'fulfilled') {
-          const { data: { user } } = userResult.value;
-          setUser(user);
-          if (user) {
-            loadUserCommunities(user.id);
-          }
+        if (communitiesError) {
+          console.error('Error fetching communities:', communitiesError);
+        } else {
+          console.log('✅ Communities loaded successfully:', communitiesData?.length || 0);
+          setCommunities(communitiesData || []);
         }
 
-        // Handle communities data
-        if (communitiesResult.status === 'fulfilled') {
-          setCommunities(communitiesResult.value);
+        // Load user data
+        console.log('🔄 Loading user data...');
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+        
+        if (user) {
+          console.log('🔄 Loading user communities...');
+          loadUserCommunities(user.id);
         }
+
       } catch (error) {
         console.error('Error loading initial data:', error);
       } finally {
@@ -72,7 +86,7 @@ export default function CommunityHub() {
     };
 
     loadAllData();
-  }, [loadCommunitiesData]);
+  }, []); // Empty dependency array - only run once
 
   // Check for last visited community redirect
   useEffect(() => {
@@ -96,35 +110,6 @@ export default function CommunityHub() {
     checkLastVisitedCommunity();
   }, [router]);
 
-  // Load communities from Supabase
-  const loadCommunitiesData = useCallback(async () => {
-    console.log('🔄 loadCommunitiesData called');
-    try {
-      const { data, error } = await supabase
-        .from('communities')
-        .select(`
-          *,
-          gyms (
-            name,
-            city,
-            country,
-            address
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching communities:', error);
-        return [];
-      }
-
-      console.log('✅ Communities loaded successfully:', data?.length || 0);
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching communities:', error);
-      return [];
-    }
-  }, []);
 
   const loadUserCommunities = useCallback(async (userId) => {
     try {
