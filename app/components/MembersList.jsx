@@ -228,7 +228,7 @@ export default function MembersList({ communityId, isAdmin = false }) {
                       onClick={() => handleProfileClick(member.user_id)}
                       className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors truncate text-left"
                     >
-                      {profile?.full_name || 'Unknown User'}
+                      {profile?.nickname || profile?.full_name || 'Unknown User'}
                     </button>
                     <span className={`px-2 py-0.5 text-xs rounded-full ${getRoleColor(member.role)}`}>
                       {member.role}

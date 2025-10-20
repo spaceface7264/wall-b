@@ -113,32 +113,66 @@ export default function CommunityPage() {
 
   const loadPosts = async (commId) => {
     try {
+      console.log('🔄 Loading posts for community:', commId);
       
+      // First try with profiles join
       const { data: postsData, error } = await supabase
         .from('posts')
-        .select('*')
+        .select(`
+          *,
+          profiles!user_id (
+            nickname,
+            full_name,
+            avatar_url
+          )
+        `)
         .eq('community_id', commId)
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('❌ Error loading posts:', error);
+        console.error('❌ Error loading posts with profiles join:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        
+        // Fallback: try without profiles join
+        console.log('🔄 Trying fallback query without profiles join...');
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('community_id', commId)
+          .order('created_at', { ascending: false });
+          
+        if (fallbackError) {
+          console.error('❌ Fallback query also failed:', fallbackError);
+          setPosts([]);
+          return;
+        }
+        
+        console.log('✅ Fallback query succeeded, loaded posts without profiles');
+        setPosts(fallbackData || []);
         return;
       }
 
-      console.log('📋 Loaded posts:', postsData);
+      console.log('✅ Loaded posts with profiles join:', postsData?.length || 0);
       postsData?.forEach((post, index) => {
         console.log(`📝 Post ${index} (${post.id}):`, {
           title: post.title,
+          user_name: post.user_name,
+          profile_nickname: post.profiles?.nickname,
           hasMediaFiles: !!post.media_files,
           mediaFilesType: typeof post.media_files,
-          mediaFilesLength: post.media_files?.length,
-          mediaFiles: post.media_files
+          mediaFilesLength: post.media_files?.length
         });
       });
 
       setPosts(postsData || []);
     } catch (error) {
-      console.error('Error loading posts:', error);
+      console.error('❌ Unexpected error loading posts:', error);
+      setPosts([]);
     }
   };
 

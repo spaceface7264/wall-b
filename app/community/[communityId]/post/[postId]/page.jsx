@@ -104,13 +104,35 @@ export default function PostDetailPage() {
         setLiked(!!like);
       }
 
-      // Get comments with proper ordering (top-level first, then replies)
-      const { data: commentsData } = await supabase
+      // Get comments with proper ordering and user profile data
+      const { data: commentsData, error: commentsError } = await supabase
         .from('comments')
-        .select('*')
+        .select(`
+          *,
+          profiles!user_id (
+            nickname,
+            full_name,
+            avatar_url
+          )
+        `)
         .eq('post_id', postId)
         .order('created_at', { ascending: true }); // Changed to ascending for proper threading
-      setComments(commentsData || []);
+
+      if (commentsError) {
+        console.error('❌ Error loading comments with profiles join:', commentsError);
+        console.log('🔄 Trying fallback query without profiles join...');
+        
+        // Fallback: try without profiles join
+        const { data: fallbackComments } = await supabase
+          .from('comments')
+          .select('*')
+          .eq('post_id', postId)
+          .order('created_at', { ascending: true });
+          
+        setComments(fallbackComments || []);
+      } else {
+        setComments(commentsData || []);
+      }
 
     } catch (error) {
       console.error('Error loading post:', error);
@@ -184,20 +206,35 @@ export default function PostDetailPage() {
   const handleAddComment = async (commentData) => {
     if (!user) return;
 
-
     try {
+      // Get user's current display name from profiles table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('nickname, full_name')
+        .eq('id', user.id)
+        .single();
+
+      const displayName = profile?.nickname || profile?.full_name || user.user_metadata?.full_name || user.email;
+
       const { data: newComment, error } = await supabase
         .from('comments')
         .insert({
           post_id: postId,
           user_id: user.id,
-          user_name: user.user_metadata?.full_name || user.email,
+          user_name: displayName,
           content: commentData.content,
           parent_comment_id: commentData.parentCommentId || null,
           like_count: 0,
           reply_count: 0
         })
-        .select()
+        .select(`
+          *,
+          profiles!user_id (
+            nickname,
+            full_name,
+            avatar_url
+          )
+        `)
         .single();
 
       if (error) {

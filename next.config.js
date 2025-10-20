@@ -2,9 +2,6 @@
 const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
-  },
-  experimental: {
-    turbo: false
   }
 }
 

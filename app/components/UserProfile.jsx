@@ -54,26 +54,24 @@ export default function UserProfile({ userId, showBackButton = true }) {
               member_count,
               gyms (
                 name,
-                location
+                city,
+                address
               )
             )
           `)
-          .eq('user_id', userId)
-          .eq('status', 'active');
+          .eq('user_id', userId);
 
         if (communityError) {
           console.error('Error fetching communities:', communityError);
         } else {
-          setCommunities(communityData?.map(item => item.communities).filter(Boolean) || []);
+          console.log('Community data fetched:', communityData);
+          const communities = communityData?.map(item => item.communities).filter(Boolean) || [];
+          console.log('Processed communities:', communities);
+          setCommunities(communities);
         }
 
-        // Fetch basic user data
-        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
-        if (userError) {
-          console.error('Error fetching user data:', userError);
-        } else {
-          setUser(userData.user);
-        }
+        // Set user data from profile (we don't need separate user fetch)
+        setUser({ id: userId, email: profileData.email });
 
       } catch (err) {
         console.error('Error fetching profile:', err);
@@ -214,25 +212,23 @@ export default function UserProfile({ userId, showBackButton = true }) {
             </div>
           </div>
 
-          {/* Activity Stats */}
+          {/* Activity Stats - Minimal inline display */}
           <div className="mobile-card animate-stagger-1">
-            <h2 className="profile-section-header">Activity Overview</h2>
-            <div className="mobile-grid-4">
-              <div className="activity-stat">
-                <div className="activity-stat-number">{profile.posts_count || 0}</div>
-                <div className="activity-stat-label">Posts</div>
-              </div>
-              <div className="activity-stat">
-                <div className="activity-stat-number">{profile.comments_count || 0}</div>
-                <div className="activity-stat-label">Comments</div>
-              </div>
-              <div className="activity-stat">
-                <div className="activity-stat-number">{profile.likes_count || 0}</div>
-                <div className="activity-stat-label">Likes</div>
-              </div>
-              <div className="activity-stat">
-                <div className="activity-stat-number">{profile.events_attended_count || 0}</div>
-                <div className="activity-stat-label">Events</div>
+            <div className="flex items-center justify-between text-sm text-gray-400">
+              <span className="font-medium">Activity:</span>
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-1">
+                  <MessageCircle className="w-3 h-3" />
+                  {profile.posts_count || 0} posts
+                </span>
+                <span className="flex items-center gap-1">
+                  <Heart className="w-3 h-3" />
+                  {profile.likes_count || 0} likes
+                </span>
+                <span className="flex items-center gap-1">
+                  <EventIcon className="w-3 h-3" />
+                  {profile.events_attended_count || 0} events
+                </span>
               </div>
             </div>
           </div>
@@ -273,9 +269,9 @@ export default function UserProfile({ userId, showBackButton = true }) {
           )}
 
           {/* Followed Communities */}
-          {communities.length > 0 && (
-            <div className="mobile-card animate-stagger-4">
-              <h2 className="profile-section-header">Communities</h2>
+          <div className="mobile-card animate-stagger-4">
+            <h2 className="profile-section-header">Communities</h2>
+            {communities.length > 0 ? (
               <div className="space-y-3">
                 {communities.map((community) => (
                   <div
@@ -288,7 +284,7 @@ export default function UserProfile({ userId, showBackButton = true }) {
                         <h3 className="font-medium text-white truncate">{community.name}</h3>
                         {community.gyms && (
                           <p className="mobile-text-xs text-gray-400 truncate">
-                            {community.gyms.name} • {community.gyms.location}
+                            {community.gyms.name} • {community.gyms.city}
                           </p>
                         )}
                         {community.description && (
@@ -305,8 +301,13 @@ export default function UserProfile({ userId, showBackButton = true }) {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="text-center py-4">
+                <Users className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+                <p className="mobile-text text-gray-400">No communities joined yet</p>
+              </div>
+            )}
+          </div>
 
           {/* Social Links */}
           {profile.social_links && Object.values(profile.social_links).some(link => link) && (

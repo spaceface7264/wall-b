@@ -168,7 +168,7 @@ export default function PostCard({
                 onClick={handleProfileClick}
                 className="text-indigo-400 hover:text-indigo-300 transition-colors"
               >
-                {post.user_name}
+                {post.profiles?.nickname || post.profiles?.full_name || post.user_name || 'Anonymous'}
               </button>
               <span className="mx-2">•</span>
               <Clock className="w-3 h-3 mr-1" />
@@ -209,7 +209,7 @@ export default function PostCard({
                 onClick={handleProfileClick}
                 className="text-indigo-400 hover:text-indigo-300 transition-colors"
               >
-                {post.user_name}
+                {post.profiles?.nickname || post.profiles?.full_name || post.user_name || 'Anonymous'}
               </button>
               <span className="mx-2">•</span>
               <Clock className="minimal-icon mr-1" />

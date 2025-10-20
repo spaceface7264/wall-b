@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { Send, ArrowLeft, Users, MoreHorizontal, Paperclip, Smile, CheckCheck, Trash2 } from 'lucide-react';
 import ErrorRetry from './ErrorRetry';
+import GroupMembersModal from './GroupMembersModal';
 
 export default function ConversationView({ conversation, currentUserId, onBack }) {
   const [messages, setMessages] = useState([]);
@@ -19,6 +20,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
   const [error, setError] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showGroupMembers, setShowGroupMembers] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesStartRef = useRef(null);
   const typingChannelRef = useRef(null);
@@ -67,6 +69,9 @@ export default function ConversationView({ conversation, currentUserId, onBack }
         setLoadingMore(false);
         return;
       }
+
+      console.log('Loading messages for conversation:', conversation.id);
+      console.log('Current user ID:', currentUserId);
 
       const limit = 50;
       const offset = loadMore ? messages.length : 0;
@@ -512,6 +517,20 @@ export default function ConversationView({ conversation, currentUserId, onBack }
             </p>
           </div>
           
+          {/* Group Members Button */}
+          {conversation.type === 'group' && (
+            <button
+              onClick={() => {
+                console.log('Opening group members modal for conversation:', conversation);
+                setShowGroupMembers(true);
+              }}
+              className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-slate-700/50 rounded-lg transition-colors"
+              title="View group members"
+            >
+              <Users className="w-5 h-5" />
+            </button>
+          )}
+          
           <button 
             onClick={() => setShowDeleteConfirm(true)}
             className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
@@ -607,7 +626,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
                 >
                   {message.sender_id !== currentUserId && (
                     <div className="text-xs text-slate-300 mb-2 font-bold">
-                      {message.profiles?.full_name || 'Unknown User'}
+                      {message.profiles?.nickname || message.profiles?.full_name || 'Unknown User'}
                     </div>
                   )}
                   <div className="mb-2">
@@ -759,6 +778,16 @@ export default function ConversationView({ conversation, currentUserId, onBack }
             </div>
           </div>
         </div>
+      )}
+
+      {/* Group Members Modal */}
+      {conversation?.type === 'group' && (
+        <GroupMembersModal
+          isOpen={showGroupMembers}
+          onClose={() => setShowGroupMembers(false)}
+          conversation={conversation}
+          currentUserId={currentUserId}
+        />
       )}
     </div>
   );

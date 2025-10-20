@@ -100,7 +100,7 @@ export default function CommentThread({
           <div className="minimal-flex gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full minimal-flex-center flex-shrink-0">
               <span className="text-white font-semibold text-sm">
-                {comment.user_name.charAt(0).toUpperCase()}
+                {(comment.profiles?.nickname || comment.profiles?.full_name || comment.user_name || 'A').charAt(0).toUpperCase()}
               </span>
             </div>
             <div>
@@ -108,7 +108,7 @@ export default function CommentThread({
                 onClick={(e) => handleProfileClick(e, comment.user_id)}
                 className="mobile-text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-colors text-left"
               >
-                {comment.user_name}
+                {comment.profiles?.nickname || comment.profiles?.full_name || comment.user_name || 'Anonymous'}
               </button>
               <p className="mobile-text-xs text-gray-400">
                 {formatTime(comment.created_at)}
