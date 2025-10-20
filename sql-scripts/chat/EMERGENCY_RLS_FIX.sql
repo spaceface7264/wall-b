@@ -118,3 +118,4 @@ WHERE auth.uid() IS NOT NULL;
 -- ==============================================
 
 SELECT 'RLS policies have been reset and simplified. Chat should now work!' as status;
+

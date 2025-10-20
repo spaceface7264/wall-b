@@ -99,3 +99,4 @@ After applying the RLS fix:
 4. **Restart the development server** after applying RLS fixes
 
 The application should now be fully functional with working chat and group members features!
+

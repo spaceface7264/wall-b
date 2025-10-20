@@ -125,3 +125,4 @@ The database trigger ensures that when a user updates their profile:
 - [ ] Verify changes appear everywhere
 - [ ] Test with users who have no nickname set
 - [ ] Test with users who have no profile record
+

@@ -122,3 +122,4 @@ LEFT JOIN profiles pr ON c.user_id = pr.id
 LIMIT 5;
 
 SELECT 'All foreign keys and joins fixed successfully!' as result;
+

@@ -70,3 +70,4 @@ LEFT JOIN profiles pr ON c.user_id = pr.id
 LIMIT 3;
 
 SELECT 'Foreign key relationships fixed successfully!' as result;
+

@@ -110,3 +110,4 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 1. Authentication checks (auth.uid() IS NOT NULL)
 -- 2. Application logic that only shows conversations the user participates in
 -- 3. The helper functions above for additional security checks if needed
+

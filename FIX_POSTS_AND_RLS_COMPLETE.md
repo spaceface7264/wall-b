@@ -77,3 +77,4 @@ After running the RLS fix:
 - User names should display as nicknames
 - No more "Error loading posts: {}" console errors
 - All components should work without RLS-related failures
+
