@@ -17,6 +17,8 @@ export const dynamic = 'force-dynamic';
 
 // Global flag to prevent duplicate data loading across component instances
 let globalDataLoaded = false;
+let globalCommunitiesData = null;
+let globalUserData = null;
 
 export default function CommunityHub() {
   const [user, setUser] = useState(null);
@@ -39,6 +41,17 @@ export default function CommunityHub() {
     // CRITICAL: Only run once ever - even if component remounts or multiple instances
     if (hasLoadedRef.current || isLoadingDataRef.current || globalDataLoaded) {
       console.log('⏸️ Already loaded or loading, skipping...');
+      
+      // If we already have global data, use it immediately
+      if (globalCommunitiesData) {
+        console.log('♻️ Using cached communities data');
+        setCommunities(globalCommunitiesData);
+        setLoading(false);
+      }
+      if (globalUserData) {
+        console.log('♻️ Using cached user data');
+        setUser(globalUserData);
+      }
       return;
     }
     
@@ -69,12 +82,14 @@ export default function CommunityHub() {
           console.error('Error fetching communities:', communitiesError);
         } else {
           console.log('✅ Communities loaded successfully:', communitiesData?.length || 0);
-          setCommunities(communitiesData || []);
+          globalCommunitiesData = communitiesData || []; // Cache globally
+          setCommunities(globalCommunitiesData);
         }
 
         // Load user data
         console.log('🔄 Loading user data...');
         const { data: { user } } = await supabase.auth.getUser();
+        globalUserData = user; // Cache globally
         setUser(user);
         
         if (user) {
