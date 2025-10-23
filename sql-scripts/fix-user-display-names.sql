@@ -62,3 +62,5 @@ SELECT id, user_name, title FROM posts LIMIT 5;
 SELECT 'Profiles with nicknames:' as info;
 SELECT id, nickname, full_name FROM profiles LIMIT 5;
 
+
+

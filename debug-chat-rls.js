@@ -66,3 +66,5 @@ async function debugChatRLS() {
 // Run the debug function
 debugChatRLS();
 
+
+

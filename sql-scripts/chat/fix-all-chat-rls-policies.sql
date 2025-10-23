@@ -111,3 +111,5 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 2. Application logic that only shows conversations the user participates in
 -- 3. The helper functions above for additional security checks if needed
 
+
+

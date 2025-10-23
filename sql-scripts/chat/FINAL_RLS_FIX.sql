@@ -120,3 +120,5 @@ FROM conversation_participants cp
 LEFT JOIN profiles p ON p.id = cp.user_id
 LIMIT 5;
 
+
+

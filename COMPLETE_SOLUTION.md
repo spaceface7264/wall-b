@@ -100,3 +100,5 @@ After applying the RLS fix:
 
 The application should now be fully functional with working chat and group members features!
 
+
+
