@@ -259,7 +259,7 @@ export default function CreateCommunityPage() {
                   Community Type
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <label className={`relative cursor-pointer ${formData.community_type === 'gym' ? 'ring-2 ring-indigo-500' : ''}`}>
+                  <label className={`relative cursor-pointer ${formData.community_type === 'gym' ? 'border-2 border-indigo-500' : ''}`}>
                     <input
                       type="radio"
                       name="community_type"
@@ -268,7 +268,7 @@ export default function CreateCommunityPage() {
                       onChange={handleInputChange}
                       className="sr-only"
                     />
-                    <div className={`p-4 rounded-lg border transition-colors ${
+                    <div className={`p-4 rounded border transition-colors ${
                       formData.community_type === 'gym' 
                         ? 'bg-indigo-500/10 border-indigo-500 text-indigo-300' 
                         : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
@@ -283,7 +283,7 @@ export default function CreateCommunityPage() {
                     </div>
                   </label>
 
-                  <label className={`relative cursor-pointer ${formData.community_type === 'general' ? 'ring-2 ring-indigo-500' : ''}`}>
+                  <label className={`relative cursor-pointer ${formData.community_type === 'general' ? 'border-2 border-indigo-500' : ''}`}>
                     <input
                       type="radio"
                       name="community_type"
@@ -292,7 +292,7 @@ export default function CreateCommunityPage() {
                       onChange={handleInputChange}
                       className="sr-only"
                     />
-                    <div className={`p-4 rounded-lg border transition-colors ${
+                    <div className={`p-4 rounded border transition-colors ${
                       formData.community_type === 'general' 
                         ? 'bg-indigo-500/10 border-indigo-500 text-indigo-300' 
                         : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'

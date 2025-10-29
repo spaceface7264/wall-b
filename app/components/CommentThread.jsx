@@ -94,7 +94,7 @@ export default function CommentThread({
 
   return (
     <div className={`${depth === 1 ? 'mt-2' : 'mt-4'}`}>
-      <div className={`${depth === 1 ? 'p-3 bg-gray-800/30 rounded-lg' : 'mobile-card-flat p-comfortable'}`}>
+      <div className={`${depth === 1 ? 'p-3 bg-gray-800/30 rounded' : 'mobile-card-flat p-comfortable'}`}>
         {/* Comment Header */}
         <div className="minimal-flex justify-between items-start mb-2">
           <div className="minimal-flex gap-2">
@@ -234,7 +234,7 @@ export default function CommentThread({
                 <div className="absolute -left-1 top-0 w-2 h-2 bg-indigo-500 rounded-full"></div>
                 
                 {/* Reply Content - Inline display */}
-                <div className="p-3 bg-gray-800/40 rounded-lg ml-2 border border-gray-700/50">
+                <div className="p-3 bg-gray-800/40 rounded ml-2 border border-gray-700/50">
                     {/* Reply Header */}
                     <div className="minimal-flex justify-between items-start mb-2">
                       <div className="minimal-flex gap-2">

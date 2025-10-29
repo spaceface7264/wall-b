@@ -661,7 +661,7 @@ export default function PostDetailPage() {
                       <img
                         src={file.url}
                         alt={file.name || `Image ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg border border-gray-600 group-hover:opacity-90 transition-opacity"
+                        className="w-full h-32 object-cover rounded border border-gray-600 group-hover:opacity-90 transition-opacity"
                         onError={(e) => {
                           console.error('❌ Image failed to load:', file.url, e);
                           e.target.style.display = 'none';
@@ -671,7 +671,7 @@ export default function PostDetailPage() {
                     ) : file && file.type && file.type.startsWith('video/') ? (
                       <video
                         src={file.url}
-                        className="w-full h-32 object-cover rounded-lg border border-gray-600 group-hover:opacity-90 transition-opacity"
+                        className="w-full h-32 object-cover rounded border border-gray-600 group-hover:opacity-90 transition-opacity"
                         controls
                         onError={(e) => {
                           console.error('❌ Video failed to load:', file.url, e);

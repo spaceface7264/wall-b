@@ -39,12 +39,12 @@ export default function Profile() {
     const loadProfile = async () => {
       try {
         setLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          navigate('/');
-          return;
-        }
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate('/');
+        return;
+      }
 
         setCurrentUser(user);
 
@@ -81,19 +81,19 @@ export default function Profile() {
 
           // Load user's communities
           const { data: communityData } = await supabase
-            .from('community_members')
-            .select(`
-              communities (
-                id,
-                name,
-                description,
-                member_count,
-                gyms (
+              .from('community_members')
+              .select(`
+                communities (
+                  id,
                   name,
-                  city
+                  description,
+                  member_count,
+                  gyms (
+                    name,
+                    city
+                  )
                 )
-              )
-            `)
+              `)
             .eq('user_id', user.id);
 
           if (communityData) {
@@ -267,14 +267,14 @@ export default function Profile() {
                 {!isEditing ? (
                   <>
                     <h2 className="mobile-card-title truncate mb-1">{displayName}</h2>
-                    {profileData.email && (
+                {profileData.email && (
                       <p className="mobile-text-xs text-gray-400 truncate mb-1">{profileData.email}</p>
-                    )}
-                    {location && (
+                )}
+                {location && (
                       <p className="mobile-text-xs text-gray-400 truncate minimal-flex gap-1">
                         <MapPin className="w-3 h-3 flex-shrink-0" />
-                        {location}
-                      </p>
+                    {location}
+                  </p>
                     )}
                   </>
                 ) : (
@@ -299,26 +299,26 @@ export default function Profile() {
             </div>
 
             {/* Edit Button */}
-            {!isEditing ? (
-              <button
-                onClick={() => setIsEditing(true)}
+                {!isEditing ? (
+                  <button
+                    onClick={() => setIsEditing(true)}
                 className="mobile-btn-secondary minimal-flex gap-2 w-full justify-center"
-              >
+                  >
                 <Edit2 className="minimal-icon" />
-                Edit Profile
-              </button>
-            ) : (
+                    Edit Profile
+                  </button>
+                ) : (
               <div className="minimal-flex gap-2">
-                <button
+                  <button
                   onClick={() => {
                     setIsEditing(false);
                     setError('');
                   }}
                   className="mobile-btn-secondary flex-1"
-                  disabled={isSaving}
-                >
-                  Cancel
-                </button>
+                    disabled={isSaving}
+                  >
+                    Cancel
+                  </button>
                 <button
                   onClick={handleSave}
                   disabled={isSaving}
@@ -334,7 +334,7 @@ export default function Profile() {
                       <Save className="minimal-icon" />
                       Save
                     </>
-                  )}
+                )}
                 </button>
               </div>
             )}
@@ -477,58 +477,58 @@ export default function Profile() {
                 {!isEditing ? (
                   <p className="profile-info-value">{profileData.company || 'Not set'}</p>
                 ) : (
-                  <input
-                    type="text"
+                <input
+                  type="text"
                     name="company"
                     value={profileData.company}
-                    onChange={handleInputChange}
+                  onChange={handleInputChange}
                     className="minimal-input"
                     placeholder="Your company/organization"
-                  />
+                />
                 )}
               </div>
-              
+
               <div className="profile-field">
                 <label className="minimal-label">Country</label>
                 {!isEditing ? (
                   <p className="profile-info-value">{profileData.country || 'Not set'}</p>
                 ) : (
-                  <select
-                    name="country"
-                    value={profileData.country}
-                    onChange={handleInputChange}
+                <select
+                  name="country"
+                  value={profileData.country}
+                  onChange={handleInputChange}
                     className="minimal-input"
-                  >
-                    <option value="">Select country</option>
-                    <option value="Denmark">🇩🇰 Denmark</option>
-                    <option value="Sweden">🇸🇪 Sweden</option>
-                    <option value="Norway">🇳🇴 Norway</option>
-                    <option value="Germany">🇩🇪 Germany</option>
-                    <option value="Netherlands">🇳🇱 Netherlands</option>
-                    <option value="United Kingdom">🇬🇧 United Kingdom</option>
-                    <option value="United States">🇺🇸 United States</option>
-                    <option value="Canada">🇨🇦 Canada</option>
-                    <option value="France">🇫🇷 France</option>
-                    <option value="Spain">🇪🇸 Spain</option>
-                    <option value="Italy">🇮🇹 Italy</option>
-                    <option value="Other">🌍 Other</option>
-                  </select>
+                >
+                  <option value="">Select country</option>
+                  <option value="Denmark">🇩🇰 Denmark</option>
+                  <option value="Sweden">🇸🇪 Sweden</option>
+                  <option value="Norway">🇳🇴 Norway</option>
+                  <option value="Germany">🇩🇪 Germany</option>
+                  <option value="Netherlands">🇳🇱 Netherlands</option>
+                  <option value="United Kingdom">🇬🇧 United Kingdom</option>
+                  <option value="United States">🇺🇸 United States</option>
+                  <option value="Canada">🇨🇦 Canada</option>
+                  <option value="France">🇫🇷 France</option>
+                  <option value="Spain">🇪🇸 Spain</option>
+                  <option value="Italy">🇮🇹 Italy</option>
+                  <option value="Other">🌍 Other</option>
+                </select>
                 )}
               </div>
-              
+
               <div className="profile-field">
                 <label className="minimal-label">City</label>
                 {!isEditing ? (
                   <p className="profile-info-value">{profileData.city || 'Not set'}</p>
                 ) : (
-                  <input
-                    type="text"
-                    name="city"
-                    value={profileData.city}
-                    onChange={handleInputChange}
+                <input
+                  type="text"
+                  name="city"
+                  value={profileData.city}
+                  onChange={handleInputChange}
                     className="minimal-input"
-                    placeholder="Your city"
-                  />
+                  placeholder="Your city"
+                />
                 )}
               </div>
             </div>
@@ -564,8 +564,8 @@ export default function Profile() {
                       placeholder="@username or URL"
                     />
                   )}
-                </div>
-                
+            </div>
+
                 <div className="profile-field">
                   <label className="minimal-label">Twitter/X</label>
                   {!isEditing ? (
@@ -620,8 +620,8 @@ export default function Profile() {
                   )}
                 </div>
               </div>
-            </div>
-          )}
+              </div>
+            )}
 
           {/* Communities */}
           {communities.length > 0 && (
@@ -631,29 +631,29 @@ export default function Profile() {
                 Communities ({communities.length})
               </h2>
               <div className="space-y-2">
-                {communities.map((community) => (
-                  <div
-                    key={community.id}
-                    onClick={() => navigate(`/community/${community.id}`)}
+                  {communities.map((community) => (
+                    <div
+                      key={community.id}
+                      onClick={() => navigate(`/community/${community.id}`)}
                     className="profile-community-item"
-                  >
-                    <div className="minimal-flex-between">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-white truncate">{community.name}</h3>
-                        {community.gyms && (
-                          <p className="mobile-text-xs text-gray-400 truncate">
-                            {community.gyms.name} • {community.gyms.city}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-400 ml-2">
-                        <Users className="w-3 h-3" />
-                        {community.member_count || 0}
+                    >
+                      <div className="minimal-flex-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-white truncate">{community.name}</h3>
+                          {community.gyms && (
+                            <p className="mobile-text-xs text-gray-400 truncate">
+                              {community.gyms.name} • {community.gyms.city}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-400 ml-2">
+                          <Users className="w-3 h-3" />
+                          {community.member_count || 0}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
             </div>
           )}
         </div>

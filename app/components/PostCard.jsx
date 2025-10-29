@@ -1,4 +1,4 @@
-import { Users, Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal, Edit2, Trash2, Calendar } from 'lucide-react';
+import { Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal, Edit2, Trash2, Calendar, User } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,15 +14,18 @@ export default function PostCard({
   currentUserId,
   isAdmin = false,
   liked = false,
+  isLiked = false,
   loadingLike = false,
+  isLiking = false,
   showActions = true,
   compact = false
 }) {
-  const [showReactions, setShowReactions] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const navigate = useNavigate();
   const isOwnPost = post.user_id === currentUserId;
   const canShowActions = showActions && (isOwnPost || isAdmin);
+  const isPostLiked = liked || isLiked;
+  const isPostLoading = loadingLike || isLiking;
 
   const handleProfileClick = (e) => {
     e.stopPropagation();
@@ -31,25 +34,24 @@ export default function PostCard({
 
   // Parse event mentions in content
   const parseEventMentions = (content) => {
+    if (!content) return '';
     const eventMentionRegex = /@event:([^@\s]+)/g;
     const parts = [];
     let lastIndex = 0;
     let match;
 
     while ((match = eventMentionRegex.exec(content)) !== null) {
-      // Add text before the mention
       if (match.index > lastIndex) {
         parts.push(content.substring(lastIndex, match.index));
       }
       
-      // Add the event mention as a clickable element
       const eventTitle = match[1];
       parts.push(
         <span
           key={match.index}
-          className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-900/30 text-indigo-300 rounded-md text-sm font-medium hover:bg-indigo-800/40 transition-colors cursor-pointer"
-          onClick={() => {
-            // You could add navigation to event here
+          className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-900/30 text-indigo-300 rounded text-sm font-medium hover:bg-indigo-800/40 transition-colors cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
             console.log('Event mentioned:', eventTitle);
           }}
         >
@@ -61,16 +63,15 @@ export default function PostCard({
       lastIndex = match.index + match[0].length;
     }
     
-    // Add remaining text
     if (lastIndex < content.length) {
       parts.push(content.substring(lastIndex));
     }
     
-    return parts;
+    return parts.length > 0 ? parts : content;
   };
-  
 
   const formatTime = (timestamp) => {
+    if (!timestamp) return 'Unknown';
     const date = new Date(timestamp);
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / (1000 * 60));
@@ -83,15 +84,15 @@ export default function PostCard({
 
   const getTagClass = (tag) => {
     const classes = {
-      beta: 'tag-chip tag-beta',
-      event: 'tag-chip tag-event',
-      question: 'tag-chip tag-question',
-      gear: 'tag-chip tag-gear',
-      training: 'tag-chip tag-training',
-      social: 'tag-chip tag-social',
-      news: 'tag-chip tag-news'
+      beta: 'post-tag post-tag-beta',
+      event: 'post-tag post-tag-event',
+      question: 'post-tag post-tag-question',
+      gear: 'post-tag post-tag-gear',
+      training: 'post-tag post-tag-training',
+      social: 'post-tag post-tag-social',
+      news: 'post-tag post-tag-news'
     };
-    return classes[tag] || 'tag-chip tag-news';
+    return classes[tag] || 'post-tag post-tag-news';
   };
 
   const getTagLabel = (tag) => {
@@ -150,43 +151,52 @@ export default function PostCard({
     setShowMenu(!showMenu);
   };
 
+  const authorName = post.profiles?.nickname || post.profiles?.full_name || post.user_name || 'Anonymous';
+  const authorAvatar = post.profiles?.avatar_url;
+  const authorInitial = authorName.charAt(0).toUpperCase();
+
   if (compact) {
     return (
       <div 
-        className="mobile-card-compact cursor-pointer touch-feedback"
+        className="post-card post-card-compact animate-fade-in"
         onClick={handleOpen}
       >
-        <div className="minimal-flex">
-          <div className="w-6 h-6 bg-gray-700 rounded-full minimal-flex-center mr-2 flex-shrink-0">
-            <Users className="w-3 h-3 text-gray-300" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="mobile-text-sm font-medium truncate">{post.title}</h4>
-            <div className="minimal-flex mobile-text-xs text-gray-400">
-              <span>by </span>
-              <button
-                onClick={handleProfileClick}
-                className="text-indigo-400 hover:text-indigo-300 transition-colors"
-              >
-                {post.profiles?.nickname || post.profiles?.full_name || post.user_name || 'Anonymous'}
-              </button>
-              <span className="mx-2">•</span>
-              <Clock className="w-3 h-3 mr-1" />
-              <span>{formatTime(post.created_at)}</span>
+        <div className="post-card-header-compact">
+          <div className="post-author-compact">
+            {authorAvatar ? (
+              <img src={authorAvatar} alt={authorName} className="post-avatar-small" />
+            ) : (
+              <div className="post-avatar-small post-avatar-placeholder">
+                {authorInitial}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <h4 className="post-title-compact truncate">{post.title}</h4>
+              <div className="post-meta-compact">
+                <button
+                  onClick={handleProfileClick}
+                  className="post-author-link"
+                >
+                  {authorName}
+                </button>
+                <span className="post-meta-separator">•</span>
+                <Clock className="post-meta-icon" />
+                <span>{formatTime(post.created_at)}</span>
+              </div>
             </div>
           </div>
-          <div className="minimal-flex gap-2">
+          <div className="post-actions-compact">
             <button
               onClick={handleLike}
-              disabled={loadingLike}
-              className={`icon-button minimal-flex gap-1 text-white hover:text-red-400 ${loadingLike ? 'opacity-50' : ''}`}
+              disabled={isPostLoading}
+              className={`post-action-btn ${isPostLiked ? 'post-action-btn-active' : ''}`}
             >
-              <Heart className={`w-4 h-4 ${liked ? 'fill-current text-red-400' : 'stroke-current'}`} />
-              <span className="mobile-text-xs">{post.like_count}</span>
+              <Heart className={`w-4 h-4 ${isPostLiked ? 'fill-current' : ''}`} />
+              <span>{post.like_count || 0}</span>
             </button>
-            <button className="icon-button minimal-flex gap-1 text-white hover:text-indigo-400">
-              <MessageCircle className="w-4 h-4 stroke-current" />
-              <span className="mobile-text-xs">{post.comment_count}</span>
+            <button className="post-action-btn">
+              <MessageCircle className="w-4 h-4" />
+              <span>{post.comment_count || 0}</span>
             </button>
           </div>
         </div>
@@ -196,155 +206,198 @@ export default function PostCard({
 
   return (
     <div 
-      className="mobile-card card-interactive animate-fade-in"
+      className="post-card animate-fade-in"
       onClick={handleOpen}
     >
-      <div className="mobile-card-header">
-        <div className="minimal-flex">
+      {/* Header */}
+      <div className="post-header">
+        <div className="post-author-info">
+          {authorAvatar ? (
+            <img 
+              src={authorAvatar} 
+              alt={authorName} 
+              className="post-avatar"
+              onClick={handleProfileClick}
+            />
+          ) : (
+            <div 
+              className="post-avatar post-avatar-placeholder"
+              onClick={handleProfileClick}
+            >
+              {authorInitial}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
-            <h3 className="mobile-subheading truncate">{post.title}</h3>
-            <div className="minimal-flex mobile-text-xs text-gray-400">
-              <span>by </span>
-              <button
-                onClick={handleProfileClick}
-                className="text-indigo-400 hover:text-indigo-300 transition-colors"
-              >
-                {post.profiles?.nickname || post.profiles?.full_name || post.user_name || 'Anonymous'}
-              </button>
-              <span className="mx-2">•</span>
-              <Clock className="minimal-icon mr-1" />
+            <button
+              onClick={handleProfileClick}
+              className="post-author-name"
+            >
+              {authorName}
+            </button>
+            <div className="post-meta">
+              <Clock className="post-meta-icon" />
               <span>{formatTime(post.created_at)}</span>
-              <span className="mx-2">•</span>
-              <span className={getTagClass(post.tag)}>
-                {getTagLabel(post.tag)}
-              </span>
+              {post.tag && (
+                <>
+                  <span className="post-meta-separator">•</span>
+                  <span className={getTagClass(post.tag)}>
+                    {getTagLabel(post.tag)}
+                  </span>
+                </>
+              )}
             </div>
           </div>
-          {canShowActions && (
-            <div className="relative">
-              <button 
-                onClick={toggleMenu}
-                className="mobile-btn-secondary p-2"
-              >
-                <MoreHorizontal className="minimal-icon" />
-              </button>
-              {showMenu && (
-                <div className="absolute right-0 top-10 z-50 bg-gray-800 border border-gray-700 rounded-lg shadow-lg min-w-[150px]">
+        </div>
+        
+        {canShowActions && (
+          <div className="post-menu-container relative">
+            <button 
+              onClick={toggleMenu}
+              className="post-menu-btn"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+            {showMenu && (
+              <>
+                <div 
+                  className="post-menu-overlay"
+                  onClick={() => setShowMenu(false)}
+                />
+                <div className="post-menu-dropdown">
                   <button
                     onClick={handleEdit}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 minimal-flex gap-2 items-center"
+                    className="post-menu-item"
                   >
                     <Edit2 className="w-4 h-4" />
-                    Edit Post
+                    <span>Edit Post</span>
                   </button>
                   <button
                     onClick={handleDelete}
-                    className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700 minimal-flex gap-2 items-center"
+                    className="post-menu-item post-menu-item-danger"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Delete Post
+                    <span>Delete Post</span>
                   </button>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
-      
-      <div className="mb-4">
-        <p className="mobile-card-content">
-          {post.content.length > 150 
-            ? parseEventMentions(`${post.content.substring(0, 150)}...`)
-            : parseEventMentions(post.content)
-          }
-        </p>
+
+      {/* Content */}
+      <div className="post-content">
+        <h3 className="post-title">{post.title}</h3>
+        
+        {post.content && (
+          <p className="post-text">
+            {post.content.length > 200 
+              ? (
+                <>
+                  {parseEventMentions(post.content.substring(0, 200))}
+                  <span className="text-gray-400">...</span>
+                </>
+              )
+              : parseEventMentions(post.content)
+            }
+          </p>
+        )}
         
         {/* Media Files */}
-        {(() => {
-          
-          if (post.media_files && post.media_files.length > 0) {
-            return (
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {post.media_files.slice(0, 4).map((file, index) => {
-                  return (
-                    <div key={index} className="relative">
-                      {file && file.type && file.type.startsWith('image/') ? (
-                        <img
-                          src={file.url}
-                          alt={file.name}
-                          className="w-full h-32 object-cover rounded-lg"
-                          loading="lazy"
-                          onError={(e) => e.target.style.display = 'none'}
-                        />
-                      ) : file && file.type && file.type.startsWith('video/') ? (
-                        <video
-                          src={file.url}
-                          className="w-full h-32 object-cover rounded-lg"
-                          controls
-                          preload="metadata"
-                        />
-                      ) : (
-                        <div className="w-full h-32 bg-gray-700 rounded-lg flex items-center justify-center">
-                          <span className="text-gray-400 text-xs">Unknown file type</span>
-                        </div>
-                      )}
-                      {post.media_files.length > 4 && index === 3 && (
-                        <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
-                          <span className="text-white text-sm font-medium">
-                            +{post.media_files.length - 4} more
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+        {post.media_files && post.media_files.length > 0 && (
+          <div className="post-media">
+            {post.media_files.length === 1 ? (
+              <div className="post-media-single">
+                {post.media_files[0].type?.startsWith('image/') ? (
+                  <img
+                    src={post.media_files[0].url}
+                    alt={post.media_files[0].name || 'Post media'}
+                    className="post-media-image"
+                    loading="lazy"
+                    onError={(e) => e.target.style.display = 'none'}
+                  />
+                ) : post.media_files[0].type?.startsWith('video/') ? (
+                  <video
+                    src={post.media_files[0].url}
+                    className="post-media-video"
+                    controls
+                    preload="metadata"
+                  />
+                ) : null}
               </div>
-            );
-          } else {
-            return null;
-          }
-        })()}
+            ) : (
+              <div className="post-media-grid">
+                {post.media_files.slice(0, 4).map((file, index) => (
+                  <div key={index} className="post-media-item">
+                    {file.type?.startsWith('image/') ? (
+                      <img
+                        src={file.url}
+                        alt={file.name || `Media ${index + 1}`}
+                        className="post-media-thumb"
+                        loading="lazy"
+                        onError={(e) => e.target.style.display = 'none'}
+                      />
+                    ) : file.type?.startsWith('video/') ? (
+                      <video
+                        src={file.url}
+                        className="post-media-thumb"
+                        controls
+                        preload="metadata"
+                      />
+                    ) : null}
+                    {post.media_files.length > 4 && index === 3 && (
+                      <div className="post-media-overlay">
+                        <span>+{post.media_files.length - 4}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       
-      <div className="mobile-card-actions">
-        <div className="minimal-flex gap-4">
-          <button 
-            onClick={handleLike}
-            disabled={loadingLike}
-            className={`icon-button minimal-flex gap-1 text-white hover:text-red-400 ${loadingLike ? 'opacity-50' : ''}`}
-          >
-            {loadingLike ? (
-              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Heart className={`w-4 h-4 ${liked ? 'fill-current text-red-400' : 'stroke-current'}`} />
-            )}
-            <span className="mobile-text-xs">{post.like_count}</span>
-          </button>
-          <button 
-            onClick={handleComment}
-            className="icon-button minimal-flex gap-1 text-white hover:text-indigo-400"
-          >
-            <MessageCircle className="w-4 h-4 stroke-current" />
-            <span className="mobile-text-xs">{post.comment_count}</span>
-          </button>
-          {onShare && (
-            <button 
-              onClick={handleShare}
-              className="minimal-flex text-gray-400 hover:text-green-400"
-            >
-              <Share className="minimal-icon mr-1" />
-            </button>
+      {/* Actions */}
+      <div className="post-actions">
+        <button 
+          onClick={handleLike}
+          disabled={isPostLoading}
+          className={`post-action-btn ${isPostLiked ? 'post-action-btn-liked' : ''}`}
+        >
+          {isPostLoading ? (
+            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Heart className={`w-4 h-4 ${isPostLiked ? 'fill-current' : ''}`} />
           )}
-          {onSave && (
-            <button 
-              onClick={handleSave}
-              className="minimal-flex text-gray-400 hover:text-yellow-400"
-            >
-              <Bookmark className="minimal-icon mr-1" />
-            </button>
-          )}
-        </div>
-        <p className="mobile-text-xs text-gray-400">Click to read more</p>
+          <span>{post.like_count || 0}</span>
+        </button>
+        
+        <button 
+          onClick={handleComment}
+          className="post-action-btn"
+        >
+          <MessageCircle className="w-4 h-4" />
+          <span>{post.comment_count || 0}</span>
+        </button>
+        
+        {onShare && (
+          <button 
+            onClick={handleShare}
+            className="post-action-btn post-action-btn-secondary"
+          >
+            <Share className="w-4 h-4" />
+          </button>
+        )}
+        
+        {onSave && (
+          <button 
+            onClick={handleSave}
+            className="post-action-btn post-action-btn-secondary"
+          >
+            <Bookmark className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </div>
   );

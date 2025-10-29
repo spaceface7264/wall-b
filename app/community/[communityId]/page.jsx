@@ -512,7 +512,7 @@ export default function CommunityPage() {
             {/* Admin Mode Banner */}
             {isAdmin && (
               <div className="mobile-item mobile-item-divider animate-slide-up">
-                <div className="flex items-center justify-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                <div className="flex items-center justify-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded">
                   <Shield className="w-4 h-4 text-amber-400" />
                   <span className="text-amber-300 text-sm font-medium">Admin Mode - You can moderate all content</span>
                 </div>
@@ -521,18 +521,18 @@ export default function CommunityPage() {
 
             {/* Create Post Form */}
             {isMember && (
-              <div className="animate-slide-up mb-4">
+              <div className="animate-slide-up">
                 <div 
                   onClick={() => setShowNewPostModal(true)}
-                  className="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors flex items-center gap-3"
+                  className="post-create-trigger"
                 >
                   {/* User Avatar */}
-                  <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
+                  <div className="post-create-avatar">
                     {user?.user_metadata?.full_name ? user.user_metadata.full_name.charAt(0).toUpperCase() : 'U'}
                   </div>
                   
                   {/* Write something text */}
-                  <div className="text-gray-400 text-sm flex-1">
+                  <div className="post-create-text">
                     Write something...
                   </div>
                 </div>
@@ -540,7 +540,7 @@ export default function CommunityPage() {
             )}
 
             {/* Posts Feed */}
-            <div className="space-y-2">
+            <div className="post-feed">
               {posts.length === 0 ? (
                 <div className="mobile-card">
                   <div className="minimal-flex-center py-12">
@@ -598,9 +598,9 @@ export default function CommunityPage() {
                   placeholder="Search events..."
                   value={eventSearchTerm}
                   onChange={(e) => setEventSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-indigo-500"
                 />
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
                     <path d="m21 21-4.34-4.34"></path>
                     <circle cx="11" cy="11" r="8"></circle>

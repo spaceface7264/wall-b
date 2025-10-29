@@ -43,38 +43,9 @@ export default function MembersList({ communityId, isAdmin = false }) {
         .order('joined_at', { ascending: false });
 
       if (error) {
-        console.log('community_members table not accessible, trying alternative approach...');
-        
-        // Fallback: try to get members from communities table directly
-        const { data: communityData, error: communityError } = await supabase
-          .from('communities')
-          .select('member_count')
-          .eq('id', communityId)
-          .single();
-
-        if (communityError) {
-          console.log('No community data available, showing empty state');
-          setMembers([]);
-          setTotalMembers(0);
-          setTotalPages(1);
-          return;
-        }
-
-        // Create a mock member list based on member count
-        const mockMembers = Array.from({ length: communityData.member_count || 0 }, (_, i) => ({
-          id: `mock-${i}`,
-          role: i === 0 ? 'admin' : 'member',
-          joined_at: new Date().toISOString(),
-          profiles: {
-            id: `mock-profile-${i}`,
-            full_name: `Member ${i + 1}`,
-            email: `member${i + 1}@example.com`,
-            avatar_url: null
-          }
-        }));
-
-        setMembers(mockMembers);
-        setTotalMembers(mockMembers.length);
+        console.log('community_members table not accessible, showing empty state');
+        setMembers([]);
+        setTotalMembers(0);
         setTotalPages(1);
         return;
       }
@@ -165,7 +136,7 @@ export default function MembersList({ communityId, isAdmin = false }) {
           placeholder="Search members..."
           value={searchTerm}
           onChange={handleSearchChange}
-          className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-indigo-500"
         />
       </div>
 
@@ -199,7 +170,7 @@ export default function MembersList({ communityId, isAdmin = false }) {
             return (
               <div
                 key={member.id}
-                className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
+                className="flex items-center gap-3 p-3 bg-gray-800 rounded hover:bg-gray-700 transition-colors"
               >
                 {/* Avatar */}
                 <div className="relative">

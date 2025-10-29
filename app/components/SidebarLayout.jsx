@@ -396,7 +396,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               onChange={handleSearchChange}
               onKeyPress={handleKeyPress}
               placeholder="Search communities..."
-              className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm placeholder-gray-400 focus:outline-none focus:border-indigo-500"
             />
             {searchQuery && (
               <button
@@ -412,7 +412,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           {isSearchActive && (
             <button
               onClick={handleSearchAllCommunities}
-              className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+              className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition-colors"
             >
               <Search className="w-4 h-4" />
               <span className="font-medium">Search all communities</span>
