@@ -147,8 +147,13 @@ export default function CreateCommunityPage() {
         // Don't fail the whole operation for this
       }
 
-      setSubmitted(true);
       showToast('success', 'Community Created!', 'Your community has been created successfully!');
+      
+      // Wait a moment for database to be ready, then navigate to the newly created community
+      // This prevents race condition where community page tries to load before data is available
+      setTimeout(() => {
+        navigate(`/community/${data.id}`);
+      }, 500);
     } catch (error) {
       console.error('Error creating community:', error);
       showToast('error', 'Error', 'Something went wrong. Please try again.');

@@ -244,8 +244,8 @@ export default function CommunitiesPage() {
                     key={community.id}
                     community={community}
                     isMember={true}
-                    onJoin={() => handleJoinCommunity(community.id)}
-                    onView={() => navigate(`/community/${community.id}`)}
+                    onLeave={() => {}}
+                    onOpen={() => navigate(`/community/${community.id}`)}
                   />
                 ))}
               </div>
@@ -276,8 +276,8 @@ export default function CommunitiesPage() {
                     key={community.id}
                     community={community}
                     isMember={myCommunities.some(c => c.id === community.id)}
-                    onJoin={() => handleJoinCommunity(community.id)}
-                    onView={() => navigate(`/community/${community.id}`)}
+                    onLeave={() => {}}
+                    onOpen={() => navigate(`/community/${community.id}`)}
                   />
                 ))}
               </div>

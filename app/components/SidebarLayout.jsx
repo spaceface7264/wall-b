@@ -425,7 +425,10 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           <div className="py-2">
             {/* Create Community Button - Always at top */}
             <button
-              onClick={() => {}}
+              onClick={() => {
+                navigate('/community/new');
+                closeDrawer();
+              }}
               onMouseDown={createRipple}
               className="w-full flex items-center justify-between p-3 rounded-none transition-colors ripple-effect hover:bg-gray-700/50 text-gray-300"
             >

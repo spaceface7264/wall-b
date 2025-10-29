@@ -69,7 +69,7 @@ export default function CommunityPage() {
     }
   }, [communityId]);
 
-  const loadCommunity = async () => {
+  const loadCommunity = async (retryCount = 0) => {
     try {
       setLoading(true);
       
@@ -89,12 +89,28 @@ export default function CommunityPage() {
         .single();
 
       if (error) {
+        // If community not found and we haven't retried, wait and retry once
+        // This handles race condition when navigating immediately after creation
+        if (error.code === 'PGRST116' && retryCount < 1) {
+          console.log('Community not found yet, retrying...');
+          setTimeout(() => {
+            loadCommunity(retryCount + 1);
+          }, 1000);
+          return;
+        }
         console.error('Error fetching community:', error);
         navigate('/communities');
         return;
       }
 
       if (!communityData) {
+        // Retry once if data is null (might be a timing issue)
+        if (retryCount < 1) {
+          setTimeout(() => {
+            loadCommunity(retryCount + 1);
+          }, 1000);
+          return;
+        }
         navigate('/communities');
         return;
       }
@@ -104,7 +120,10 @@ export default function CommunityPage() {
       loadEvents(communityData.id);
     } catch (error) {
       console.error('Error loading community:', error);
-      navigate('/communities');
+      // Only redirect on final retry
+      if (retryCount >= 1) {
+        navigate('/communities');
+      }
     } finally {
       setLoading(false);
     }
