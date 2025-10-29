@@ -1,13 +1,11 @@
-'use client';
-
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { Bell, X } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 
 export default function NotificationBell({ userId }) {
   const [isOpen, setIsOpen] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
   const { 
     notifications, 
     unreadCount, 
@@ -77,7 +75,7 @@ export default function NotificationBell({ userId }) {
     if (data.post_id) {
       // Navigate to post detail page
       if (data.community_id) {
-        router.push(`/community/${data.community_id}/post/${data.post_id}`);
+        navigate(`/community/${data.community_id}/post/${data.post_id}`);
       }
     }
     

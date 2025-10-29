@@ -1,4 +1,4 @@
-'use client';
+
 
 import { useState } from 'react';
 import { Calendar, MapPin, Clock, Users, ChevronDown, ChevronUp, User } from 'lucide-react';

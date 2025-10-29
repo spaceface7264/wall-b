@@ -1,6 +1,6 @@
 # Climbing Community App
 
-A modern community platform for climbers built with Next.js and Supabase.
+A modern community platform for climbers built with Vite, React, and Supabase.
 
 ## Features
 
@@ -14,7 +14,7 @@ A modern community platform for climbers built with Next.js and Supabase.
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14, React, Tailwind CSS
+- **Frontend**: Vite, React, React Router, Tailwind CSS
 - **Backend**: Supabase (PostgreSQL, Auth, Storage, Real-time)
 - **Styling**: Custom mobile-first design system
 - **Icons**: Lucide React
@@ -27,10 +27,10 @@ A modern community platform for climbers built with Next.js and Supabase.
    ```
 
 2. **Set up environment variables**:
-   Create `.env.local` with your Supabase credentials:
+   Create `.env` or `.env.local` with your Supabase credentials:
    ```
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
 3. **Set up database**:
@@ -47,7 +47,26 @@ A modern community platform for climbers built with Next.js and Supabase.
    ```
 
 5. **Open your browser**:
-   Navigate to `http://localhost:3000`
+   The app will automatically open at `http://localhost:3000`
+
+## Development & Deployment
+
+📚 **For detailed setup instructions, see [DEPLOYMENT_SETUP.md](./DEPLOYMENT_SETUP.md)**
+
+### Quick Start
+
+**Local Development:**
+```bash
+npm run dev              # Start dev server (localhost:3000)
+npm run dev:host         # Start dev server accessible on network
+npm run build            # Build for production
+npm run preview          # Preview production build locally
+```
+
+**Netlify Deployment:**
+1. Connect your repository to Netlify
+2. Set environment variables in Netlify dashboard
+3. Deploys automatically on git push
 
 ## Project Structure
 

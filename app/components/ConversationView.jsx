@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Send, ArrowLeft, Users, MoreHorizontal, Paperclip, Smile, CheckCheck, Trash2 } from 'lucide-react';
 import ErrorRetry from './ErrorRetry';
@@ -24,12 +22,12 @@ export default function ConversationView({ conversation, currentUserId, onBack }
   const messagesEndRef = useRef(null);
   const messagesStartRef = useRef(null);
   const typingChannelRef = useRef(null);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const handleProfileClick = () => {
     if (conversation.type === 'direct' && conversation.otherParticipants?.length > 0) {
       const otherUserId = conversation.otherParticipants[0].user_id;
-      router.push(`/profile/${otherUserId}`);
+      navigate(`/profile/${otherUserId}`);
     }
   };
 

@@ -1,7 +1,5 @@
-'use client'
-
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Users, Shield, Settings, ArrowLeft, MapPin, CheckCircle, XCircle, Clock } from 'lucide-react';
 import NotificationTest from '../components/NotificationTest';
@@ -13,7 +11,7 @@ export default function AdminPage() {
   const [communities, setCommunities] = useState([]);
   const [gymRequests, setGymRequests] = useState([]);
   const [activeTab, setActiveTab] = useState('users');
-  const router = useRouter();
+  const navigate = useNavigate();
 
   useEffect(() => {
     checkAdmin();
@@ -24,7 +22,7 @@ export default function AdminPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        router.push('/');
+        navigate('/');
         return;
       }
 
@@ -35,14 +33,14 @@ export default function AdminPage() {
         .single();
       
       if (!profile?.is_admin) {
-        router.push('/dashboard');
+        navigate('/communities');
         return;
       }
 
       setIsAdmin(true);
     } catch (error) {
       console.error('Error checking admin status:', error);
-      router.push('/dashboard');
+      navigate('/communities');
     } finally {
       setIsLoading(false);
     }
@@ -196,7 +194,7 @@ export default function AdminPage() {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
           <p className="text-gray-600 mb-4">You need admin access to view this page.</p>
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => navigate('/communities')}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
           >
             Go to Dashboard
@@ -214,7 +212,7 @@ export default function AdminPage() {
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => router.push('/dashboard')}
+                onClick={() => navigate('/communities')}
                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all duration-200"
               >
                 <ArrowLeft className="w-5 h-5" />

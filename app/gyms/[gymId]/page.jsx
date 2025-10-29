@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { MapPin, Clock, Phone, Mail, Globe, Star, Heart, Dumbbell, Users, Calendar, Info, MessageCircle, Plus } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
@@ -17,7 +15,7 @@ export default function GymDetail() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('about');
-  const router = useRouter();
+  const navigate = useNavigate();
   const params = useParams();
   const { showToast } = useToast();
 
@@ -401,7 +399,7 @@ export default function GymDetail() {
                   <MapPin className="minimal-icon mx-auto mb-2 text-gray-500" />
                   <p className="mobile-text-sm">Gym not found</p>
                   <button 
-                    onClick={() => router.back()}
+                    onClick={() => navigate(-1)}
                     className="mobile-btn-primary mt-4"
                   >
                     Go Back
@@ -665,12 +663,12 @@ export default function GymDetail() {
         </div>
 
         <div className="mobile-section">
-          {/* Header with Title and Favorite */}
-          <div className="mobile-card animate-fade-in mb-6">
+          {/* Header with Location and Favorite */}
+          <div className="mobile-card animate-fade-in">
             <div className="minimal-flex-between items-start">
               <div className="flex-1">
                 <div className="minimal-flex-between items-center mb-2">
-                  <h1 className="mobile-card-title text-2xl">{gym.name}</h1>
+                  <div className="flex-1"></div>
                   <button 
                     onClick={toggleFavorite}
                     className={`mobile-btn-secondary transition-all duration-200 ${

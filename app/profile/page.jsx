@@ -1,7 +1,5 @@
-'use client'
-
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { User as UserIcon, Settings, Save, Camera, X } from 'lucide-react';
 import SidebarLayout from '../components/SidebarLayout';
@@ -23,7 +21,7 @@ export default function Profile() {
   const [isUploading, setIsUploading] = useState(false);
   const [showImageUpload, setShowImageUpload] = useState(false);
   const isSavingRef = useRef(false);
-  const router = useRouter();
+  const navigate = useNavigate();
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -156,9 +154,9 @@ export default function Profile() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/');
+      navigate('/');
     }
-  }, [loading, user, router]);
+  }, [loading, user, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

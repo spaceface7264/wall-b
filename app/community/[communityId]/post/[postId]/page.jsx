@@ -1,7 +1,6 @@
-'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Heart, MessageCircle, Edit2, Trash2, Shield, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import SidebarLayout from '../../../../components/SidebarLayout';
 import CommentThread from '../../../../components/CommentThread';
@@ -10,7 +9,7 @@ import CreatePostModal from '../../../../components/CreatePostModal';
 import { supabase } from '../../../../../lib/supabase';
 
 export default function PostDetailPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const params = useParams();
   const { communityId, postId } = params;
 
@@ -87,7 +86,7 @@ export default function PostDetailPage() {
       
       if (postError || !postData) {
         console.error('Error fetching post:', postError);
-        router.push(`/community/${communityId}`);
+        navigate(`/community/${communityId}`);
         return;
       }
 
@@ -503,7 +502,7 @@ export default function PostDetailPage() {
           return;
         }
 
-        router.push(`/community/${communityId}`);
+        navigate(`/community/${communityId}`);
       } catch (error) {
         console.error('Error deleting post:', error);
       }

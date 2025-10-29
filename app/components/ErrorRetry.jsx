@@ -1,4 +1,4 @@
-'use client';
+
 
 import { useState } from 'react';
 import { AlertCircle, RefreshCw, Wifi, WifiOff } from 'lucide-react';

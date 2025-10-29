@@ -1,14 +1,9 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { Users, MapPin, Info, ArrowLeft, CheckCircle, AlertCircle, Building } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
 import { useToast } from '../../providers/ToastProvider';
-
-// Force dynamic rendering
-export const dynamic = 'force-dynamic';
 
 export default function CreateCommunityPage() {
   const [user, setUser] = useState(null);
@@ -16,7 +11,7 @@ export default function CreateCommunityPage() {
   const [submitting, setSubmitting] = useState(false);
   const [gyms, setGyms] = useState([]);
   const [submitted, setSubmitted] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
   const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -185,7 +180,7 @@ export default function CreateCommunityPage() {
         <div className="mobile-container">
           <div className="mobile-section">
             {/* Success Message */}
-            <div className="mobile-card animate-fade-in mb-6">
+            <div className="mobile-card animate-fade-in">
               <div className="minimal-flex-center py-8">
                 <div className="text-center">
                   <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
@@ -195,7 +190,7 @@ export default function CreateCommunityPage() {
                   </p>
                   <div className="space-y-3">
                     <button
-                      onClick={() => router.push('/community')}
+                      onClick={() => navigate('/communities')}
                       className="mobile-btn-primary w-full"
                     >
                       Back to Communities
@@ -227,14 +222,14 @@ export default function CreateCommunityPage() {
   }
 
   return (
-    <SidebarLayout currentPage="community">
+    <SidebarLayout currentPage="community" pageTitle="Create Community">
       <div className="mobile-container">
         <div className="mobile-section">
           {/* Header */}
           <div className="mobile-card animate-fade-in mb-6">
             <div className="minimal-flex-between items-center mb-4">
               <button
-                onClick={() => router.back()}
+                onClick={() => navigate(-1)}
                 className="mobile-btn-secondary minimal-flex gap-2"
               >
                 <ArrowLeft className="minimal-icon" />
@@ -243,7 +238,6 @@ export default function CreateCommunityPage() {
             </div>
             
             <div className="text-center">
-              <h1 className="mobile-card-title text-2xl mb-2">Create Community</h1>
               <p className="mobile-text-sm text-gray-300">
                 Start a new community for climbers to connect and share experiences
               </p>

@@ -1,12 +1,11 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { MapPin, Heart, Plus, MoreHorizontal } from 'lucide-react';
-import SidebarLayout from '../components/SidebarLayout';
 import GymCard from '../components/GymCard';
 import { useToast } from '../providers/ToastProvider';
+
+// Note: This component is wrapped with SidebarLayout in App.jsx, so don't wrap here
 
 export default function Gyms() {
   const [gyms, setGyms] = useState([]);
@@ -17,7 +16,7 @@ export default function Gyms() {
   const [favoriteGymIds, setFavoriteGymIds] = useState(new Set());
   const [user, setUser] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -173,7 +172,7 @@ export default function Gyms() {
   const openGym = (gym) => {
     console.log('Opening gym:', gym);
     console.log('Gym ID:', gym.id);
-    router.push(`/gyms/${gym.id}`);
+    navigate(`/gyms/${gym.id}`);
   };
 
   const toggleFavorite = async (gymId) => {
@@ -232,8 +231,7 @@ export default function Gyms() {
 
 
   return (
-    <SidebarLayout currentPage="gyms" pageTitle="Gyms">
-      <div className="mobile-container">
+    <div className="mobile-container">
         {/* Header */}
         <div className="animate-fade-in mb-6">
           <div className="mobile-card-header">
@@ -265,7 +263,7 @@ export default function Gyms() {
                         <div className="py-1">
                           <button
                             onClick={() => {
-                              router.push('/gyms/request');
+                              navigate('/gyms/request');
                               setShowMenu(false);
                             }}
                             className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors"
@@ -284,7 +282,7 @@ export default function Gyms() {
         </div>
 
         {/* Search */}
-        <div className="mobile-card animate-slide-up mb-4">
+        <div className="mobile-card animate-slide-up">
           <input
             type="text"
             value={searchTerm}
@@ -343,6 +341,5 @@ export default function Gyms() {
             )}
         </div>
       </div>
-    </SidebarLayout>
   );
 }

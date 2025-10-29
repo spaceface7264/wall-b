@@ -1,7 +1,5 @@
-'use client'
-
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle } from 'lucide-react';
 import NotificationBell from './NotificationBell';
@@ -16,132 +14,11 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
   const [communitiesLoading, setCommunitiesLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  useEffect(() => {
-    let mounted = true;
-
-    const getUser = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (mounted) {
-          setUser(user);
-          
-          // Check if user is admin and load communities
-          if (user) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('is_admin')
-              .eq('id', user.id)
-              .single();
-            
-            setIsAdmin(profile?.is_admin || false);
-            loadUserCommunities(user.id);
-          }
-          
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('Error getting user:', error);
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    getUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (mounted) {
-          setUser(session?.user ?? null);
-          
-          // Check admin status when auth state changes
-          if (session?.user) {
-            try {
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('is_admin')
-                .eq('id', session.user.id)
-                .single();
-              
-              setIsAdmin(profile?.is_admin || false);
-              loadUserCommunities(session.user.id);
-            } catch (error) {
-              console.error('Error checking admin status:', error);
-              setIsAdmin(false);
-            }
-          } else {
-            setIsAdmin(false);
-            setCommunities([]);
-          }
-          
-          setLoading(false);
-        }
-      }
-    );
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    // Add a small delay to prevent race conditions with initial auth check
-    const timer = setTimeout(() => {
-      if (!loading && !user) {
-        console.log('🔒 No authenticated user, redirecting to login...');
-        router.push('/');
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [loading, user, router]);
-
-  // Ripple effect function
-  const createRipple = (event) => {
-    const button = event.currentTarget;
-    const rect = button.getBoundingClientRect();
-    const size = Math.max(rect.width, rect.height);
-    const x = event.clientX - rect.left - size / 2;
-    const y = event.clientY - rect.top - size / 2;
-    
-    const ripple = document.createElement('span');
-    ripple.style.width = ripple.style.height = size + 'px';
-    ripple.style.left = x + 'px';
-    ripple.style.top = y + 'px';
-    ripple.classList.add('ripple');
-    
-    button.appendChild(ripple);
-    
-    setTimeout(() => {
-      ripple.remove();
-    }, 600);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      router.push('/');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
-  const toggleDrawer = () => {
-    setDrawerOpen(!drawerOpen);
-  };
-
-  const closeDrawer = () => {
-    setDrawerOpen(false);
-  };
-
-  const navigateToPage = (page) => {
-    router.push(`/${page}`);
-    closeDrawer();
-  };
-
+  // Define loadUserCommunities BEFORE useEffect to avoid ReferenceError
+  // (const functions are NOT hoisted in JavaScript)
   const loadUserCommunities = async (userId) => {
     if (!userId) return;
     
@@ -202,13 +79,220 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     }
   };
 
+  useEffect(() => {
+    let mounted = true;
+    let timeoutId;
+
+    console.log('🔵 SidebarLayout useEffect starting');
+
+    // SAFETY: Timeout to prevent infinite loading
+    timeoutId = setTimeout(() => {
+      if (mounted) {
+        console.error('⚠️ TIMEOUT: Auth check took > 5 seconds, forcing loading=false');
+        setLoading(false);
+      }
+    }, 5000);
+
+    const getUser = async () => {
+      try {
+        console.log('🔵 getUser() called, checking supabase client...');
+        
+        // Check if supabase exists
+        if (!supabase) {
+          console.error('❌ CRITICAL: supabase client is undefined!');
+          if (mounted) {
+            clearTimeout(timeoutId);
+            setLoading(false);
+            setUser(null);
+          }
+          return;
+        }
+
+        // Use getSession() instead of getUser() - it's faster and more reliable
+        console.log('🔵 Calling supabase.auth.getSession()...');
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        console.log('🔵 getSession() completed:', { 
+          hasSession: !!session, 
+          hasUser: !!session?.user,
+          hasError: !!sessionError,
+          errorMessage: sessionError?.message 
+        });
+        
+        if (sessionError) {
+          console.error('❌ Session error:', sessionError);
+          if (mounted) {
+            clearTimeout(timeoutId);
+            setLoading(false);
+            setUser(null);
+          }
+          return;
+        }
+
+        const user = session?.user ?? null;
+
+        if (mounted) {
+          setUser(user);
+          console.log('🔵 User state set:', user ? `User ID: ${user.id}` : 'null');
+          
+          // Check if user is admin and load communities
+          if (user) {
+            try {
+              console.log('🔵 Loading profile for user...');
+              const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('is_admin')
+                .eq('id', user.id)
+                .maybeSingle();
+              
+              if (profileError && profileError.code !== 'PGRST116') {
+                console.error('❌ Profile error:', profileError);
+              }
+              
+              setIsAdmin(profile?.is_admin || false);
+              loadUserCommunities(user.id);
+            } catch (error) {
+              console.error('❌ Profile check failed:', error);
+              setIsAdmin(false);
+            }
+          }
+          
+          clearTimeout(timeoutId);
+          console.log('🔵 Setting loading to false');
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('❌ getUser() failed:', error);
+        console.error('❌ Error details:', error.message);
+        if (mounted) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+          setUser(null);
+        }
+      }
+    };
+
+    getUser();
+
+    let subscription;
+    try {
+      const { data: { subscription: sub } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          console.log('🔵 Auth state changed:', event);
+          if (mounted) {
+            setUser(session?.user ?? null);
+            
+            if (session?.user) {
+              try {
+                const { data: profile, error: profileError } = await supabase
+                  .from('profiles')
+                  .select('is_admin')
+                  .eq('id', session.user.id)
+                  .maybeSingle();
+                
+                if (profileError && profileError.code !== 'PGRST116') {
+                  console.error('Error checking admin status:', profileError);
+                }
+                
+                setIsAdmin(profile?.is_admin || false);
+                loadUserCommunities(session.user.id);
+              } catch (error) {
+                console.error('Error checking admin status:', error);
+                setIsAdmin(false);
+              }
+            } else {
+              setIsAdmin(false);
+              setCommunities([]);
+            }
+            
+            clearTimeout(timeoutId);
+            setLoading(false);
+          }
+        }
+      );
+      subscription = sub;
+    } catch (error) {
+      console.error('❌ Failed to setup auth listener:', error);
+    }
+
+    return () => {
+      console.log('🔵 SidebarLayout cleanup');
+      mounted = false;
+      clearTimeout(timeoutId);
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // Only redirect to login if we're not already on the login page
+    // and only after loading is complete and user is confirmed null
+    // Add a delay to allow auth state to settle after navigation
+    if (location.pathname === '/' || location.pathname === '/login') {
+      return; // Don't redirect if already on login page
+    }
+
+    const timer = setTimeout(() => {
+      if (!loading && !user) {
+        console.log('🔒 No authenticated user, redirecting to login...');
+        navigate('/');
+      }
+    }, 500); // Increased delay to allow auth state to settle
+
+    return () => clearTimeout(timer);
+  }, [loading, user, navigate, location.pathname]);
+
+  // Ripple effect function
+  const createRipple = (event) => {
+    const button = event.currentTarget;
+    const rect = button.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = event.clientX - rect.left - size / 2;
+    const y = event.clientY - rect.top - size / 2;
+    
+    const ripple = document.createElement('span');
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = x + 'px';
+    ripple.style.top = y + 'px';
+    ripple.classList.add('ripple');
+    
+    button.appendChild(ripple);
+    
+    setTimeout(() => {
+      ripple.remove();
+    }, 600);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  const toggleDrawer = () => {
+    setDrawerOpen(!drawerOpen);
+  };
+
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+  };
+
+  const navigateToPage = (page) => {
+    navigate(`/${page}`);
+    closeDrawer();
+  };
+
   const navigateToCommunity = (communityId) => {
-    router.push(`/community/${communityId}`);
+    navigate(`/community/${communityId}`);
     closeDrawer();
   };
 
   const navigateToJoinCommunity = () => {
-    router.push('/community');
+    navigate('/communities');
     closeDrawer();
   };
 
@@ -225,7 +309,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
 
   const handleSearchAllCommunities = () => {
     if (searchQuery.trim()) {
-      router.push(`/community?search=${encodeURIComponent(searchQuery.trim())}`);
+      navigate(`/communities?search=${encodeURIComponent(searchQuery.trim())}`);
       closeDrawer();
     }
   };
@@ -249,7 +333,21 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
   }
 
   if (!user) {
-    return null;
+    // Instead of returning null (blank screen), redirect to login
+    // This ensures user sees something rather than blank page
+    return (
+      <div className="mobile-app mobile-safe-area flex items-center justify-center animate-fade-in" style={{ backgroundColor: '#252526' }}>
+        <div className="text-center">
+          <p className="minimal-text mb-4">Please log in to continue</p>
+          <button
+            onClick={() => navigate('/')}
+            className="mobile-btn-primary"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -417,9 +515,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
 
       {/* Main Content Area */}
       <div className={`mobile-content ${currentPage === 'chat' ? 'mobile-content-chat' : 'mobile-content-with-cards'}`}>
-        <div className="p-comfortable">
-          {children}
-        </div>
+        {children}
       </div>
 
       {/* Bottom Navigation */}

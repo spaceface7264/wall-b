@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Heart, Reply, Edit2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import CommentInput from './CommentInput';
 
 export default function CommentThread({
@@ -21,7 +21,7 @@ export default function CommentThread({
   const [editContent, setEditContent] = useState(comment.content);
   const [liking, setLiking] = useState(false);
   const [liked, setLiked] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const isOwnComment = comment.user_id === userId;
   const canModerate = isOwnComment || isAdmin;
@@ -30,7 +30,7 @@ export default function CommentThread({
 
   const handleProfileClick = (e, userId) => {
     e.stopPropagation();
-    router.push(`/profile/${userId}`);
+    navigate(`/profile/${userId}`);
   };
 
 

@@ -1,4 +1,4 @@
-'use client';
+
 
 import { MessageCircle, Loader2 } from 'lucide-react';
 

@@ -1,4 +1,3 @@
-'use client';
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
@@ -12,7 +11,7 @@ import CreatePostModal from '../../components/CreatePostModal';
 import CreateEventModal from '../../components/CreateEventModal';
 import MembersList from '../../components/MembersList';
 import CalendarView from '../../components/CalendarView';
-import { useRouter, useParams } from 'next/navigation';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export default function CommunityPage() {
   const [user, setUser] = useState(null);
@@ -38,7 +37,7 @@ export default function CommunityPage() {
   const [showMenu, setShowMenu] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [eventSearchTerm, setEventSearchTerm] = useState('');
-  const router = useRouter();
+  const navigate = useNavigate();
   const params = useParams();
   const communityId = params.communityId;
 
@@ -91,12 +90,12 @@ export default function CommunityPage() {
 
       if (error) {
         console.error('Error fetching community:', error);
-        router.push('/community');
+        navigate('/communities');
         return;
       }
 
       if (!communityData) {
-        router.push('/community');
+        navigate('/communities');
         return;
       }
 
@@ -105,7 +104,7 @@ export default function CommunityPage() {
       loadEvents(communityData.id);
     } catch (error) {
       console.error('Error loading community:', error);
-      router.push('/community');
+      navigate('/communities');
     } finally {
       setLoading(false);
     }
@@ -549,7 +548,7 @@ export default function CommunityPage() {
                       setShowEditPostModal(true);
                     }}
                     onOpen={(post) => {
-                      router.push(`/community/${communityId}/post/${post.id}`);
+                      navigate(`/community/${communityId}/post/${post.id}`);
                     }}
                     isLiked={likedPosts.has(post.id)}
                     isLiking={likingPost === post.id}
@@ -716,7 +715,7 @@ export default function CommunityPage() {
                   <Users className="minimal-icon mx-auto mb-2 text-gray-500" />
                   <p className="mobile-text-sm">Community not found</p>
                   <button 
-                    onClick={() => router.push('/community')}
+                    onClick={() => navigate('/communities')}
                     className="mobile-btn-primary mt-4"
                   >
                     Back to Communities
@@ -773,7 +772,7 @@ export default function CommunityPage() {
 
           {/* Success Message */}
           {showSuccessMessage && (
-            <div className="mobile-card animate-slide-up mb-4 bg-green-500/10 border border-green-500/20">
+            <div className="mobile-card animate-slide-up bg-green-500/10 border border-green-500/20">
               <div className="minimal-flex-center py-2">
                 <p className="text-green-400 text-sm font-medium">{successMessage}</p>
               </div>

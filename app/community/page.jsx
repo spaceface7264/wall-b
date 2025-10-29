@@ -1,10 +1,7 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Users, Plus, MapPin, Calendar, MessageCircle, Search, Filter, Building, Globe } from 'lucide-react';
-import SidebarLayout from '../components/SidebarLayout';
 import CommunityCard from '../components/CommunityCard';
 import { useToast } from '../providers/ToastProvider';
 
@@ -15,7 +12,7 @@ export default function CommunitiesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [myCommunities, setMyCommunities] = useState([]);
-  const router = useRouter();
+  const navigate = useNavigate();
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -100,8 +97,16 @@ export default function CommunitiesPage() {
   };
 
   const filteredCommunities = communities.filter(community => {
-    const matchesSearch = community.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         community.description.toLowerCase().includes(searchTerm.toLowerCase());
+    // Safety checks for null/undefined values
+    if (!community || !community.name) {
+      return false;
+    }
+    
+    const name = (community.name || '').toLowerCase();
+    const description = (community.description || '').toLowerCase();
+    const searchLower = searchTerm.toLowerCase();
+    
+    const matchesSearch = name.includes(searchLower) || description.includes(searchLower);
     
     const matchesFilter = filterType === 'all' || 
                          (filterType === 'gym' && community.community_type === 'gym') ||
@@ -140,37 +145,34 @@ export default function CommunitiesPage() {
 
   if (loading) {
     return (
-      <SidebarLayout currentPage="community">
-        <div className="mobile-container">
-          <div className="mobile-section">
-            <div className="mobile-card animate-fade-in">
-              <div className="minimal-flex-center py-8">
-                <div className="minimal-spinner"></div>
-                <p className="minimal-text ml-3">Loading communities...</p>
-              </div>
+      <div className="mobile-container">
+        <div className="mobile-section">
+          <div className="mobile-card animate-fade-in">
+            <div className="minimal-flex-center py-8">
+              <div className="minimal-spinner"></div>
+              <p className="minimal-text ml-3">Loading communities...</p>
             </div>
           </div>
         </div>
-      </SidebarLayout>
+      </div>
     );
   }
 
   return (
-    <SidebarLayout currentPage="community">
+    <>
       <div className="mobile-container">
         <div className="mobile-section">
           {/* Header */}
-          <div className="mobile-card animate-fade-in mb-6">
+          <div className="mobile-card animate-fade-in">
             <div className="minimal-flex-between items-center mb-4">
-              <div>
-                <h1 className="mobile-card-title text-2xl mb-2">Communities</h1>
+              <div className="flex-1">
                 <p className="mobile-text-sm text-gray-300">
                   Connect with climbers and share your passion
                 </p>
               </div>
               <button
-                onClick={() => router.push('/community/new')}
-                className="mobile-btn-primary minimal-flex gap-2"
+                onClick={() => navigate('/community/new')}
+                className="mobile-btn-primary minimal-flex gap-2 ml-4"
               >
                 <Plus className="minimal-icon" />
                 Create
@@ -231,7 +233,7 @@ export default function CommunitiesPage() {
 
           {/* My Communities */}
           {myCommunities.length > 0 && (
-            <div className="mobile-card animate-slide-up mb-6">
+            <div className="mobile-card animate-slide-up">
               <h2 className="minimal-heading mb-4 minimal-flex">
                 <Users className="minimal-icon mr-2 text-indigo-400" />
                 My Communities
@@ -243,7 +245,7 @@ export default function CommunitiesPage() {
                     community={community}
                     isMember={true}
                     onJoin={() => handleJoinCommunity(community.id)}
-                    onView={() => router.push(`/community/${community.id}`)}
+                    onView={() => navigate(`/community/${community.id}`)}
                   />
                 ))}
               </div>
@@ -275,7 +277,7 @@ export default function CommunitiesPage() {
                     community={community}
                     isMember={myCommunities.some(c => c.id === community.id)}
                     onJoin={() => handleJoinCommunity(community.id)}
-                    onView={() => router.push(`/community/${community.id}`)}
+                    onView={() => navigate(`/community/${community.id}`)}
                   />
                 ))}
               </div>
@@ -283,6 +285,6 @@ export default function CommunitiesPage() {
           </div>
         </div>
       </div>
-    </SidebarLayout>
+    </>
   );
 }

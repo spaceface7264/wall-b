@@ -9,7 +9,7 @@ const compat = new FlatCompat({
 });
 
 export default [
-  ...compat.extends('next/core-web-vitals', 'next/typescript'),
+  ...compat.extends('plugin:react/recommended', 'plugin:react-hooks/recommended'),
   {
     files: ['**/*.{js,jsx,ts,tsx}'],
     languageOptions: {
@@ -31,7 +31,12 @@ export default [
       '@typescript-eslint/no-require-imports': 'warn',
       'react/no-unescaped-entities': 'warn',
       'react-hooks/exhaustive-deps': 'warn',
-      '@next/next/no-img-element': 'warn',
+      'react/react-in-jsx-scope': 'off', // Not needed with React 17+
+    },
+    settings: {
+      react: {
+        version: 'detect',
+      },
     },
   },
 ];

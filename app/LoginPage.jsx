@@ -1,7 +1,5 @@
-'use client'
-
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
@@ -12,7 +10,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -27,7 +25,7 @@ export default function LoginPage() {
       if (result.error) {
         setError(result.error.message);
       } else {
-        router.push('/community');
+        navigate('/communities');
       }
     } catch {
       setError('Authentication failed');

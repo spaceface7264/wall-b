@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { MapPin, Phone, Mail, Globe, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
@@ -19,7 +17,7 @@ export default function GymRequestPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
   const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -160,7 +158,7 @@ export default function GymRequestPage() {
         <div className="mobile-container">
           <div className="mobile-section">
             {/* Success Message */}
-            <div className="mobile-card animate-fade-in mb-6">
+            <div className="mobile-card animate-fade-in">
               <div className="minimal-flex-center py-8">
                 <div className="text-center">
                   <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
@@ -170,7 +168,7 @@ export default function GymRequestPage() {
                   </p>
                   <div className="space-y-3">
                     <button
-                      onClick={() => router.push('/gyms')}
+                      onClick={() => navigate('/gyms')}
                       className="mobile-btn-primary w-full"
                     >
                       Back to Gyms
@@ -205,14 +203,14 @@ export default function GymRequestPage() {
   }
 
   return (
-    <SidebarLayout currentPage="gyms">
+    <SidebarLayout currentPage="gyms" pageTitle="Request a Gym">
       <div className="mobile-container">
         <div className="mobile-section">
           {/* Header */}
           <div className="mobile-card animate-fade-in mb-6">
             <div className="minimal-flex-between items-center mb-4">
               <button
-                onClick={() => router.back()}
+                onClick={() => navigate(-1)}
                 className="mobile-btn-secondary minimal-flex gap-2"
               >
                 <ArrowLeft className="minimal-icon" />
@@ -221,7 +219,6 @@ export default function GymRequestPage() {
             </div>
             
             <div className="text-center">
-              <h1 className="mobile-card-title text-2xl mb-2">Request a Gym</h1>
               <p className="mobile-text-sm text-gray-300">
                 Is your gym missing from our database? Let us know and we'll add it!
               </p>

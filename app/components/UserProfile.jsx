@@ -1,7 +1,6 @@
-'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { User as UserIcon, MapPin, Calendar, Users, MessageCircle, Heart, Calendar as EventIcon, ArrowLeft } from 'lucide-react';
 import SidebarLayout from './SidebarLayout';
@@ -13,7 +12,7 @@ export default function UserProfile({ userId, showBackButton = true }) {
   const [communities, setCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const router = useRouter();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -125,7 +124,7 @@ export default function UserProfile({ userId, showBackButton = true }) {
                 <p className="mobile-text text-gray-400 mb-4">{error}</p>
                 {showBackButton && (
                   <button
-                    onClick={() => router.back()}
+                    onClick={() => navigate(-1)}
                     className="mobile-btn-primary minimal-flex gap-2"
                   >
                     <ArrowLeft className="minimal-icon" />
@@ -202,7 +201,7 @@ export default function UserProfile({ userId, showBackButton = true }) {
               
               {showBackButton && (
                 <button
-                  onClick={() => router.back()}
+                  onClick={() => navigate(-1)}
                   className="mobile-btn-secondary minimal-flex gap-2"
                 >
                   <ArrowLeft className="minimal-icon" />
@@ -276,7 +275,7 @@ export default function UserProfile({ userId, showBackButton = true }) {
                 {communities.map((community) => (
                   <div
                     key={community.id}
-                    onClick={() => router.push(`/community/${community.id}`)}
+                    onClick={() => navigate(`/community/${community.id}`)}
                     className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 hover:bg-slate-700/50 transition-colors cursor-pointer"
                   >
                     <div className="minimal-flex-between">

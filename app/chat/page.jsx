@@ -1,15 +1,11 @@
-'use client';
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { MessageCircle, Loader2 } from 'lucide-react';
-import SidebarLayout from '../components/SidebarLayout';
+// Note: SidebarLayout is wrapped in App.jsx, don't import here
 import ConversationList from '../components/ConversationList';
 import ConversationView from '../components/ConversationView';
 import ChatLoading from '../components/ChatLoading';
-
-// Force dynamic rendering
-export const dynamic = 'force-dynamic';
 
 export default function Chat() {
   const [user, setUser] = useState(null);
@@ -47,33 +43,27 @@ export default function Chat() {
   };
 
   if (loading) {
-    return (
-      <SidebarLayout currentPage="chat">
-        <ChatLoading />
-      </SidebarLayout>
-    );
+    return <ChatLoading />;
   }
 
   if (!user) {
     return (
-      <SidebarLayout currentPage="chat">
-        <div className="flex items-center justify-center h-full min-h-[400px]">
-          <div className="text-center space-y-4 max-w-sm px-4">
-            <div className="bg-slate-800/50 rounded-full w-20 h-20 flex items-center justify-center mx-auto">
-              <MessageCircle className="w-10 h-10 text-indigo-400" />
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-slate-200">Connect with the Community</h3>
-              <p className="text-slate-400 text-sm">Sign in to start conversations and engage with members worldwide</p>
-            </div>
+      <div className="flex items-center justify-center h-full min-h-[400px]">
+        <div className="text-center space-y-4 max-w-sm px-4">
+          <div className="bg-slate-800/50 rounded-full w-20 h-20 flex items-center justify-center mx-auto">
+            <MessageCircle className="w-10 h-10 text-indigo-400" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-slate-200">Connect with the Community</h3>
+            <p className="text-slate-400 text-sm">Sign in to start conversations and engage with members worldwide</p>
           </div>
         </div>
-      </SidebarLayout>
+      </div>
     );
   }
 
   return (
-    <SidebarLayout currentPage="chat">
+    <>
       {/* Main Chat Container - respects parent padding */}
       <div className="flex flex-col h-full overflow-hidden rounded-lg border border-slate-700/50">
         <div className="flex flex-1 overflow-hidden">
@@ -126,7 +116,6 @@ export default function Chat() {
           </div>
         </div>
       </div>
-      
-    </SidebarLayout>
+    </>
   );
 }

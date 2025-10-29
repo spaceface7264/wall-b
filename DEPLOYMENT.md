@@ -6,30 +6,30 @@
 
 #### **Core Supabase Variables**
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
 #### **App Configuration**
 ```
-NEXT_PUBLIC_APP_NAME=Wall-B
-NEXT_PUBLIC_APP_DESCRIPTION=A modern bouldering community app
-NEXT_PUBLIC_APP_URL=https://your-app.netlify.app
+VITE_APP_NAME=Wall-B
+VITE_APP_DESCRIPTION=A modern bouldering community app
+VITE_APP_URL=https://your-app.netlify.app
 ```
 
 #### **Feature Flags (Optional)**
 ```
-NEXT_PUBLIC_ENABLE_CHAT=true
-NEXT_PUBLIC_ENABLE_COMMUNITIES=true
-NEXT_PUBLIC_ENABLE_GYMS=true
-NEXT_PUBLIC_ENABLE_EVENTS=true
+VITE_ENABLE_CHAT=true
+VITE_ENABLE_COMMUNITIES=true
+VITE_ENABLE_GYMS=true
+VITE_ENABLE_EVENTS=true
 ```
 
 #### **Analytics (Optional)**
 ```
-NEXT_PUBLIC_GA_TRACKING_ID=your_ga_id
-NEXT_PUBLIC_MIXPANEL_TOKEN=your_mixpanel_token
+VITE_GA_TRACKING_ID=your_ga_id
+VITE_MIXPANEL_TOKEN=your_mixpanel_token
 ```
 
 ## 🌐 Deployment Platforms
@@ -116,7 +116,7 @@ const appName = config.app.name;
 - Check Node.js version compatibility
 
 ### **Runtime Errors**
-- Verify `NEXT_PUBLIC_` variables are accessible in browser
+- Verify `VITE_` variables are accessible in browser
 - Check Supabase RLS policies
 - Verify database connections
 

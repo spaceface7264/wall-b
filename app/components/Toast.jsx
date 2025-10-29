@@ -1,5 +1,5 @@
 // components/Toast.jsx
-'use client';
+
 
 import { useState, useEffect } from 'react';
 import { X, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';

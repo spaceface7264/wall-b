@@ -1,6 +1,6 @@
 import { Users, Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal, Edit2, Trash2, Calendar } from 'lucide-react';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 
 export default function PostCard({ 
   post, 
@@ -20,13 +20,13 @@ export default function PostCard({
 }) {
   const [showReactions, setShowReactions] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
   const isOwnPost = post.user_id === currentUserId;
   const canShowActions = showActions && (isOwnPost || isAdmin);
 
   const handleProfileClick = (e) => {
     e.stopPropagation();
-    router.push(`/profile/${post.user_id}`);
+    navigate(`/profile/${post.user_id}`);
   };
 
   // Parse event mentions in content

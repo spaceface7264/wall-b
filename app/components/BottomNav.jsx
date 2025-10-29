@@ -1,14 +1,13 @@
-'use client';
-
-import { useRouter, usePathname } from 'next/navigation';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Home, MapPin, MessageCircle, User } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import UnreadBadge from './UnreadBadge';
 
 export default function BottomNav() {
-  const router = useRouter();
-  const pathname = usePathname();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const pathname = location.pathname;
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -66,7 +65,7 @@ export default function BottomNav() {
     if (path === '/community') {
       sessionStorage.setItem('fromHomeButton', 'true');
     }
-    router.push(path);
+    navigate(path);
   };
 
   return (

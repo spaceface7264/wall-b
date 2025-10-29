@@ -1,17 +1,25 @@
 [build]
   command = "npm run build"
-  publish = ".next"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "18"
   NODE_ENV = "production"
 
 # Environment Variables (set these in Netlify dashboard)
-# NEXT_PUBLIC_SUPABASE_URL
-# NEXT_PUBLIC_SUPABASE_ANON_KEY
-# SUPABASE_SERVICE_ROLE_KEY
-# NEXT_PUBLIC_APP_NAME
-# NEXT_PUBLIC_APP_URL
+# Required:
+# - VITE_SUPABASE_URL
+# - VITE_SUPABASE_ANON_KEY
+# 
+# Optional:
+# - VITE_APP_NAME
+# - VITE_APP_URL
+# - VITE_DEBUG
+# - VITE_ENABLE_CHAT
+# - VITE_ENABLE_COMMUNITIES
+# - VITE_ENABLE_GYMS
+# - VITE_ENABLE_EVENTS
+# - SUPABASE_SERVICE_ROLE_KEY (server-side only)
 
 # Headers for security and performance
 [[headers]]
@@ -21,9 +29,30 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    # Security headers
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
 
-# Redirects for SPA routing
+# Cache static assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache other static files
+[[headers]]
+  for = "/*.{js,css,woff,woff2,eot,ttf,otf}"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Redirects for SPA routing - must be last
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
+
+# Error page (optional)
+# [[redirects]]
+#   from = "/404"
+#   to = "/index.html"
+#   status = 200

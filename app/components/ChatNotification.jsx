@@ -1,16 +1,15 @@
-'use client';
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { MessageCircle, X, Bell, BellOff } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 
 export default function ChatNotification({ userId }) {
   const [notifications, setNotifications] = useState([]);
   const [showNotification, setShowNotification] = useState(false);
   const [permission, setPermission] = useState('default');
   const [isEnabled, setIsEnabled] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!userId) return;
@@ -119,7 +118,7 @@ export default function ChatNotification({ userId }) {
 
     browserNotification.onclick = () => {
       window.focus();
-      router.push(`/chat?conversationId=${notification.conversationId}`);
+      navigate(`/chat?conversationId=${notification.conversationId}`);
       browserNotification.close();
     };
 
@@ -130,7 +129,7 @@ export default function ChatNotification({ userId }) {
   };
 
   const handleNotificationClick = (conversationId) => {
-    router.push(`/chat?conversationId=${conversationId}`);
+    navigate(`/chat?conversationId=${conversationId}`);
     setShowNotification(false);
   };
 

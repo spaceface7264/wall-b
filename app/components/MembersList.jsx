@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Search, Users, Crown, Shield, User } from 'lucide-react';
 
@@ -13,10 +11,10 @@ export default function MembersList({ communityId, isAdmin = false }) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalMembers, setTotalMembers] = useState(0);
   const membersPerPage = 20;
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const handleProfileClick = (userId) => {
-    router.push(`/profile/${userId}`);
+    navigate(`/profile/${userId}`);
   };
 
   useEffect(() => {
