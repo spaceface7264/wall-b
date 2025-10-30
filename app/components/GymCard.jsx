@@ -1,5 +1,6 @@
 import React from 'react';
 import { MapPin, Star, Clock, Users, ChevronRight, Heart } from 'lucide-react';
+import { formatDistance } from '../../lib/geolocation';
 
 const GymCard = React.memo(function GymCard({
   gym,
@@ -73,6 +74,9 @@ const GymCard = React.memo(function GymCard({
           <div className="minimal-flex mobile-text-xs text-gray-400" style={{ marginBottom: '12px' }}>
             <MapPin className="minimal-icon flex-shrink-0" style={{ marginRight: '10px' }} />
             <span className="truncate">{gym.city}, {gym.country}</span>
+            {typeof gym.distance_km === 'number' && (
+              <span className="ml-2 text-indigo-300 whitespace-nowrap">• {formatDistance(gym.distance_km)} away</span>
+            )}
           </div>
 
           <p className="mobile-text-xs text-gray-300 line-clamp-2" style={{ lineHeight: '1.7' }}>

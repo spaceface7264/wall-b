@@ -4,6 +4,8 @@ import { supabase } from '../../lib/supabase';
 import { MapPin, Heart, Plus, MoreHorizontal } from 'lucide-react';
 import GymCard from '../components/GymCard';
 import { useToast } from '../providers/ToastProvider';
+import { useNearbyGyms } from '../hooks/useGeolocation';
+import { formatDistance } from '../../lib/geolocation';
 import { EmptyGyms } from '../components/EmptyState';
 
 // Note: This component is wrapped with SidebarLayout in App.jsx, so don't wrap here
@@ -17,8 +19,18 @@ export default function Gyms() {
   const [favoriteGymIds, setFavoriteGymIds] = useState(new Set());
   const [user, setUser] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [radiusKm, setRadiusKm] = useState(25);
+  const [sortByDistance, setSortByDistance] = useState(false);
   const navigate = useNavigate();
   const { showToast } = useToast();
+
+  const {
+    gyms: nearbyGyms,
+    loading: nearbyLoading,
+    error: nearbyError,
+    requestLocation,
+    location,
+  } = useNearbyGyms({ radiusKm, limit: 50 });
 
   useEffect(() => {
     getUser();
@@ -175,6 +187,19 @@ export default function Gyms() {
     return matchesSearch && matchesCountry;
   });
 
+  // If we have nearby results and sorting by distance, decorate and sort
+  let displayedGyms = filteredGyms;
+  if (sortByDistance && Array.isArray(nearbyGyms) && nearbyGyms.length > 0) {
+    const distanceById = new Map(nearbyGyms.map(g => [g.id, g.distance_km]));
+    displayedGyms = filteredGyms
+      .map(g => ({ ...g, distance_km: distanceById.get(g.id) }))
+      .sort((a, b) => {
+        const da = typeof a.distance_km === 'number' ? a.distance_km : Infinity;
+        const db = typeof b.distance_km === 'number' ? b.distance_km : Infinity;
+        return da - db;
+      });
+  }
+
   const openGym = (gym) => {
     console.log('Opening gym:', gym);
     console.log('Gym ID:', gym.id);
@@ -287,6 +312,41 @@ export default function Gyms() {
           </div>
         </div>
 
+        {/* Location controls */}
+        <div className="mobile-card animate-slide-up mb-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={requestLocation}
+              className="mobile-btn-secondary px-3 py-2"
+            >
+              Use my location
+            </button>
+            <select
+              value={radiusKm}
+              onChange={(e) => setRadiusKm(parseInt(e.target.value, 10))}
+              className="minimal-input w-auto"
+              aria-label="Radius"
+            >
+              <option value={5}>5km</option>
+              <option value={10}>10km</option>
+              <option value={25}>25km</option>
+              <option value={50}>50km</option>
+              <option value={100}>100km</option>
+            </select>
+            <label className="flex items-center gap-2 text-sm text-gray-300">
+              <input
+                type="checkbox"
+                checked={sortByDistance}
+                onChange={(e) => setSortByDistance(e.target.checked)}
+              />
+              Sort by distance
+            </label>
+          </div>
+          {nearbyError && (
+            <p className="mobile-text-xs text-red-400 mt-2">{nearbyError.message}</p>
+          )}
+        </div>
+
         {/* Search */}
         <div className="mobile-card animate-slide-up">
           <input
@@ -324,10 +384,10 @@ export default function Gyms() {
                   </div>
                 ))}
               </div>
-            ) : filteredGyms.length === 0 ? (
+            ) : displayedGyms.length === 0 ? (
               <EmptyGyms onRequestClick={() => navigate('/gyms/request')} />
             ) : (
-              filteredGyms.map((gym, index) => (
+              displayedGyms.map((gym, index) => (
                 <GymCard
                   key={gym.id}
                   gym={gym}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Search, Users, Crown, Shield, User } from 'lucide-react';
+import { EmptyMembers, EmptySearch } from './EmptyState';
 
 export default function MembersList({ communityId, isAdmin = false }) {
   const [members, setMembers] = useState([]);

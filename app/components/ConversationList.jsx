@@ -7,6 +7,7 @@ import UserDiscovery from './UserDiscovery';
 import UnreadBadge from './UnreadBadge';
 import GroupChatModal from './GroupChatModal';
 import ErrorRetry from './ErrorRetry';
+import ConversationListSkeleton from './ConversationListSkeleton';
 
 export default function ConversationList({ onSelectConversation, currentUserId }) {
   const [conversations, setConversations] = useState([]);
@@ -181,11 +182,8 @@ export default function ConversationList({ onSelectConversation, currentUserId }
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-          <p className="text-gray-400 text-sm">Loading conversations...</p>
-        </div>
+      <div className="h-full p-4">
+        <ConversationListSkeleton count={5} />
       </div>
     );
   }

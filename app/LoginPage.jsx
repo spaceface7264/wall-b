@@ -10,7 +10,32 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [resetMessage, setResetMessage] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const navigate = useNavigate();
+
+  const handlePasswordReset = async () => {
+    setResetMessage('');
+    if (!email) {
+      setResetMessage('Enter your email above, then click Forgot password.');
+      return;
+    }
+    try {
+      setIsSendingReset(true);
+      const redirectTo = `${window.location.origin}/reset-password`;
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+      if (resetError) {
+        setResetMessage(resetError.message || 'Failed to send reset email');
+        return;
+      }
+      setResetMessage('Password reset email sent. Check your inbox.');
+    } catch (e) {
+      setResetMessage('Failed to send reset email');
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -18,18 +43,68 @@ export default function LoginPage() {
     setError('');
 
     try {
+      if (isSignUp && !acceptedTerms) {
+        setError('Please accept the Terms & Conditions to create an account.');
+        setIsLoading(false);
+        return;
+      }
       const result = isSignUp 
         ? await supabase.auth.signUp({ email, password })
         : await supabase.auth.signInWithPassword({ email, password });
 
       if (result.error) {
         setError(result.error.message);
-      } else {
-        navigate('/communities');
+        setIsLoading(false);
+        return;
       }
-    } catch {
-      setError('Authentication failed');
-    } finally {
+
+      // For signup, check if email confirmation is required
+      if (isSignUp && result.data && !result.data.session) {
+        setError('Please check your email to confirm your account before signing in.');
+        setIsLoading(false);
+        return;
+      }
+
+      // If we have a session, check profile completeness
+      try {
+        // Use the user from the result if available, otherwise fetch
+        const user = result.data?.user || (await supabase.auth.getUser()).data?.user;
+        
+        if (!user) {
+          // For email confirmation flows, send to login
+          setError('Authentication succeeded but could not get user. Please try again.');
+          setIsLoading(false);
+          return;
+        }
+
+        // Try to fetch profile - use maybeSingle() to avoid errors if profile doesn't exist
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        // Add a small delay to ensure navigation happens smoothly
+        setIsLoading(false);
+        
+        // Wait a moment before navigating to let loading state clear
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // If profile doesn't exist or missing required fields, go to onboarding
+        if (profileError || !profile || !profile.nickname || !profile.handle) {
+          navigate('/onboarding');
+        } else {
+          navigate('/communities');
+        }
+      } catch (err) {
+        console.error('Error checking profile:', err);
+        setIsLoading(false);
+        // On error, assume onboarding needed
+        setTimeout(() => navigate('/onboarding'), 100);
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Authentication failed. Please check your credentials and try again.');
       setIsLoading(false);
     }
   };
@@ -128,6 +203,39 @@ export default function LoginPage() {
               </div>
             )}
 
+            {/* Forgot password */}
+            {!isSignUp && (
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={handlePasswordReset}
+                  disabled={isSendingReset}
+                  className="text-indigo-400 hover:text-indigo-300 mobile-text-sm"
+                >
+                  {isSendingReset ? 'Sending…' : 'Forgot password?'}
+                </button>
+                {resetMessage && (
+                  <span className="mobile-text-xs text-gray-400 ml-2 truncate">
+                    {resetMessage}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Accept Terms & Conditions for Sign Up */}
+            {isSignUp && (
+              <label className="flex items-center gap-2 mobile-text-sm text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="accent-indigo-600"
+                />
+                I agree to the
+                <a href="/terms" target="_blank" rel="noreferrer" className="text-indigo-400 hover:text-indigo-300">Terms & Conditions</a>
+              </label>
+            )}
+
             <button
               type="submit"
               disabled={isLoading}
@@ -143,17 +251,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer Link */}
-        <p className="text-center mobile-text-xs text-gray-500 mt-4">
-          {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-          {' '}
-          <button
-            type="button"
-            onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
-            className="text-indigo-400 hover:text-indigo-300"
-          >
-            {isSignUp ? 'Sign in' : 'Sign up'}
-          </button>
-        </p>
+        {/* Footer link removed to avoid duplicate Sign Up/Sign In toggle (tab switcher covers it) */}
       </div>
     </div>
   );

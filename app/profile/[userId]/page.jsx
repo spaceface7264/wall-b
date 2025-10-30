@@ -208,6 +208,9 @@ export default function PublicProfile() {
               
               <div className="flex-1 min-w-0">
                 <h2 className="mobile-card-title truncate mb-1">{displayName}</h2>
+                {profile.handle && (
+                  <p className="mobile-text-xs text-gray-400 truncate mb-1">@{profile.handle}</p>
+                )}
                 {profile.email && profile.show_email && (
                   <p className="mobile-text-xs text-gray-400 truncate mb-1">{profile.email}</p>
                 )}

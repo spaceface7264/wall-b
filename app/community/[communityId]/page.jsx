@@ -14,6 +14,7 @@ import MembersList from '../../components/MembersList';
 import CalendarView from '../../components/CalendarView';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getActualMemberCount } from '../../../lib/community-utils';
+import ListSkeleton from '../../components/ListSkeleton';
 
 export default function CommunityPage() {
   const [user, setUser] = useState(null);
@@ -126,7 +127,7 @@ export default function CommunityPage() {
       console.error('Error loading community:', error);
       // Only redirect on final retry
       if (retryCount >= 1) {
-        navigate('/communities');
+      navigate('/communities');
       }
     } finally {
       setLoading(false);
@@ -710,12 +711,7 @@ export default function CommunityPage() {
       <SidebarLayout currentPage="community">
         <div className="mobile-container">
           <div className="mobile-section">
-            <div className="mobile-card animate-fade-in">
-              <div className="minimal-flex-center py-8">
-                <div className="minimal-spinner"></div>
-                <p className="minimal-text ml-3">Loading community...</p>
-              </div>
-            </div>
+            <ListSkeleton variant="post" count={3} />
           </div>
         </div>
       </SidebarLayout>

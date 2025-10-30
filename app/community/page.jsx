@@ -6,6 +6,7 @@ import CommunityCard from '../components/CommunityCard';
 import { useToast } from '../providers/ToastProvider';
 import { enrichCommunitiesWithActualCounts } from '../../lib/community-utils';
 import { EmptyCommunities, EmptySearch } from '../components/EmptyState';
+import ListSkeleton from '../components/ListSkeleton';
 
 export default function CommunitiesPage() {
   const [user, setUser] = useState(null);
@@ -154,12 +155,7 @@ export default function CommunitiesPage() {
     return (
         <div className="mobile-container">
           <div className="mobile-section">
-            <div className="mobile-card animate-fade-in">
-              <div className="minimal-flex-center py-8">
-                <div className="minimal-spinner"></div>
-                <p className="minimal-text ml-3">Loading communities...</p>
-              </div>
-            </div>
+            <ListSkeleton variant="community" count={6} />
           </div>
         </div>
     );

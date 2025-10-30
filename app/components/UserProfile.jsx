@@ -184,6 +184,9 @@ export default function UserProfile({ userId, showBackButton = true }) {
                 
                 <div className="flex-1 min-w-0">
                   <h2 className="mobile-card-title truncate">{displayName}</h2>
+                  {profile.handle && (
+                    <p className="mobile-text-xs text-gray-400">@{profile.handle}</p>
+                  )}
                   {profile.email && (
                     <p className="mobile-card-subtitle truncate">{profile.email}</p>
                   )}

@@ -11,6 +11,9 @@ import GymPage from './gyms/[gymId]/page.jsx'
 import ProfilePage from './profile/page.jsx'
 import PublicProfile from './profile/[userId]/page.jsx'
 import AdminPage from './admin/page.jsx'
+import ResetPasswordPage from './reset-password/page.jsx'
+import TermsPage from './terms/page.jsx'
+import OnboardingPage from './onboarding/page.jsx'
 import SidebarLayout from './components/SidebarLayout.jsx'
 import { ToastProvider } from './providers/ToastProvider.jsx'
 
@@ -21,6 +24,9 @@ function App() {
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
           {/* Redirect deprecated /community to /communities for consistency */}
           <Route path="/community" element={<Navigate to="/communities" replace />} />
           <Route path="/communities" element={<SidebarLayout currentPage="communities" pageTitle="Communities"><CommunitiesPage /></SidebarLayout>} />
