@@ -32,7 +32,7 @@ export default function BottomNav() {
       id: 'home',
       label: 'Home',
       icon: Home,
-      path: '/community'
+      path: '/communities'
     },
     {
       id: 'gyms',
@@ -55,14 +55,14 @@ export default function BottomNav() {
   ];
 
   const isActive = (path) => {
-    if (path === '/community') {
-      return pathname === '/community' || pathname.startsWith('/community/');
+    if (path === '/communities') {
+      return pathname === '/communities' || pathname.startsWith('/community/');
     }
     return pathname.startsWith(path);
   };
 
   const handleNavigation = (path) => {
-    if (path === '/community') {
+    if (path === '/communities') {
       sessionStorage.setItem('fromHomeButton', 'true');
     }
     navigate(path);

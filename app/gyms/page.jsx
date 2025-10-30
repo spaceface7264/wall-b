@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { MapPin, Heart, Plus, MoreHorizontal } from 'lucide-react';
 import GymCard from '../components/GymCard';
 import { useToast } from '../providers/ToastProvider';
+import { EmptyGyms } from '../components/EmptyState';
 
 // Note: This component is wrapped with SidebarLayout in App.jsx, so don't wrap here
 
@@ -58,17 +59,18 @@ export default function Gyms() {
   const fetchGyms = async () => {
     try {
       setLoading(true);
+      // Fetch gyms from database
       const { data, error } = await supabase
         .from('gyms')
         .select('*')
         .order('name', { ascending: true });
-
+      
       if (error) {
         console.error('Error fetching gyms:', error);
         // Fallback to mock data if database doesn't exist yet
         const mockGyms = [
           {
-            id: 1,
+            id: "11111111-1111-1111-1111-111111111111",
             name: "The Climbing Hangar",
             country: "United Kingdom",
             city: "London",
@@ -94,7 +96,7 @@ export default function Gyms() {
             boulder_count: 200
           },
           {
-            id: 2,
+            id: "22222222-2222-2222-2222-222222222222",
             name: "Boulder World",
             country: "Germany",
             city: "Berlin",
@@ -120,7 +122,7 @@ export default function Gyms() {
             boulder_count: 300
           },
           {
-            id: 3,
+            id: "33333333-3333-3333-3333-333333333333",
             name: "Vertical Dreams",
             country: "France",
             city: "Paris",
@@ -148,6 +150,10 @@ export default function Gyms() {
         ];
         setGyms(mockGyms);
         const uniqueCountries = [...new Set(mockGyms.map(gym => gym.country))];
+        setCountries(uniqueCountries);
+      } else if (data && data.length > 0) {
+        setGyms(data);
+        const uniqueCountries = [...new Set(data.map(gym => gym.country))];
         setCountries(uniqueCountries);
       } else {
         setGyms(data || []);
@@ -319,15 +325,7 @@ export default function Gyms() {
                 ))}
               </div>
             ) : filteredGyms.length === 0 ? (
-              <div className="mobile-card">
-                <div className="minimal-flex-center py-12">
-                  <div className="text-center">
-                    <MapPin className="minimal-icon mx-auto mb-4 text-gray-500 text-4xl" />
-                    <p className="mobile-text-sm text-gray-400 mb-2">No gyms found matching your search</p>
-                    <p className="mobile-text-xs text-gray-500">Try adjusting your search terms or filters</p>
-                  </div>
-                </div>
-              </div>
+              <EmptyGyms onRequestClick={() => navigate('/gyms/request')} />
             ) : (
               filteredGyms.map((gym, index) => (
                 <GymCard

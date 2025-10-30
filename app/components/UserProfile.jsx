@@ -301,10 +301,7 @@ export default function UserProfile({ userId, showBackButton = true }) {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-4">
-                <Users className="w-8 h-8 text-gray-500 mx-auto mb-2" />
-                <p className="mobile-text text-gray-400">No communities joined yet</p>
-              </div>
+              <EmptyProfileCommunities />
             )}
           </div>
 

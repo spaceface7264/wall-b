@@ -26,13 +26,47 @@ const GymCard = React.memo(function GymCard({
 
   const facilities = Array.isArray(gym.facilities) ? gym.facilities : JSON.parse(gym.facilities || '[]');
 
+
   return (
     <div
       className="mobile-card cursor-pointer touch-feedback hover:border-indigo-500/50 transition-all duration-200"
       onClick={() => onOpen(gym)}
       style={{ padding: '20px', marginBottom: '16px', position: 'relative' }}
     >
-      <div style={{ display: 'flex', gap: '20px' }}>
+      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+        {/* Gym Image */}
+        {(gym.image_url || gym.image) && (
+          <div style={{ 
+            flexShrink: 0, 
+            width: '120px', 
+            height: '120px',
+            minWidth: '120px',
+            minHeight: '120px',
+            backgroundColor: '#1e1e1e',
+            borderRadius: '4px',
+            border: '1px solid #333333',
+            overflow: 'hidden'
+          }}>
+            <img
+              src={gym.image_url || gym.image}
+              alt={gym.name}
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'cover',
+                display: 'block'
+              }}
+              onError={(e) => {
+                console.error('❌ Failed to load gym image for:', gym.name, 'URL:', gym.image_url || gym.image);
+                e.target.style.display = 'none';
+              }}
+              onLoad={() => {
+                console.log('✅ Gym image loaded successfully:', gym.name);
+              }}
+            />
+          </div>
+        )}
+        
         <div style={{ flex: 1, minWidth: 0 }}>
           <h3 className="mobile-subheading truncate" style={{ marginBottom: '12px' }}>{gym.name}</h3>
 

@@ -6,6 +6,7 @@ import SidebarLayout from '../../components/SidebarLayout';
 import TabNavigation from '../../components/TabNavigation';
 import CalendarView from '../../components/CalendarView';
 import { useToast } from '../../providers/ToastProvider';
+import { enrichCommunitiesWithActualCounts } from '../../../lib/community-utils';
 
 export default function GymDetail() {
   const [gym, setGym] = useState(null);
@@ -44,8 +45,20 @@ export default function GymDetail() {
     }
   };
 
+  // Helper function to check if a string is a valid UUID
+  const isValidUUID = (str) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
+
   const checkFavoriteStatus = async (userId, gymId) => {
     try {
+      // Only check favorites if gymId is a valid UUID
+      if (!isValidUUID(gymId)) {
+        setIsFavorite(false);
+        return;
+      }
+      
       const { data: favorite, error } = await supabase
         .from('user_favorite_gyms')
         .select('id')
@@ -68,6 +81,110 @@ export default function GymDetail() {
     try {
       setLoading(true);
       console.log('Fetching gym with ID:', gymId);
+      
+      // If gymId is numeric (mock data), use mock data directly
+      if (!isValidUUID(gymId)) {
+        console.log('Gym ID is not a UUID, using mock data');
+        const mockGyms = [
+          {
+            id: "11111111-1111-1111-1111-111111111111",
+            name: "The Climbing Hangar",
+            country: "United Kingdom",
+            city: "London",
+            address: "123 Climbing Street, London E1 6AN",
+            phone: "+44 20 1234 5678",
+            email: "info@climbinghangar.com",
+            website: "https://climbinghangar.com",
+            description: "Premier bouldering gym in the heart of London with world-class facilities and routes for all levels.",
+            image_url: "https://images.unsplash.com/photo-1544551763-46a013bb2d26?w=800",
+            facilities: ["Cafe", "Shop", "Training Area", "Yoga Studio", "Kids Area", "Locker Rooms"],
+            opening_hours: {
+              monday: "6:00-23:00",
+              tuesday: "6:00-23:00",
+              wednesday: "6:00-23:00",
+              thursday: "6:00-23:00",
+              friday: "6:00-23:00",
+              saturday: "8:00-22:00",
+              sunday: "8:00-22:00"
+            },
+            price_range: "£15-25",
+            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert"],
+            wall_height: "4-5 meters",
+            boulder_count: 200
+          },
+          {
+            id: "22222222-2222-2222-2222-222222222222",
+            name: "Boulder World",
+            country: "Germany",
+            city: "Berlin",
+            address: "456 Bouldering Boulevard, 10115 Berlin",
+            phone: "+49 30 12345678",
+            email: "berlin@boulderworld.de",
+            website: "https://boulderworld.de",
+            description: "Modern bouldering facility with innovative route setting and excellent training equipment.",
+            image_url: "https://images.unsplash.com/photo-1522163182402-834f871fd851?w=800",
+            facilities: ["Cafe", "Shop", "Training Area", "Sauna", "Massage", "Locker Rooms", "Parking"],
+            opening_hours: {
+              monday: "7:00-24:00",
+              tuesday: "7:00-24:00",
+              wednesday: "7:00-24:00",
+              thursday: "7:00-24:00",
+              friday: "7:00-24:00",
+              saturday: "9:00-23:00",
+              sunday: "9:00-23:00"
+            },
+            price_range: "€18-28",
+            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert", "Competition"],
+            wall_height: "4-6 meters",
+            boulder_count: 300
+          },
+          {
+            id: "33333333-3333-3333-3333-333333333333",
+            name: "Vertical Dreams",
+            country: "France",
+            city: "Paris",
+            address: "789 Rue de l'Escalade, 75011 Paris",
+            phone: "+33 1 23 45 67 89",
+            email: "paris@verticaldreams.fr",
+            website: "https://verticaldreams.fr",
+            description: "Historic climbing gym with traditional charm and modern bouldering facilities in the heart of Paris.",
+            image_url: "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=800",
+            facilities: ["Cafe", "Shop", "Training Area", "Yoga Studio", "Locker Rooms", "Equipment Rental"],
+            opening_hours: {
+              monday: "6:30-22:30",
+              tuesday: "6:30-22:30",
+              wednesday: "6:30-22:30",
+              thursday: "6:30-22:30",
+              friday: "6:30-22:30",
+              saturday: "9:00-21:00",
+              sunday: "9:00-21:00"
+            },
+            price_range: "€16-26",
+            difficulty_levels: ["Beginner", "Intermediate", "Advanced"],
+            wall_height: "3.5-5 meters",
+            boulder_count: 150
+          }
+        ];
+        
+        // Map numeric IDs to UUIDs for backward compatibility
+        const idMap = {
+          "1": "11111111-1111-1111-1111-111111111111",
+          "2": "22222222-2222-2222-2222-222222222222",
+          "3": "33333333-3333-3333-3333-333333333333"
+        };
+        
+        const mappedId = idMap[gymId] || gymId;
+        const foundGym = mockGyms.find(gym => gym.id === mappedId || gym.id === gymId);
+        
+        if (foundGym) {
+          setGym(foundGym);
+          await loadCommunities(foundGym.id);
+          await loadEvents(foundGym.id);
+        } else {
+          setGym(null);
+        }
+        return;
+      }
       
       const { data, error } = await supabase
         .from('gyms')
@@ -194,7 +311,9 @@ export default function GymDetail() {
         return;
       }
 
-      setCommunities(data || []);
+      // Enrich communities with actual member counts
+      const enrichedCommunities = await enrichCommunitiesWithActualCounts(data || []);
+      setCommunities(enrichedCommunities);
     } catch (error) {
       console.log('Error loading communities, showing empty state');
       setCommunities([]);

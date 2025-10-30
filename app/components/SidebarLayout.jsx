@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle } from 'lucide-react';
+import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import BottomNav from './BottomNav';
+import { enrichCommunitiesWithActualCounts } from '../../lib/community-utils';
 
 export default function SidebarLayout({ children, currentPage = 'community', pageTitle = null }) {
   const [user, setUser] = useState(null);
@@ -71,7 +72,10 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       }
 
       console.log('Communities data:', data);
-      setCommunities(data?.map(item => item.communities).filter(Boolean) || []);
+      const communitiesList = data?.map(item => item.communities).filter(Boolean) || [];
+      // Enrich with actual member counts
+      const enrichedCommunities = await enrichCommunitiesWithActualCounts(communitiesList);
+      setCommunities(enrichedCommunities);
     } catch (error) {
       console.error('Error loading communities:', error);
     } finally {
@@ -518,7 +522,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
 
       {/* Main Content Area */}
       <div className={`mobile-content ${currentPage === 'chat' ? 'mobile-content-chat' : 'mobile-content-with-cards'}`}>
-        {children}
+          {children}
       </div>
 
       {/* Bottom Navigation */}

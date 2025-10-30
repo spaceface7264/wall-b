@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Star } from 'lucide-react';
+import { Users } from 'lucide-react';
 
 const CommunityCard = React.memo(function CommunityCard({
   community,
@@ -23,14 +23,6 @@ const CommunityCard = React.memo(function CommunityCard({
             <Users className="minimal-icon mr-1.5 flex-shrink-0" />
             <span className="font-medium">{community.member_count} members</span>
           </div>
-        </div>
-        <div className="flex flex-col items-end gap-3 ml-3">
-          {isMember && (
-            <div className="minimal-flex mobile-text-xs text-green-400 bg-green-900/20 px-2 py-1 rounded-full">
-              <Star className="minimal-icon mr-1" />
-              <span>Member</span>
-            </div>
-          )}
         </div>
       </div>
     </div>

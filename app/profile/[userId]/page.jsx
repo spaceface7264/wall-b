@@ -12,8 +12,17 @@ export default function PublicProfile() {
   const [profile, setProfile] = useState(null);
   const [communities, setCommunities] = useState([]);
   const [error, setError] = useState('');
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
+    // Get current user
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    getCurrentUser();
+
     const loadProfile = async () => {
       if (!userId) return;
 
@@ -134,8 +143,42 @@ export default function PublicProfile() {
     );
   }
 
+  const handleSendMessage = async () => {
+    if (!currentUserId || !userId || sendingMessage) return;
+    
+    // Don't allow messaging yourself
+    if (currentUserId === userId) {
+      return;
+    }
+
+    try {
+      setSendingMessage(true);
+      
+      // Create or get existing conversation
+      const { data: conversationId, error } = await supabase.rpc('get_or_create_direct_conversation', {
+        user1_id: currentUserId,
+        user2_id: userId
+      });
+
+      if (error) {
+        console.error('Error creating conversation:', error);
+        alert('Failed to start conversation. Please try again.');
+        return;
+      }
+
+      // Navigate to chat page
+      navigate('/chat');
+    } catch (err) {
+      console.error('Error starting conversation:', err);
+      alert('Failed to start conversation. Please try again.');
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
   const displayName = profile.nickname || profile.full_name || 'Anonymous';
   const location = [profile.city, profile.country].filter(Boolean).join(', ');
+  const isOwnProfile = currentUserId === userId;
 
   return (
     <SidebarLayout currentPage="profile" pageTitle={displayName}>
@@ -180,14 +223,26 @@ export default function PublicProfile() {
               </div>
             </div>
 
-            {/* Back Button */}
-            <button
-              onClick={() => navigate(-1)}
-              className="mobile-btn-secondary minimal-flex gap-2 w-full justify-center"
-            >
-              <ArrowLeft className="minimal-icon" />
-              Back
-            </button>
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigate(-1)}
+                className="mobile-btn-secondary minimal-flex gap-2 flex-1 justify-center"
+              >
+                <ArrowLeft className="minimal-icon" />
+                Back
+              </button>
+              {!isOwnProfile && currentUserId && (
+                <button
+                  onClick={handleSendMessage}
+                  disabled={sendingMessage}
+                  className="mobile-btn-primary minimal-flex gap-2 flex-1 justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <MessageCircle className="minimal-icon" />
+                  {sendingMessage ? 'Starting...' : 'Send Message'}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Activity Stats */}

@@ -4,6 +4,8 @@ import { supabase } from '../../lib/supabase';
 import { Users, Plus, MapPin, Calendar, MessageCircle, Search, Filter, Building, Globe } from 'lucide-react';
 import CommunityCard from '../components/CommunityCard';
 import { useToast } from '../providers/ToastProvider';
+import { enrichCommunitiesWithActualCounts } from '../../lib/community-utils';
+import { EmptyCommunities, EmptySearch } from '../components/EmptyState';
 
 export default function CommunitiesPage() {
   const [user, setUser] = useState(null);
@@ -54,7 +56,9 @@ export default function CommunitiesPage() {
         return;
       }
 
-      setCommunities(data || []);
+      // Enrich communities with actual member counts
+      const enrichedCommunities = await enrichCommunitiesWithActualCounts(data || []);
+      setCommunities(enrichedCommunities);
     } catch (error) {
       console.error('Error loading communities:', error);
       showToast('error', 'Error', 'Something went wrong');
@@ -90,7 +94,10 @@ export default function CommunitiesPage() {
         return;
       }
 
-      setMyCommunities(data?.map(item => item.communities).filter(Boolean) || []);
+      const myCommunitiesList = data?.map(item => item.communities).filter(Boolean) || [];
+      // Enrich with actual member counts
+      const enrichedMyCommunities = await enrichCommunitiesWithActualCounts(myCommunitiesList);
+      setMyCommunities(enrichedMyCommunities);
     } catch (error) {
       console.error('Error loading my communities:', error);
     }
@@ -145,16 +152,16 @@ export default function CommunitiesPage() {
 
   if (loading) {
     return (
-      <div className="mobile-container">
-        <div className="mobile-section">
-          <div className="mobile-card animate-fade-in">
-            <div className="minimal-flex-center py-8">
-              <div className="minimal-spinner"></div>
-              <p className="minimal-text ml-3">Loading communities...</p>
+        <div className="mobile-container">
+          <div className="mobile-section">
+            <div className="mobile-card animate-fade-in">
+              <div className="minimal-flex-center py-8">
+                <div className="minimal-spinner"></div>
+                <p className="minimal-text ml-3">Loading communities...</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
     );
   }
 
@@ -260,15 +267,17 @@ export default function CommunitiesPage() {
             </h2>
             
             {filteredCommunities.length === 0 ? (
-              <div className="minimal-flex-center py-12">
-                <div className="text-center">
-                  <Users className="minimal-icon mx-auto mb-4 text-gray-500 text-4xl" />
-                  <p className="mobile-text-sm text-gray-400 mb-2">No communities found</p>
-                  <p className="mobile-text-xs text-gray-500">
-                    {searchTerm ? 'Try adjusting your search terms' : 'Be the first to create a community!'}
-                  </p>
-                </div>
-              </div>
+              searchTerm || filterType !== 'all' ? (
+                <EmptySearch
+                  searchTerm={searchTerm || filterType}
+                  onClearSearch={() => {
+                    setSearchTerm('');
+                    setFilterType('all');
+                  }}
+                />
+              ) : (
+                <EmptyCommunities onCreateClick={() => navigate('/community/new')} />
+              )
             ) : (
               <div className="space-y-3">
                 {filteredCommunities.map((community) => (

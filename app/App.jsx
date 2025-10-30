@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './LoginPage.jsx'
 import CommunitiesPage from './community/page.jsx'
 import CommunityPage from './community/[communityId]/page.jsx'
@@ -9,6 +9,7 @@ import ChatPage from './chat/page.jsx'
 import GymsPage from './gyms/page.jsx'
 import GymPage from './gyms/[gymId]/page.jsx'
 import ProfilePage from './profile/page.jsx'
+import PublicProfile from './profile/[userId]/page.jsx'
 import AdminPage from './admin/page.jsx'
 import SidebarLayout from './components/SidebarLayout.jsx'
 import { ToastProvider } from './providers/ToastProvider.jsx'
@@ -20,8 +21,8 @@ function App() {
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/login" element={<LoginPage />} />
-          {/* /community route for Home button - shows CommunitiesPage */}
-          <Route path="/community" element={<SidebarLayout currentPage="home" pageTitle="Communities"><CommunitiesPage /></SidebarLayout>} />
+          {/* Redirect deprecated /community to /communities for consistency */}
+          <Route path="/community" element={<Navigate to="/communities" replace />} />
           <Route path="/communities" element={<SidebarLayout currentPage="communities" pageTitle="Communities"><CommunitiesPage /></SidebarLayout>} />
           {/* IMPORTANT: /community/new must come BEFORE /community/:communityId - React Router matches routes in order */}
           <Route path="/community/new" element={<CreateCommunityPage />} />
@@ -33,7 +34,7 @@ function App() {
           <Route path="/gyms/:gymId" element={<GymPage />} />
           {/* ProfilePage wraps itself so it can set dynamic titles */}
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/profile/:userId" element={<ProfilePage />} />
+          <Route path="/profile/:userId" element={<PublicProfile />} />
           <Route path="/admin" element={<SidebarLayout currentPage="admin" pageTitle="Admin"><AdminPage /></SidebarLayout>} />
         </Routes>
       </Router>

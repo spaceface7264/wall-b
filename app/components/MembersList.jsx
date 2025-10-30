@@ -155,12 +155,14 @@ export default function MembersList({ communityId, isAdmin = false }) {
 
       {/* Members List */}
       {members.length === 0 ? (
-        <div className="text-center py-8">
-          <Users className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">
-            {searchTerm ? 'No members found matching your search' : 'No members yet'}
-          </p>
-        </div>
+        searchTerm ? (
+          <EmptySearch
+            searchTerm={searchTerm}
+            onClearSearch={() => setSearchTerm('')}
+          />
+        ) : (
+          <EmptyMembers />
+        )
       ) : (
         <div className="space-y-2">
           {members.map((member) => {

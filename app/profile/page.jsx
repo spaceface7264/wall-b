@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { User as UserIcon, Settings, Save, Camera, X, MapPin, Users, MessageCircle, Heart, Calendar as EventIcon, Edit2, Globe } from 'lucide-react';
 import SidebarLayout from '../components/SidebarLayout';
 import { useToast } from '../providers/ToastProvider';
+import { enrichCommunitiesWithActualCounts } from '../../lib/community-utils';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -97,7 +98,10 @@ export default function Profile() {
             .eq('user_id', user.id);
 
           if (communityData) {
-            setCommunities(communityData.map(item => item.communities).filter(Boolean));
+            const communitiesList = communityData.map(item => item.communities).filter(Boolean);
+            // Enrich with actual member counts.supabase
+            const enrichedCommunities = await enrichCommunitiesWithActualCounts(communitiesList);
+            setCommunities(enrichedCommunities);
           }
         }
       } catch (err) {

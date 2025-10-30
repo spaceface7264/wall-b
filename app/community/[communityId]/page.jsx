@@ -5,6 +5,7 @@ import { Users, MessageCircle, Plus, MessageSquare, Clock, X, ThumbsUp, MapPin, 
 import SidebarLayout from '../../components/SidebarLayout';
 import TabNavigation from '../../components/TabNavigation';
 import PostCard from '../../components/PostCard';
+import { EmptyPosts, EmptyEvents, EmptyMembers } from '../../components/EmptyState';
 import EventCard from '../../components/EventCard';
 import SimpleEventCard from '../../components/SimpleEventCard';
 import CreatePostModal from '../../components/CreatePostModal';
@@ -12,6 +13,7 @@ import CreateEventModal from '../../components/CreateEventModal';
 import MembersList from '../../components/MembersList';
 import CalendarView from '../../components/CalendarView';
 import { useNavigate, useParams } from 'react-router-dom';
+import { getActualMemberCount } from '../../../lib/community-utils';
 
 export default function CommunityPage() {
   const [user, setUser] = useState(null);
@@ -115,7 +117,9 @@ export default function CommunityPage() {
         return;
       }
 
-      setCommunity(communityData);
+      // Get actual member count to ensure accuracy
+      const actualMemberCount = await getActualMemberCount(communityData.id);
+      setCommunity({ ...communityData, member_count: actualMemberCount });
       loadPosts(communityData.id);
       loadEvents(communityData.id);
     } catch (error) {
@@ -542,17 +546,10 @@ export default function CommunityPage() {
             {/* Posts Feed */}
             <div className="post-feed">
               {posts.length === 0 ? (
-                <div className="mobile-card">
-                  <div className="minimal-flex-center py-12">
-                    <div className="text-center">
-                      <MessageCircle className="minimal-icon mx-auto mb-4 text-gray-500 text-4xl" />
-                      <p className="mobile-text-sm text-gray-400 mb-2">No posts yet</p>
-                      <p className="mobile-text-xs text-gray-500">
-                        {isMember ? 'Be the first to share something!' : 'Join the community to see posts'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <EmptyPosts
+                  onCreateClick={() => setShowNewPostModal(true)}
+                  isMember={isMember}
+                />
               ) : (
                 posts.map((post) => (
                   <PostCard
@@ -624,6 +621,8 @@ export default function CommunityPage() {
               communityId={communityId} 
               userId={user?.id} 
               searchTerm={eventSearchTerm}
+              isMember={isMember}
+              onCreateClick={() => setShowNewEventModal(true)}
             />
           </div>
         );

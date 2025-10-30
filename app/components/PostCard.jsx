@@ -168,20 +168,20 @@ export default function PostCard({
             ) : (
               <div className="post-avatar-small post-avatar-placeholder">
                 {authorInitial}
-              </div>
+          </div>
             )}
-            <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0">
               <h4 className="post-title-compact truncate">{post.title}</h4>
               <div className="post-meta-compact">
-                <button
-                  onClick={handleProfileClick}
+              <button
+                onClick={handleProfileClick}
                   className="post-author-link"
-                >
+              >
                   {authorName}
-                </button>
+              </button>
                 <span className="post-meta-separator">•</span>
                 <Clock className="post-meta-icon" />
-                <span>{formatTime(post.created_at)}</span>
+              <span>{formatTime(post.created_at)}</span>
               </div>
             </div>
           </div>
@@ -228,36 +228,36 @@ export default function PostCard({
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <button
-              onClick={handleProfileClick}
+              <button
+                onClick={handleProfileClick}
               className="post-author-name"
-            >
+              >
               {authorName}
-            </button>
+              </button>
             <div className="post-meta">
               <Clock className="post-meta-icon" />
               <span>{formatTime(post.created_at)}</span>
               {post.tag && (
                 <>
                   <span className="post-meta-separator">•</span>
-                  <span className={getTagClass(post.tag)}>
-                    {getTagLabel(post.tag)}
-                  </span>
+              <span className={getTagClass(post.tag)}>
+                {getTagLabel(post.tag)}
+              </span>
                 </>
               )}
             </div>
           </div>
         </div>
         
-        {canShowActions && (
+          {canShowActions && (
           <div className="post-menu-container relative">
-            <button 
-              onClick={toggleMenu}
+              <button 
+                onClick={toggleMenu}
               className="post-menu-btn"
-            >
+              >
               <MoreHorizontal className="w-4 h-4" />
-            </button>
-            {showMenu && (
+              </button>
+              {showMenu && (
               <>
                 <div 
                   className="post-menu-overlay"
@@ -280,10 +280,10 @@ export default function PostCard({
                   </button>
                 </div>
               </>
-            )}
-          </div>
-        )}
-      </div>
+              )}
+            </div>
+          )}
+        </div>
 
       {/* Content */}
       <div className="post-content">
@@ -298,9 +298,9 @@ export default function PostCard({
                   <span className="text-gray-400">...</span>
                 </>
               )
-              : parseEventMentions(post.content)
-            }
-          </p>
+            : parseEventMentions(post.content)
+          }
+        </p>
         )}
         
         {/* Media Files */}
@@ -330,27 +330,27 @@ export default function PostCard({
                 {post.media_files.slice(0, 4).map((file, index) => (
                   <div key={index} className="post-media-item">
                     {file.type?.startsWith('image/') ? (
-                      <img
-                        src={file.url}
+                        <img
+                          src={file.url}
                         alt={file.name || `Media ${index + 1}`}
                         className="post-media-thumb"
-                        loading="lazy"
-                        onError={(e) => e.target.style.display = 'none'}
-                      />
+                          loading="lazy"
+                          onError={(e) => e.target.style.display = 'none'}
+                        />
                     ) : file.type?.startsWith('video/') ? (
-                      <video
-                        src={file.url}
+                        <video
+                          src={file.url}
                         className="post-media-thumb"
-                        controls
-                        preload="metadata"
-                      />
+                          controls
+                          preload="metadata"
+                        />
                     ) : null}
-                    {post.media_files.length > 4 && index === 3 && (
+                      {post.media_files.length > 4 && index === 3 && (
                       <div className="post-media-overlay">
                         <span>+{post.media_files.length - 4}</span>
-                      </div>
-                    )}
-                  </div>
+                        </div>
+                      )}
+                    </div>
                 ))}
               </div>
             )}
@@ -360,44 +360,44 @@ export default function PostCard({
       
       {/* Actions */}
       <div className="post-actions">
-        <button 
-          onClick={handleLike}
+          <button 
+            onClick={handleLike}
           disabled={isPostLoading}
           className={`post-action-btn ${isPostLiked ? 'post-action-btn-liked' : ''}`}
-        >
+          >
           {isPostLoading ? (
-            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          ) : (
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : (
             <Heart className={`w-4 h-4 ${isPostLiked ? 'fill-current' : ''}`} />
-          )}
+            )}
           <span>{post.like_count || 0}</span>
-        </button>
+          </button>
         
-        <button 
-          onClick={handleComment}
+          <button 
+            onClick={handleComment}
           className="post-action-btn"
-        >
+          >
           <MessageCircle className="w-4 h-4" />
           <span>{post.comment_count || 0}</span>
-        </button>
+          </button>
         
-        {onShare && (
-          <button 
-            onClick={handleShare}
+          {onShare && (
+            <button 
+              onClick={handleShare}
             className="post-action-btn post-action-btn-secondary"
-          >
+            >
             <Share className="w-4 h-4" />
-          </button>
-        )}
+            </button>
+          )}
         
-        {onSave && (
-          <button 
-            onClick={handleSave}
+          {onSave && (
+            <button 
+              onClick={handleSave}
             className="post-action-btn post-action-btn-secondary"
-          >
+            >
             <Bookmark className="w-4 h-4" />
-          </button>
-        )}
+            </button>
+          )}
       </div>
     </div>
   );

@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin, Users, CheckCircle } from 'lucide-react';
 import EventRSVPList from './EventRSVPList';
+import { EmptyEvents, EmptySearch } from './EmptyState';
 
-export default function CalendarView({ communityId, userId, searchTerm = '' }) {
+export default function CalendarView({ communityId, userId, searchTerm = '', isMember = false, onCreateClick }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -377,12 +378,17 @@ export default function CalendarView({ communityId, userId, searchTerm = '' }) {
         /* List View */
         <div className="space-y-3">
           {getFilteredEvents().length === 0 ? (
-            <div className="text-center py-8">
-              <Calendar className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-              <p className="text-gray-400">
-                {searchTerm.trim() ? 'No events found matching your search' : 'No events scheduled'}
-              </p>
-            </div>
+            searchTerm.trim() ? (
+              <EmptySearch
+                searchTerm={searchTerm}
+                onClearSearch={() => {/* Search cleared by parent */}}
+              />
+            ) : (
+              <EmptyEvents
+                onCreateClick={onCreateClick}
+                isMember={isMember}
+              />
+            )
           ) : (
             getFilteredEvents().map(event => (
               <div key={event.id} className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">

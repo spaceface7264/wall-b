@@ -7,6 +7,7 @@ import CommentThread from '../../../../components/CommentThread';
 import CommentInput from '../../../../components/CommentInput';
 import CreatePostModal from '../../../../components/CreatePostModal';
 import { supabase } from '../../../../../lib/supabase';
+import { EmptyComments } from '../../../../components/EmptyState';
 
 export default function PostDetailPage() {
   const navigate = useNavigate();
@@ -745,9 +746,7 @@ export default function PostDetailPage() {
           </div>
 
           {topLevelComments.length === 0 ? (
-            <div className="mobile-card-flat p-4 text-center">
-              <p className="minimal-text">No comments yet. Be the first to comment!</p>
-            </div>
+            <EmptyComments onCreateClick={() => {/* Focus comment input */}} />
           ) : (
             <div>
               {topLevelComments.map((comment) => (
