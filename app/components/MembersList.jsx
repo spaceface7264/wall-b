@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Search, Users, Crown, Shield, User } from 'lucide-react';
 import { EmptyMembers, EmptySearch } from './EmptyState';
+import MembersListSkeleton from './MembersListSkeleton';
 
 export default function MembersList({ communityId, isAdmin = false }) {
   const [members, setMembers] = useState([]);
@@ -118,13 +119,7 @@ export default function MembersList({ communityId, isAdmin = false }) {
   };
 
   if (loading && members.length === 0) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-center py-8">
-          <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      </div>
-    );
+    return <MembersListSkeleton count={6} />;
   }
 
   return (

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import StarfieldBackground from './components/StarfieldBackground';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -110,10 +111,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{
-      background: 'linear-gradient(135deg, #1a1a1b 0%, #252526 100%)'
-    }}>
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <StarfieldBackground />
+      <div className="w-full max-w-sm relative z-10">
         
         {/* Header */}
         <div className="text-center mb-8">

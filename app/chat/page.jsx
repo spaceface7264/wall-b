@@ -76,7 +76,11 @@ export default function Chat() {
               border-r border-slate-700/50
               bg-slate-900/30
               overflow-hidden
+              transition-all duration-300 ease-in-out
             `}
+            style={{
+              animation: showConversationList ? 'slideInLeft 0.3s ease-out' : undefined
+            }}
           >
             <ConversationList
               onSelectConversation={handleSelectConversation}
@@ -92,7 +96,11 @@ export default function Chat() {
               flex-1
               bg-slate-900/20
               overflow-hidden
+              transition-all duration-300 ease-in-out
             `}
+            style={{
+              animation: !showConversationList ? 'slideInRight 0.3s ease-out' : undefined
+            }}
           >
             {selectedConversation ? (
               <ConversationView

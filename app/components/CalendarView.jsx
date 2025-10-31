@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin, Users, CheckCircle } from 'lucide-react';
 import EventRSVPList from './EventRSVPList';
 import { EmptyEvents, EmptySearch } from './EmptyState';
+import CalendarSkeleton from './CalendarSkeleton';
 
 export default function CalendarView({ communityId, userId, searchTerm = '', isMember = false, onCreateClick }) {
   const [events, setEvents] = useState([]);
@@ -213,11 +214,7 @@ export default function CalendarView({ communityId, userId, searchTerm = '', isM
   const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <CalendarSkeleton />;
   }
 
   return (

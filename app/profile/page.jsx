@@ -5,6 +5,7 @@ import { User as UserIcon, Settings, Save, Camera, X, MapPin, Users, MessageCirc
 import SidebarLayout from '../components/SidebarLayout';
 import { useToast } from '../providers/ToastProvider';
 import { enrichCommunitiesWithActualCounts } from '../../lib/community-utils';
+import ProfileSkeleton from '../components/ProfileSkeleton';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -215,12 +216,7 @@ export default function Profile() {
       <SidebarLayout currentPage="profile" pageTitle="Profile">
         <div className="mobile-container">
           <div className="mobile-section">
-            <div className="mobile-card animate-fade-in">
-              <div className="minimal-flex-center py-8">
-                <div className="minimal-spinner"></div>
-                <p className="minimal-text ml-3">Loading profile...</p>
-              </div>
-            </div>
+            <ProfileSkeleton />
           </div>
         </div>
       </SidebarLayout>

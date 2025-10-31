@@ -7,6 +7,7 @@ import TabNavigation from '../../components/TabNavigation';
 import CalendarView from '../../components/CalendarView';
 import { useToast } from '../../providers/ToastProvider';
 import { enrichCommunitiesWithActualCounts } from '../../../lib/community-utils';
+import GymDetailSkeleton from '../../components/GymDetailSkeleton';
 
 export default function GymDetail() {
   const [gym, setGym] = useState(null);
@@ -495,12 +496,7 @@ export default function GymDetail() {
       <SidebarLayout currentPage="gyms" pageTitle={gym?.name}>
         <div className="mobile-container">
           <div className="mobile-section">
-            <div className="mobile-card animate-fade-in">
-              <div className="minimal-flex-center py-8">
-                <div className="minimal-spinner"></div>
-                <p className="minimal-text ml-3">Loading gym details...</p>
-              </div>
-            </div>
+            <GymDetailSkeleton />
           </div>
         </div>
       </SidebarLayout>
@@ -701,14 +697,26 @@ export default function GymDetail() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">Communities at this gym</h3>
+              <div className="flex items-center gap-3">
               <span className="text-sm text-gray-400">{communities.length} communities</span>
+                <button 
+                  className="mobile-btn-primary"
+                  onClick={() => navigate(`/community/new?gym_id=${gym.id}`)}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Community
+                </button>
+              </div>
             </div>
             
             {communities.length === 0 ? (
               <div className="text-center py-8">
                 <Users className="w-12 h-12 text-gray-500 mx-auto mb-4" />
                 <p className="text-gray-400 mb-4">No communities yet at this gym</p>
-                <button className="mobile-btn-primary">
+                <button 
+                  className="mobile-btn-primary"
+                  onClick={() => navigate(`/community/new?gym_id=${gym.id}`)}
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Create Community
                 </button>
@@ -716,7 +724,11 @@ export default function GymDetail() {
             ) : (
               <div className="space-y-3">
                 {communities.map((community) => (
-                  <div key={community.id} className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
+                  <div 
+                    key={community.id} 
+                    className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/community/${community.id}`)}
+                  >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h4 className="font-medium text-white">{community.name}</h4>
@@ -727,15 +739,6 @@ export default function GymDetail() {
                             {community.member_count || 0} members
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => joinCommunity(community.id)}
-                          className="mobile-btn-primary"
-                        >
-                          <MessageCircle className="w-4 h-4 mr-2" />
-                          Join
-                        </button>
                       </div>
                     </div>
                   </div>

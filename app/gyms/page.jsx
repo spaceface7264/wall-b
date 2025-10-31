@@ -158,6 +158,32 @@ export default function Gyms() {
             difficulty_levels: ["Beginner", "Intermediate", "Advanced"],
             wall_height: "3.5-5 meters",
             boulder_count: 150
+          },
+          {
+            id: "44444444-4444-4444-4444-444444444444",
+            name: "Summit Climbing Center",
+            country: "United States",
+            city: "Boulder",
+            address: "321 Mountain View Drive, Boulder, CO 80301",
+            phone: "+1 303 555 9876",
+            email: "info@summitclimbing.com",
+            website: "https://summitclimbing.com",
+            description: "State-of-the-art climbing facility with world-class bouldering walls, lead climbing routes, and comprehensive training programs for climbers of all skill levels.",
+            image_url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800",
+            facilities: ["Cafe", "Shop", "Training Area", "Yoga Studio", "Kids Area", "Locker Rooms", "Parking", "Equipment Rental", "Bike Storage"],
+            opening_hours: {
+              monday: "5:00-23:00",
+              tuesday: "5:00-23:00",
+              wednesday: "5:00-23:00",
+              thursday: "5:00-23:00",
+              friday: "5:00-23:00",
+              saturday: "7:00-22:00",
+              sunday: "7:00-22:00"
+            },
+            price_range: "$22-32",
+            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert", "Competition"],
+            wall_height: "5-15 meters",
+            boulder_count: 250
           }
         ];
         setGyms(mockGyms);

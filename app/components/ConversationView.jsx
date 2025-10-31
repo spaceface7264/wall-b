@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Send, ArrowLeft, Users, MoreHorizontal, Paperclip, Smile, CheckCheck, Trash2 } from 'lucide-react';
+import { Send, ArrowLeft, Users, MoreHorizontal, Paperclip, Smile, CheckCheck, Trash2, MessageCircle } from 'lucide-react';
 import ErrorRetry from './ErrorRetry';
 import GroupMembersModal from './GroupMembersModal';
+import ConversationMessageSkeleton from './ConversationMessageSkeleton';
 
 export default function ConversationView({ conversation, currentUserId, onBack }) {
   const [messages, setMessages] = useState([]);
@@ -48,7 +49,17 @@ export default function ConversationView({ conversation, currentUserId, onBack }
   }, [conversation, messages]);
 
   useEffect(() => {
-    scrollToBottom();
+    // Only auto-scroll if user is near the bottom (within 200px)
+    const messagesContainer = messagesEndRef.current?.parentElement;
+    if (messagesContainer) {
+      const isNearBottom = 
+        messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 200;
+      
+      if (isNearBottom || messages.length <= 20) {
+        // Small delay to ensure DOM is updated
+        setTimeout(() => scrollToBottom(messages.length <= 20), 50);
+      }
+    }
   }, [messages]);
 
   const loadMessages = async (loadMore = false) => {
@@ -168,7 +179,22 @@ export default function ConversationView({ conversation, currentUserId, onBack }
             profiles: profile || { full_name: 'Unknown User', avatar_url: null }
           };
 
-          setMessages(prev => [...prev, messageWithProfile]);
+          setMessages(prev => {
+            // Check if message already exists (avoid duplicates from optimistic updates)
+            const exists = prev.some(msg => msg.id === messageWithProfile.id);
+            if (exists) return prev;
+            return [...prev, { ...messageWithProfile, isNew: true }];
+          });
+          
+          // Auto-scroll to new message
+          setTimeout(() => scrollToBottom(), 100);
+          
+          // Remove "isNew" flag after animation
+          setTimeout(() => {
+            setMessages(prev => prev.map(msg => 
+              msg.id === messageWithProfile.id ? { ...msg, isNew: false } : msg
+            ));
+          }, 600);
         }
       )
       .on('postgres_changes',
@@ -249,6 +275,26 @@ export default function ConversationView({ conversation, currentUserId, onBack }
     if (!newMessage.trim() || !currentUserId || sendingMessage) return;
 
     const messageText = newMessage.trim();
+    const tempId = `temp-${Date.now()}`;
+    
+    // Optimistic update - add message immediately
+    const optimisticMessage = {
+      id: tempId,
+      conversation_id: conversation.id,
+      sender_id: currentUserId,
+      message: messageText,
+      message_type: 'text',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      profiles: {
+        full_name: 'You',
+        avatar_url: null
+      },
+      sending: true,
+      isNew: true
+    };
+
+    setMessages(prev => [...prev, optimisticMessage]);
     setNewMessage('');
     setSendingMessage(true);
 
@@ -259,8 +305,11 @@ export default function ConversationView({ conversation, currentUserId, onBack }
     }
     setIsTyping(false);
 
+    // Scroll to bottom after optimistic update
+    setTimeout(() => scrollToBottom(), 100);
+
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('direct_messages')
         .insert([
           {
@@ -269,7 +318,9 @@ export default function ConversationView({ conversation, currentUserId, onBack }
             message: messageText,
             message_type: 'text'
           }
-        ]);
+        ])
+        .select()
+        .single();
 
       if (error) {
         console.error('Error sending message:', error);
@@ -279,10 +330,36 @@ export default function ConversationView({ conversation, currentUserId, onBack }
           hint: error.hint,
           code: error.code
         });
+        
+        // Remove optimistic message on error
+        setMessages(prev => prev.filter(msg => msg.id !== tempId));
         setNewMessage(messageText); // Restore message on error
+      } else {
+        // Get sender profile for the real message
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, avatar_url')
+          .eq('id', currentUserId)
+          .single();
+
+        // Replace optimistic message with real one
+        setMessages(prev => prev.map(msg => 
+          msg.id === tempId 
+            ? { ...data, profiles: profile || { full_name: 'You', avatar_url: null }, sending: false, isNew: true }
+            : msg
+        ));
+        
+        // Remove "isNew" flag after animation
+        setTimeout(() => {
+          setMessages(prev => prev.map(msg => 
+            msg.id === data.id ? { ...msg, isNew: false } : msg
+          ));
+        }, 600);
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
       setNewMessage(messageText); // Restore message on error
     } finally {
       setSendingMessage(false);
@@ -328,8 +405,13 @@ export default function ConversationView({ conversation, currentUserId, onBack }
     }
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (instant = false) => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: instant ? 'auto' : 'smooth',
+        block: 'end'
+      });
+    }
   };
 
   const handleScroll = (e) => {
@@ -540,7 +622,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
       </div>
 
       {/* Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-4 pt-[120px] pb-24 md:pt-4 md:pb-4" onScroll={handleScroll}>
+      <div className="flex-1 overflow-y-auto p-4 pt-[120px] pb-40 md:pt-4 md:pb-4" onScroll={handleScroll}>
         {/* Load More Button */}
         {hasMoreMessages && !loadingMore && (
           <div className="flex justify-center mb-6">
@@ -562,12 +644,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
         
         <div ref={messagesStartRef} />
         {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-              <p className="text-gray-400 text-sm">Loading messages...</p>
-            </div>
-          </div>
+          <ConversationMessageSkeleton count={6} />
         ) : error ? (
           <ErrorRetry
             error={error}
@@ -576,11 +653,22 @@ export default function ConversationView({ conversation, currentUserId, onBack }
             description="There was an error loading the conversation messages. Please try again."
           />
         ) : messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <Users className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-              <p className="text-gray-400 mb-2">No messages yet</p>
-              <p className="text-gray-500 text-sm">Start the conversation!</p>
+          <div className="flex items-center justify-center h-full animate-fade-in">
+            <div className="text-center max-w-sm px-6">
+              <div className="relative mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500/20 to-purple-600/20 rounded-full flex items-center justify-center mx-auto">
+                  <MessageCircle className="w-8 h-8 text-indigo-400" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500/30 rounded-full animate-pulse"></div>
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">Start the Conversation</h3>
+              <p className="text-gray-400 mb-4 text-sm leading-relaxed">
+                Send a message to {getConversationName()} to get started. Your messages will appear here.
+              </p>
+              <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                <div className="w-1 h-1 bg-indigo-400 rounded-full animate-pulse"></div>
+                <span>Messages are end-to-end secure</span>
+              </div>
             </div>
           </div>
         ) : (
@@ -600,9 +688,15 @@ export default function ConversationView({ conversation, currentUserId, onBack }
                 <div
                   className={`flex ${message.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
                 >
-              <div className={`flex gap-3 max-w-xs lg:max-w-md ${message.sender_id === currentUserId ? 'flex-row-reverse' : ''}`}>
+              <div 
+                className={`flex gap-3 max-w-xs lg:max-w-md ${message.sender_id === currentUserId ? 'flex-row-reverse' : ''} transition-all duration-300`}
+                style={{
+                  animation: message.isNew ? 'slideInMessage 0.3s ease-out' : undefined,
+                  transform: message.isNew ? 'translateY(0)' : undefined
+                }}
+              >
                 {message.sender_id !== currentUserId && (
-                  <div className="w-8 h-8 bg-slate-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-slate-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
                     {message.profiles?.avatar_url ? (
                       <img
                         src={message.profiles.avatar_url}
@@ -616,11 +710,11 @@ export default function ConversationView({ conversation, currentUserId, onBack }
                 )}
                 
                 <div
-                  className={`px-3 py-2 rounded-lg text-sm max-w-xs ${
+                  className={`px-3 py-2 rounded-lg text-sm max-w-xs transition-all duration-200 ${
                     message.sender_id === currentUserId
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-700 text-white'
-                  }`}
+                      ? 'bg-indigo-600 text-white shadow-md hover:shadow-lg'
+                      : 'bg-slate-700 text-white shadow-sm hover:shadow-md'
+                  } ${message.sending ? 'opacity-70' : 'opacity-100'} ${message.isNew ? 'scale-[1.02]' : 'scale-100'}`}
                 >
                   {message.sender_id !== currentUserId && (
                     <div className="text-xs text-slate-300 mb-2 font-bold">
@@ -631,10 +725,19 @@ export default function ConversationView({ conversation, currentUserId, onBack }
                     <p className="leading-relaxed">{message.message}</p>
                   </div>
                   <div className="flex items-center justify-between text-xs opacity-90">
-                    <span className="text-slate-300 font-medium">{formatTime(message.created_at)}</span>
+                    <span className="text-slate-300 font-medium" title={new Date(message.created_at).toLocaleString()}>
+                      {formatTime(message.created_at)}
+                    </span>
                     {message.sender_id === currentUserId && (
                       <div className="flex items-center gap-1 ml-2">
-                        {getMessageStatus(message)}
+                        {message.sending ? (
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+                            <span className="text-gray-400 text-[10px]">Sending</span>
+                          </div>
+                        ) : (
+                          getMessageStatus(message)
+                        )}
                       </div>
                     )}
                   </div>
@@ -648,19 +751,19 @@ export default function ConversationView({ conversation, currentUserId, onBack }
         
         {/* Typing Indicator */}
         {typingUsers.length > 0 && (
-          <div className="flex justify-start">
+          <div className="flex justify-start animate-fade-in">
             <div className="flex gap-2 max-w-xs">
-              <div className="w-8 h-8 bg-slate-600 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 bg-slate-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
                 <Users className="w-4 h-4 text-white" />
               </div>
-              <div className="px-3 py-2 rounded-lg text-sm bg-slate-700 text-white">
+              <div className="px-4 py-2.5 rounded-lg text-sm bg-slate-700 text-white shadow-sm">
                 <div className="flex items-center gap-2">
-                  <div className="flex space-x-1">
-                    <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></div>
-                    <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="flex space-x-1.5 items-center">
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
                   </div>
-                  <span className="text-xs text-slate-300">
+                  <span className="text-xs text-slate-300 font-medium">
                     {typingUsers.length === 1
                       ? `${typingUsers[0]} is typing...`
                       : `${typingUsers.join(', ')} are typing...`
@@ -676,7 +779,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
       </div>
 
       {/* Input - Fixed */}
-      <div className="fixed bottom-16 left-0 right-0 md:static md:flex-shrink-0 p-3 border-t border-slate-700 bg-slate-800 z-20">
+      <div className="fixed bottom-20 left-0 right-0 md:static md:flex-shrink-0 p-3 border-t border-slate-700 bg-slate-800 z-20" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
         <form onSubmit={sendMessage} className="flex gap-2">
           {/* Attachment Button */}
           <button

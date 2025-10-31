@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { Users, MapPin, Info, ArrowLeft, CheckCircle, AlertCircle, Building } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
+import FormSkeleton from '../../components/FormSkeleton';
 import { useToast } from '../../providers/ToastProvider';
 
 export default function CreateCommunityPage() {
@@ -12,6 +13,7 @@ export default function CreateCommunityPage() {
   const [gyms, setGyms] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -30,7 +32,17 @@ export default function CreateCommunityPage() {
         const { data: { user } } = await supabase.auth.getUser();
         setUser(user);
         if (user) {
-          loadGyms();
+          await loadGyms();
+          
+          // Check if gym_id is in URL params and pre-fill the form
+          const gymIdFromUrl = searchParams.get('gym_id');
+          if (gymIdFromUrl) {
+            setFormData(prev => ({
+              ...prev,
+              gym_id: gymIdFromUrl,
+              community_type: 'gym'
+            }));
+          }
         }
       } catch (error) {
         console.error('Error getting user:', error);
@@ -39,7 +51,7 @@ export default function CreateCommunityPage() {
       }
     };
     getUser();
-  }, []);
+  }, [searchParams]);
 
   const loadGyms = async () => {
     try {
@@ -167,12 +179,7 @@ export default function CreateCommunityPage() {
       <SidebarLayout currentPage="community">
         <div className="mobile-container">
           <div className="mobile-section">
-            <div className="mobile-card animate-fade-in">
-              <div className="minimal-flex-center py-8">
-                <div className="minimal-spinner"></div>
-                <p className="minimal-text ml-3">Loading...</p>
-              </div>
-            </div>
+            <FormSkeleton fieldCount={5} />
           </div>
         </div>
       </SidebarLayout>

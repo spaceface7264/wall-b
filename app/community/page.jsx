@@ -34,11 +34,24 @@ export default function CommunitiesPage() {
     loadCommunities();
   }, []);
 
+  // Reload communities when navigating back to this page
+  useEffect(() => {
+    const handleFocus = () => {
+      loadCommunities();
+      if (user) {
+        loadMyCommunities(user.id);
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user]);
+
   const loadCommunities = async () => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
+      // First try with gyms relation
+      let { data, error } = await supabase
         .from('communities')
         .select(`
           *,
@@ -46,23 +59,114 @@ export default function CommunitiesPage() {
             name,
             city,
             country,
-            address
+            address,
+            image_url
           )
         `)
         .order('created_at', { ascending: false });
 
+      // If that fails (e.g., RLS issue with gyms), try without gyms relation
+      if (error) {
+        console.warn('Error loading communities with gyms relation:', error);
+        console.log('Retrying without gyms relation...');
+        
+        const fallbackResult = await supabase
+          .from('communities')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (fallbackResult.error) {
+          console.error('Error loading communities:', fallbackResult.error);
+          showToast('error', 'Error', `Failed to load communities: ${fallbackResult.error.message}`);
+          return;
+        }
+        
+        data = fallbackResult.data;
+        error = null;
+        
+        // Fetch gym data separately for communities that have gym_id
+        if (data && data.length > 0) {
+          const gymIds = data
+            .map(c => c.gym_id)
+            .filter(Boolean)
+            .filter((id, index, self) => self.indexOf(id) === index); // unique IDs
+          
+          if (gymIds.length > 0) {
+            console.log('Fetching gym data for', gymIds.length, 'gyms:', gymIds);
+            
+            // Try fetching gyms one by one if batch fails (RLS might block .in())
+            let gymsMap = {};
+            
+            // First try batch query
+            const { data: gymsData, error: gymsError } = await supabase
+              .from('gyms')
+              .select('id, name, city, country, address')
+              .in('id', gymIds);
+            
+            if (gymsError) {
+              console.warn('Batch gym query failed, trying individual queries:', gymsError);
+              console.error('Full error details:', JSON.stringify(gymsError, null, 2));
+              
+              // Fallback: fetch gyms individually
+              for (const gymId of gymIds) {
+                try {
+                  console.log('Fetching individual gym:', gymId);
+                  const { data: gymData, error: singleError } = await supabase
+                    .from('gyms')
+                    .select('id, name, city, country, address')
+                    .eq('id', gymId)
+                    .single();
+                  
+                  if (singleError) {
+                    console.error(`Failed to fetch gym ${gymId}:`, singleError);
+                  } else if (gymData) {
+                    console.log('✅ Successfully fetched gym:', gymData.name);
+                    gymsMap[gymData.id] = gymData;
+                  }
+                } catch (err) {
+                  console.error('Exception fetching gym', gymId, err);
+                }
+              }
+            } else if (gymsData) {
+              // Batch query succeeded
+              gymsData.forEach(gym => {
+                gymsMap[gym.id] = gym;
+              });
+            }
+            
+            // Attach gym data to communities
+            if (Object.keys(gymsMap).length > 0) {
+              data = data.map(community => {
+                const gym = community.gym_id && gymsMap[community.gym_id] ? gymsMap[community.gym_id] : null;
+                return {
+                  ...community,
+                  gyms: gym ? [gym] : undefined
+                };
+              });
+              
+              console.log('Attached gym data to communities:', data.filter(c => c.gyms).length, 'communities have gym data');
+            } else {
+              console.warn('No gym data fetched for any communities');
+            }
+          }
+        }
+      }
+
       if (error) {
         console.error('Error loading communities:', error);
-        showToast('error', 'Error', 'Failed to load communities');
+        showToast('error', 'Error', `Failed to load communities: ${error.message}`);
         return;
       }
 
+      console.log('Loaded communities:', data?.length || 0, data);
+
       // Enrich communities with actual member counts
       const enrichedCommunities = await enrichCommunitiesWithActualCounts(data || []);
+      console.log('Enriched communities:', enrichedCommunities?.length || 0, enrichedCommunities);
       setCommunities(enrichedCommunities);
     } catch (error) {
       console.error('Error loading communities:', error);
-      showToast('error', 'Error', 'Something went wrong');
+      showToast('error', 'Error', `Something went wrong: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -70,7 +174,8 @@ export default function CommunitiesPage() {
 
   const loadMyCommunities = async (userId) => {
     try {
-      const { data, error } = await supabase
+      // Try with nested gyms relation first
+      let { data, error } = await supabase
         .from('community_members')
         .select(`
           community_id,
@@ -81,18 +186,109 @@ export default function CommunitiesPage() {
             community_type,
             member_count,
             created_at,
+            gym_id,
             gyms (
               name,
               city,
-              country
+              country,
+              image_url
             )
           )
         `)
         .eq('user_id', userId);
 
+      // If nested query fails, fetch communities separately
       if (error) {
-        console.error('Error loading my communities:', error);
-        return;
+        console.warn('Error loading my communities with nested gyms:', error);
+        
+        const { data: membersData, error: membersError } = await supabase
+          .from('community_members')
+          .select('community_id')
+          .eq('user_id', userId);
+
+        if (membersError) {
+          console.error('Error loading my communities:', membersError);
+          return;
+        }
+
+        const communityIds = membersData?.map(m => m.community_id).filter(Boolean) || [];
+        if (communityIds.length === 0) {
+          setMyCommunities([]);
+          return;
+        }
+
+        const { data: communitiesData, error: communitiesError } = await supabase
+          .from('communities')
+          .select('id, name, description, community_type, member_count, created_at, gym_id')
+          .in('id', communityIds);
+
+        if (communitiesError) {
+          console.error('Error loading communities:', communitiesError);
+          return;
+        }
+
+        data = communitiesData?.map(c => ({ community_id: c.id, communities: c })) || [];
+        
+        // Fetch gym data separately
+        const gymIds = communitiesData
+          ?.map(c => c.gym_id)
+          .filter(Boolean)
+          .filter((id, index, self) => self.indexOf(id) === index) || [];
+        
+        if (gymIds.length > 0) {
+          console.log('Fetching gym data for my communities:', gymIds.length, 'gyms');
+          
+          // Try fetching gyms one by one if batch fails (RLS might block .in())
+          let gymsMap = {};
+          
+          // First try batch query
+          const { data: gymsData, error: gymsError } = await supabase
+            .from('gyms')
+            .select('id, name, city, country')
+            .in('id', gymIds);
+          
+          if (gymsError) {
+            console.warn('Batch gym query failed for my communities, trying individual queries:', gymsError);
+            
+            // Fallback: fetch gyms individually
+            for (const gymId of gymIds) {
+              try {
+                const { data: gymData, error: singleError } = await supabase
+                  .from('gyms')
+                  .select('id, name, city, country')
+                  .eq('id', gymId)
+                  .single();
+                
+                if (!singleError && gymData) {
+                  gymsMap[gymData.id] = gymData;
+                }
+              } catch (err) {
+                console.warn('Failed to fetch gym', gymId, err);
+              }
+            }
+          } else if (gymsData) {
+            // Batch query succeeded
+            gymsData.forEach(gym => {
+              gymsMap[gym.id] = gym;
+            });
+          }
+          
+          // Attach gym data to communities
+          if (Object.keys(gymsMap).length > 0) {
+            data = data.map(item => {
+              const gym = item.communities.gym_id && gymsMap[item.communities.gym_id] 
+                ? gymsMap[item.communities.gym_id] 
+                : null;
+              return {
+                ...item,
+                communities: {
+                  ...item.communities,
+                  gyms: gym ? [gym] : undefined
+                }
+              };
+            });
+          }
+        }
       }
 
       const myCommunitiesList = data?.map(item => item.communities).filter(Boolean) || [];
@@ -116,12 +312,19 @@ export default function CommunitiesPage() {
     
     const matchesSearch = name.includes(searchLower) || description.includes(searchLower);
     
+    // Check filter - use community_type if it exists, otherwise infer from gym_id
+    const isGymCommunity = community.community_type === 'gym' || (community.community_type === undefined && community.gym_id);
+    const isGeneralCommunity = community.community_type === 'general' || (community.community_type === undefined && !community.gym_id);
+    
     const matchesFilter = filterType === 'all' || 
-                         (filterType === 'gym' && community.community_type === 'gym') ||
-                         (filterType === 'general' && community.community_type === 'general');
+                         (filterType === 'gym' && isGymCommunity) ||
+                         (filterType === 'general' && isGeneralCommunity);
     
     return matchesSearch && matchesFilter;
   });
+
+  const [joiningCommunity, setJoiningCommunity] = useState(null);
+  const [leavingCommunity, setLeavingCommunity] = useState(null);
 
   const handleJoinCommunity = async (communityId) => {
     if (!user) {
@@ -129,6 +332,7 @@ export default function CommunitiesPage() {
       return;
     }
 
+    setJoiningCommunity(communityId);
     try {
       const { error } = await supabase
         .from('community_members')
@@ -144,11 +348,58 @@ export default function CommunitiesPage() {
       }
 
       showToast('success', 'Success', 'Joined community successfully!');
-      loadMyCommunities(user.id);
+      await loadCommunities();
+      if (user) {
+        await loadMyCommunities(user.id);
+      }
     } catch (error) {
       console.error('Error joining community:', error);
       showToast('error', 'Error', 'Something went wrong');
+    } finally {
+      setJoiningCommunity(null);
     }
+  };
+
+  const handleLeaveCommunity = async (communityId) => {
+    if (!user) {
+      return;
+    }
+
+    if (!confirm('Are you sure you want to leave this community? You will no longer be able to see posts or participate in discussions.')) {
+      return;
+    }
+
+    setLeavingCommunity(communityId);
+    try {
+      const { error } = await supabase
+        .from('community_members')
+        .delete()
+        .eq('community_id', communityId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error leaving community:', error);
+        showToast('error', 'Error', 'Failed to leave community');
+        return;
+      }
+
+      showToast('success', 'Success', 'You have left the community');
+      await loadCommunities();
+      if (user) {
+        await loadMyCommunities(user.id);
+      }
+    } catch (error) {
+      console.error('Error leaving community:', error);
+      showToast('error', 'Error', 'Something went wrong');
+    } finally {
+      setLeavingCommunity(null);
+    }
+  };
+
+  const handleReportCommunity = async (communityId) => {
+    // TODO: Implement report functionality
+    showToast('info', 'Report', 'Report functionality coming soon');
+    console.log('Report community:', communityId);
   };
 
   if (loading) {
@@ -247,8 +498,11 @@ export default function CommunitiesPage() {
                     key={community.id}
                     community={community}
                     isMember={true}
-                    onLeave={() => {}}
+                    onJoin={handleJoinCommunity}
+                    onLeave={handleLeaveCommunity}
+                    onReport={handleReportCommunity}
                     onOpen={() => navigate(`/community/${community.id}`)}
+                    leaving={leavingCommunity === community.id}
                   />
                 ))}
               </div>
@@ -276,15 +530,22 @@ export default function CommunitiesPage() {
               )
             ) : (
               <div className="space-y-3">
-                {filteredCommunities.map((community) => (
-                  <CommunityCard
-                    key={community.id}
-                    community={community}
-                    isMember={myCommunities.some(c => c.id === community.id)}
-                    onLeave={() => {}}
-                    onOpen={() => navigate(`/community/${community.id}`)}
-                  />
-                ))}
+                {filteredCommunities.map((community) => {
+                  const isMemberOfThis = myCommunities.some(c => c.id === community.id);
+                  return (
+                    <CommunityCard
+                      key={community.id}
+                      community={community}
+                      isMember={isMemberOfThis}
+                      onJoin={handleJoinCommunity}
+                      onLeave={handleLeaveCommunity}
+                      onReport={handleReportCommunity}
+                      onOpen={() => navigate(`/community/${community.id}`)}
+                      joining={joiningCommunity === community.id}
+                      leaving={leavingCommunity === community.id}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>

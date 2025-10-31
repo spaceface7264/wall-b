@@ -26,13 +26,16 @@ CREATE INDEX IF NOT EXISTS gym_requests_created_at_idx ON gym_requests(created_a
 -- Enable Row Level Security
 ALTER TABLE gym_requests ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies
+-- RLS Policies (drop if exists to make idempotent)
+DROP POLICY IF EXISTS "Users can view their own gym requests" ON gym_requests;
 CREATE POLICY "Users can view their own gym requests" ON gym_requests
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create gym requests" ON gym_requests;
 CREATE POLICY "Users can create gym requests" ON gym_requests
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Admins can view all gym requests" ON gym_requests;
 CREATE POLICY "Admins can view all gym requests" ON gym_requests
   FOR SELECT USING (
     EXISTS (
@@ -42,6 +45,7 @@ CREATE POLICY "Admins can view all gym requests" ON gym_requests
     )
   );
 
+DROP POLICY IF EXISTS "Admins can update gym requests" ON gym_requests;
 CREATE POLICY "Admins can update gym requests" ON gym_requests
   FOR UPDATE USING (
     EXISTS (

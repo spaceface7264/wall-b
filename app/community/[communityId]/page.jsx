@@ -1,7 +1,7 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { Users, MessageCircle, Plus, MessageSquare, Clock, X, ThumbsUp, MapPin, UserPlus, TrendingUp, Calendar, Settings, ArrowLeft, Shield, Info, MoreHorizontal, RefreshCw, Heart } from 'lucide-react';
+import { Users, MessageCircle, Plus, MessageSquare, Clock, X, ThumbsUp, MapPin, UserPlus, TrendingUp, Calendar, Settings, ArrowLeft, Shield, Info, MoreHorizontal, RefreshCw, Heart, MoreVertical, LogOut, Flag } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
 import TabNavigation from '../../components/TabNavigation';
 import PostCard from '../../components/PostCard';
@@ -40,6 +40,7 @@ export default function CommunityPage() {
   const [showMenu, setShowMenu] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [eventSearchTerm, setEventSearchTerm] = useState('');
+  const menuRef = useRef(null);
   const navigate = useNavigate();
   const params = useParams();
   const communityId = params.communityId;
@@ -293,6 +294,7 @@ export default function CommunityPage() {
     }
 
     setLeaving(true);
+    setShowMenu(false);
     try {
       const { error } = await supabase
         .from('community_members')
@@ -310,12 +312,38 @@ export default function CommunityPage() {
       setShowSuccessMessage(true);
       setSuccessMessage('You have left the community');
       setTimeout(() => setShowSuccessMessage(false), 3000);
+      
+      // Redirect to communities page after leaving
+      setTimeout(() => {
+        navigate('/communities');
+      }, 2000);
     } catch (error) {
       console.error('Error leaving community:', error);
     } finally {
       setLeaving(false);
     }
   };
+
+  const handleReportCommunity = async () => {
+    setShowMenu(false);
+    // TODO: Implement report functionality
+    alert('Report functionality coming soon');
+    console.log('Report community:', communityId);
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showMenu]);
 
   const handleDeletePost = async (postId) => {
     if (!user) return;
@@ -758,15 +786,14 @@ export default function CommunityPage() {
 
           {/* Header */}
           <div className="animate-fade-in mb-6">
-
-
-            {/* Join Button - Only show for non-members */}
-            {!isMember && (
-              <div className="mt-4">
+            {/* Action Buttons Row */}
+            <div className="flex items-center gap-2 mt-4">
+              {/* Join Button - Only show for non-members */}
+              {!isMember && (
                 <button
                   onClick={handleJoinCommunity}
                   disabled={joining}
-                  className="mobile-btn-primary w-full minimal-flex gap-2 justify-center"
+                  className="mobile-btn-primary flex-1 minimal-flex gap-2 justify-center"
                 >
                   {joining ? (
                     <>
@@ -780,8 +807,47 @@ export default function CommunityPage() {
                     </>
                   )}
                 </button>
+              )}
+
+              {/* 3-Dot Menu - Show for all users */}
+              <div className="relative flex-shrink-0" ref={menuRef}>
+                <button
+                  onClick={() => setShowMenu(!showMenu)}
+                  className="p-2 hover:bg-gray-700 rounded-md transition-colors"
+                  aria-label="More options"
+                >
+                  <MoreVertical className="w-5 h-5 text-gray-400" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {showMenu && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 min-w-[180px]"
+                  >
+                    {isMember && (
+                      <button
+                        onClick={handleLeaveCommunity}
+                        disabled={leaving}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        role="menuitem"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        {leaving ? 'Leaving...' : 'Leave Community'}
+                      </button>
+                    )}
+                    <button
+                      onClick={handleReportCommunity}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                      role="menuitem"
+                    >
+                      <Flag className="w-4 h-4" />
+                      Report
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Success Message */}

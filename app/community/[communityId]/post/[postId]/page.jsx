@@ -8,6 +8,7 @@ import CommentInput from '../../../../components/CommentInput';
 import CreatePostModal from '../../../../components/CreatePostModal';
 import { supabase } from '../../../../../lib/supabase';
 import { EmptyComments } from '../../../../components/EmptyState';
+import PostCardSkeleton from '../../../../components/PostCardSkeleton';
 
 export default function PostDetailPage() {
   const navigate = useNavigate();
@@ -561,11 +562,8 @@ export default function PostDetailPage() {
     return (
       <SidebarLayout currentPage="community">
         <div className="mobile-container">
-          <div className="minimal-flex-center" style={{ minHeight: '50vh' }}>
-            <div className="text-center">
-              <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="minimal-text">Loading post...</p>
-            </div>
+          <div className="mobile-section">
+            <PostCardSkeleton />
           </div>
         </div>
       </SidebarLayout>

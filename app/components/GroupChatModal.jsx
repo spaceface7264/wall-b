@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { X, Users, Search, Check, Plus } from 'lucide-react';
 import Avatar from './Avatar';
+import UserListSkeleton from './UserListSkeleton';
 
 export default function GroupChatModal({ isOpen, onClose, onCreateGroup, currentUserId }) {
   const [groupName, setGroupName] = useState('');
@@ -146,8 +147,17 @@ export default function GroupChatModal({ isOpen, onClose, onCreateGroup, current
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center p-4">
-      <div className="mobile-card w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+    <div 
+      className="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center p-4 animate-fade-in"
+      style={{ animation: 'fadeInBackdrop 0.2s ease-out' }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+    >
+      <div 
+        className="mobile-card w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col"
+        style={{ animation: 'slideUpModal 0.3s ease-out' }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <h2 className="text-xl font-semibold text-white">Create Group Chat</h2>

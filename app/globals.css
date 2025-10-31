@@ -30,7 +30,7 @@
   .mobile-app {
     min-height: 100vh;
     max-width: 800px;
-    background-color: #252526;
+    background-color: #1E1E1E;
     color: #ffffff;
     display: flex;
     flex-direction: column;
@@ -53,7 +53,7 @@
     justify-content: space-between;
     height: 56px;
     padding: 0 16px;
-    background-color: #252526;
+    background-color: #202020;
     border-bottom: 1px solid #333333;
     position: sticky;
     top: 0;
@@ -249,14 +249,15 @@
   .mobile-section {
     display: flex;
     flex-direction: column;
+    background-color: #1E1E1E;
     gap: 16px;
-    padding: 16px;
+    padding: auto;
   }
 
   /* Mobile Cards */
   .mobile-card {
     background-color: #1e1e1e;
-    border-radius: 4px;
+    border-radius: 14px;
     padding: 16px;
     border: 1px solid #333333;
     transition: border-color 0.2s ease;
@@ -542,6 +543,59 @@
     }
     to {
       opacity: 1;
+    }
+  }
+
+  @keyframes slideInMessage {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes slideUpModal {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes fadeInBackdrop {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
     }
   }
 

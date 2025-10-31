@@ -8,6 +8,47 @@ const GymCard = React.memo(function GymCard({
   isFavorite = false,
   onToggleFavorite
 }) {
+  const getCountryFlag = (country) => {
+    const flagMap = {
+      'United Kingdom': '🇬🇧',
+      'UK': '🇬🇧',
+      'Germany': '🇩🇪',
+      'France': '🇫🇷',
+      'United States': '🇺🇸',
+      'USA': '🇺🇸',
+      'Spain': '🇪🇸',
+      'Italy': '🇮🇹',
+      'Netherlands': '🇳🇱',
+      'Belgium': '🇧🇪',
+      'Switzerland': '🇨🇭',
+      'Austria': '🇦🇹',
+      'Poland': '🇵🇱',
+      'Czech Republic': '🇨🇿',
+      'Sweden': '🇸🇪',
+      'Norway': '🇳🇴',
+      'Denmark': '🇩🇰',
+      'Finland': '🇫🇮',
+      'Canada': '🇨🇦',
+      'Australia': '🇦🇺',
+      'Japan': '🇯🇵',
+      'South Korea': '🇰🇷',
+      'China': '🇨🇳',
+      'Brazil': '🇧🇷',
+      'Mexico': '🇲🇽',
+      'Argentina': '🇦🇷',
+      'Portugal': '🇵🇹',
+      'Greece': '🇬🇷',
+      'Turkey': '🇹🇷',
+      'Russia': '🇷🇺',
+      'India': '🇮🇳',
+      'Singapore': '🇸🇬',
+      'Thailand': '🇹🇭',
+      'New Zealand': '🇳🇿',
+      'Ireland': '🇮🇪',
+    };
+    return flagMap[country] || '🌍';
+  };
+
   const getFacilityIcon = (facility) => {
     const iconMap = {
       'Cafe': '☕',
@@ -71,8 +112,9 @@ const GymCard = React.memo(function GymCard({
         <div style={{ flex: 1, minWidth: 0 }}>
           <h3 className="mobile-subheading truncate" style={{ marginBottom: '12px' }}>{gym.name}</h3>
 
-          <div className="minimal-flex mobile-text-xs text-gray-400" style={{ marginBottom: '12px' }}>
-            <MapPin className="minimal-icon flex-shrink-0" style={{ marginRight: '10px' }} />
+          <div className="minimal-flex mobile-text-xs text-gray-400 items-center" style={{ marginBottom: '12px', flexWrap: 'wrap', gap: '4px' }}>
+            <span className="text-lg flex-shrink-0" title={gym.country}>{getCountryFlag(gym.country)}</span>
+            <MapPin className="minimal-icon flex-shrink-0" style={{ marginLeft: '4px', marginRight: '6px' }} />
             <span className="truncate">{gym.city}, {gym.country}</span>
             {typeof gym.distance_km === 'number' && (
               <span className="ml-2 text-indigo-300 whitespace-nowrap">• {formatDistance(gym.distance_km)} away</span>

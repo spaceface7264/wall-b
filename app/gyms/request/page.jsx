@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { MapPin, Phone, Mail, Globe, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
 import { useToast } from '../../providers/ToastProvider';
+import FormSkeleton from '../../components/FormSkeleton';
 
 const countries = [
   'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France', 'Spain', 'Italy',
@@ -105,7 +106,9 @@ export default function GymRequestPage() {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
+      console.log('Submitting gym request for user:', user.id);
+      
+      const { data, error } = await supabase
         .from('gym_requests')
         .insert({
           user_id: user.id,
@@ -117,20 +120,23 @@ export default function GymRequestPage() {
           email: formData.email.trim() || null,
           website: formData.website.trim() || null,
           description: formData.description.trim() || null
-        });
+        })
+        .select();
 
       if (error) {
         console.error('Error submitting gym request:', error);
-        showToast('error', 'Error', 'Failed to submit gym request. Please try again.');
+        showToast('error', 'Error', `Failed to submit: ${error.message || 'Please check console for details'}`);
+        setSubmitting(false);
         return;
       }
 
+      console.log('Gym request submitted successfully:', data);
       setSubmitted(true);
       showToast('success', 'Request Submitted!', 'We\'ll review your request and add the gym soon!');
+      setSubmitting(false);
     } catch (error) {
-      console.error('Error submitting gym request:', error);
-      showToast('error', 'Error', 'Something went wrong. Please try again.');
-    } finally {
+      console.error('Exception submitting gym request:', error);
+      showToast('error', 'Error', `Something went wrong: ${error.message || 'Please try again.'}`);
       setSubmitting(false);
     }
   };
@@ -140,12 +146,7 @@ export default function GymRequestPage() {
       <SidebarLayout currentPage="gyms">
         <div className="mobile-container">
           <div className="mobile-section">
-            <div className="mobile-card animate-fade-in">
-              <div className="minimal-flex-center py-8">
-                <div className="minimal-spinner"></div>
-                <p className="minimal-text ml-3">Loading...</p>
-              </div>
-            </div>
+            <FormSkeleton fieldCount={6} />
           </div>
         </div>
       </SidebarLayout>

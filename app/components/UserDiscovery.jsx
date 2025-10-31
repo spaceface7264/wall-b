@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Search, Users, X, MessageCircle } from 'lucide-react';
+import UserListSkeleton from './UserListSkeleton';
 
 export default function UserDiscovery({ isOpen, onClose, onStartConversation, currentUserId }) {
   const [users, setUsers] = useState([]);
@@ -86,8 +87,17 @@ export default function UserDiscovery({ isOpen, onClose, onStartConversation, cu
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex justify-center items-center p-4">
-      <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div 
+      className="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex justify-center items-center p-4 animate-fade-in"
+      style={{ animation: 'fadeInBackdrop 0.2s ease-out' }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div 
+        className="bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+        style={{ animation: 'slideUpModal 0.3s ease-out' }}
+      >
         <div className="flex justify-between items-center p-4 border-b border-gray-700">
           <h2 className="text-xl font-bold text-white">Start New Chat</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
@@ -110,9 +120,7 @@ export default function UserDiscovery({ isOpen, onClose, onStartConversation, cu
 
           {/* Users List */}
           {loading ? (
-            <div className="flex justify-center items-center py-8">
-              <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-            </div>
+            <UserListSkeleton count={6} />
           ) : filteredUsers.length === 0 ? (
             <div className="text-center py-8">
               <Users className="w-12 h-12 text-gray-500 mx-auto mb-4" />

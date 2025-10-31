@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import OnboardingSkeleton from '../components/OnboardingSkeleton';
 
 const HANDLE_REGEX = /^[A-Za-z0-9._-]{3,20}$/;
 

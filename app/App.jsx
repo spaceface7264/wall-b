@@ -8,6 +8,7 @@ import CreateCommunityPage from './community/new/page.jsx'
 import ChatPage from './chat/page.jsx'
 import GymsPage from './gyms/page.jsx'
 import GymPage from './gyms/[gymId]/page.jsx'
+import GymRequestPage from './gyms/request/page.jsx'
 import ProfilePage from './profile/page.jsx'
 import PublicProfile from './profile/[userId]/page.jsx'
 import AdminPage from './admin/page.jsx'
@@ -37,11 +38,12 @@ function App() {
           <Route path="/community/:communityId/post/:postId" element={<PostDetailPage />} />
           <Route path="/chat" element={<SidebarLayout currentPage="chat" pageTitle="Chat"><ChatPage /></SidebarLayout>} />
           <Route path="/gyms" element={<SidebarLayout currentPage="gyms" pageTitle="Gyms"><GymsPage /></SidebarLayout>} />
+          <Route path="/gyms/request" element={<GymRequestPage />} />
           <Route path="/gyms/:gymId" element={<GymPage />} />
           {/* ProfilePage wraps itself so it can set dynamic titles */}
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/:userId" element={<PublicProfile />} />
-          <Route path="/admin" element={<SidebarLayout currentPage="admin" pageTitle="Admin"><AdminPage /></SidebarLayout>} />
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </Router>
     </ToastProvider>

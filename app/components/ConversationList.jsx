@@ -30,7 +30,29 @@ export default function ConversationList({ onSelectConversation, currentUserId }
       setLoading(true);
       setError(null);
       
-      // First, check if tables exist by trying a simple query
+      // Get conversations the user participates in - RLS should filter, but we query via participants for extra security
+      // First get conversation IDs for the current user
+      const { data: userConversations, error: participantError } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', currentUserId);
+
+      if (participantError) {
+        console.error('Error loading user conversations:', participantError);
+        setError(participantError);
+        return;
+      }
+
+      if (!userConversations || userConversations.length === 0) {
+        setConversations([]);
+        setLoading(false);
+        return;
+      }
+
+      // Extract conversation IDs
+      const conversationIds = userConversations.map(uc => uc.conversation_id);
+
+      // Now get the full conversation details for those IDs (RLS will double-check)
       const { data: conversations, error } = await supabase
         .from('conversations')
         .select(`
@@ -41,6 +63,7 @@ export default function ConversationList({ onSelectConversation, currentUserId }
           created_at,
           updated_at
         `)
+        .in('id', conversationIds)
         .order('updated_at', { ascending: false });
 
       if (error) {

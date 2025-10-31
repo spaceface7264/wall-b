@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { X, Users, UserPlus, UserMinus, Crown, Search, MoreVertical } from 'lucide-react';
 import Avatar from './Avatar';
+import MembersListSkeleton from './MembersListSkeleton';
+import UserListSkeleton from './UserListSkeleton';
 
 export default function GroupMembersModal({ isOpen, onClose, conversation, currentUserId }) {
   const [members, setMembers] = useState([]);
@@ -295,10 +297,7 @@ export default function GroupMembersModal({ isOpen, onClose, conversation, curre
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mr-2"></div>
-              <p className="text-slate-400">Loading members...</p>
-            </div>
+            <MembersListSkeleton count={6} />
           ) : error ? (
             <div className="p-4 text-center">
               <p className="text-red-400 mb-4">{error}</p>
@@ -323,10 +322,7 @@ export default function GroupMembersModal({ isOpen, onClose, conversation, curre
               </div>
 
               {loadingUsers ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mr-2"></div>
-                  <p className="text-slate-400">Loading users...</p>
-                </div>
+                <UserListSkeleton count={6} />
               ) : filteredAvailableUsers.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="w-12 h-12 text-slate-500 mx-auto mb-4" />

@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { User as UserIcon, MapPin, Users, MessageCircle, Heart, Calendar as EventIcon, ArrowLeft, Globe } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
 import CommunityCard from '../../components/CommunityCard';
+import ProfileSkeleton from '../../components/ProfileSkeleton';
 
 export default function PublicProfile() {
   const { userId } = useParams();
@@ -88,12 +89,7 @@ export default function PublicProfile() {
       <SidebarLayout currentPage="profile" pageTitle="Profile">
         <div className="mobile-container">
           <div className="mobile-section">
-            <div className="mobile-card animate-fade-in">
-              <div className="minimal-flex-center py-8">
-                <div className="minimal-spinner"></div>
-                <p className="minimal-text ml-3">Loading profile...</p>
-              </div>
-            </div>
+            <ProfileSkeleton />
           </div>
         </div>
       </SidebarLayout>

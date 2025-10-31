@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Users, X, User } from 'lucide-react';
+import MembersListSkeleton from './MembersListSkeleton';
 
 export default function EventRSVPList({ eventId, isOpen, onClose }) {
   const [rsvps, setRsvps] = useState([]);
@@ -108,9 +109,7 @@ export default function EventRSVPList({ eventId, isOpen, onClose }) {
         {/* Content */}
         <div className="overflow-y-auto max-h-[60vh]">
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-            </div>
+            <MembersListSkeleton count={4} />
           ) : rsvps.length === 0 ? (
             <div className="text-center py-8">
               <Users className="w-12 h-12 text-gray-500 mx-auto mb-4" />

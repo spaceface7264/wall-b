@@ -1,10 +1,10 @@
 -- Enhanced Community Database Schema
 -- Run this in your Supabase SQL Editor
 
--- Create communities table (one per gym)
+-- Create communities table (one per gym, or general communities)
 CREATE TABLE IF NOT EXISTS communities (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  gym_id UUID NOT NULL REFERENCES gyms(id) ON DELETE CASCADE,
+  gym_id UUID REFERENCES gyms(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
   member_count INTEGER DEFAULT 0,
@@ -12,8 +12,31 @@ CREATE TABLE IF NOT EXISTS communities (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   is_active BOOLEAN DEFAULT TRUE,
   rules TEXT, -- Community guidelines
-  UNIQUE(gym_id) -- One community per gym
+  community_type TEXT DEFAULT 'gym' CHECK (community_type IN ('gym', 'general'))
 );
+
+-- Make gym_id optional and add community_type column for existing tables<｜place▁holder▁no▁574｜>
+ALTER TABLE communities ALTER COLUMN gym_id DROP NOT NULL;
+ALTER TABLE communities ADD COLUMN IF NOT EXISTS community_type TEXT DEFAULT 'gym' CHECK (community_type IN ('gym', 'general'));
+
+-- Drop unique constraint on gym_id if it exists (to allow general communities)
+DO $$ 
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'communities_gym_id_key' 
+    AND conrelid = 'communities'::regclass
+  ) THEN
+    ALTER TABLE communities DROP CONSTRAINT communities_gym_id_key;
+  END IF;
+END $$;
+
+-- Update existing communities to have correct type
+UPDATE communities SET community_type = 'gym' WHERE gym_id IS NOT NULL AND (community_type IS NULL OR community_type = 'gym');
+UPDATE communities SET community_type = 'general' WHERE gym_id IS NULL AND (community_type IS NULL OR community_type = 'general');
+
+-- Create index for community_type
+CREATE INDEX IF NOT EXISTS communities_type_idx ON communities(community_type);
 
 -- Create community_members table
 CREATE TABLE IF NOT EXISTS community_members (
@@ -138,20 +161,25 @@ ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE event_rsvps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reactions ENABLE ROW LEVEL SECURITY;
 
--- Communities policies
+-- Communities policies (make idempotent)
+DROP POLICY IF EXISTS "Allow authenticated users to read communities" ON communities;
 CREATE POLICY "Allow authenticated users to read communities" ON communities
   FOR SELECT USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Allow authenticated users to create communities" ON communities;
 CREATE POLICY "Allow authenticated users to create communities" ON communities
   FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
--- Community members policies
+-- Community members policies (make idempotent)
+DROP POLICY IF EXISTS "Allow authenticated users to read community members" ON community_members;
 CREATE POLICY "Allow authenticated users to read community members" ON community_members
   FOR SELECT USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Allow users to join communities" ON community_members;
 CREATE POLICY "Allow users to join communities" ON community_members
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Allow users to leave communities" ON community_members;
 CREATE POLICY "Allow users to leave communities" ON community_members
   FOR DELETE USING (auth.uid() = user_id);
 

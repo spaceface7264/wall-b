@@ -43,3 +43,9 @@ After running these scripts, you'll have:
 - ✅ Typing indicators
 - ✅ Message read status tracking
 - ✅ Proper security with RLS policies
+
+## Security Fix
+
+**⚠️ IMPORTANT: If all users can see the same conversations, run the security fix:**
+
+See `FIX_CHAT_SECURITY.md` for detailed instructions. In short, run `fix-chat-rls-security.sql` in your Supabase SQL Editor to fix RLS policy issues.
