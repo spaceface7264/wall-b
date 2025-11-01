@@ -1,12 +1,22 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './app'),
+    },
+  },
+  optimizeDeps: {
+    include: ['lucide-react'],
+    exclude: [],
+  },
   server: {
     port: 3000,
     open: true,
-    host: false, // Set to true to expose on network (or use --host flag)
+    host: true, // Set to true to expose on network (or use --host flag)
     strictPort: false, // Try next available port if 3000 is taken
     hmr: {
       overlay: true, // Show error overlay in browser

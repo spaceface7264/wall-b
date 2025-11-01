@@ -85,6 +85,15 @@ export default function LoginPage() {
           .eq('id', user.id)
           .maybeSingle();
 
+        // Check if user is banned
+        if (profile && profile.is_banned) {
+          // Sign out the user immediately
+          await supabase.auth.signOut();
+          setError('Your account has been banned. Please contact support if you believe this is an error.');
+          setIsLoading(false);
+          return;
+        }
+
         // Add a small delay to ensure navigation happens smoothly
         setIsLoading(false);
         
@@ -118,13 +127,16 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-white mb-2">Wall-B</h1>
+          <p className="mobile-text-sm text-gray-300 italic mb-2">
+            Communities are meant to be experienced
+          </p>
           <p className="mobile-text-sm text-gray-400">
             {isSignUp ? 'Create your account' : 'Welcome back'}
           </p>
         </div>
 
         {/* Auth Card */}
-        <div className="mobile-card">
+        <div className="mobile-card" style={{ backgroundColor: 'rgba(30, 30, 30, 0.85)', backdropFilter: 'blur(10px)' }}>
           {/* Tab Switcher */}
           <div className="flex gap-2 p-1 bg-gray-800/40 rounded-lg mb-6">
             <button
@@ -132,7 +144,7 @@ export default function LoginPage() {
               onClick={() => { setIsSignUp(false); setError(''); }}
               className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${
                 !isSignUp 
-                  ? 'bg-indigo-600 text-white' 
+                  ? 'bg-blue-600 text-white' 
                   : 'text-gray-400 hover:text-gray-300'
               }`}
             >
@@ -143,7 +155,7 @@ export default function LoginPage() {
               onClick={() => { setIsSignUp(true); setError(''); }}
               className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${
                 isSignUp 
-                  ? 'bg-indigo-600 text-white' 
+                  ? 'bg-blue-600 text-white' 
                   : 'text-gray-400 hover:text-gray-300'
               }`}
             >
@@ -203,14 +215,26 @@ export default function LoginPage() {
               </div>
             )}
 
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="mobile-btn-primary w-full justify-center"
+            >
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : (
+                isSignUp ? 'Create Account' : 'Sign In'
+              )}
+            </button>
+
             {/* Forgot password */}
             {!isSignUp && (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-end">
                 <button
                   type="button"
                   onClick={handlePasswordReset}
                   disabled={isSendingReset}
-                  className="text-indigo-400 hover:text-indigo-300 mobile-text-sm"
+                  className="text-blue-400 hover:text-blue-300 mobile-text-sm"
                 >
                   {isSendingReset ? 'Sending…' : 'Forgot password?'}
                 </button>
@@ -229,24 +253,12 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={acceptedTerms}
                   onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="accent-indigo-600"
+                  className="accent-blue-600"
                 />
                 I agree to the
-                <a href="/terms" target="_blank" rel="noreferrer" className="text-indigo-400 hover:text-indigo-300">Terms & Conditions</a>
+                <a href="/terms" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300">Terms & Conditions</a>
               </label>
             )}
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="mobile-btn-primary w-full justify-center"
-            >
-              {isLoading ? (
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              ) : (
-                isSignUp ? 'Create Account' : 'Sign In'
-              )}
-            </button>
           </form>
         </div>
 

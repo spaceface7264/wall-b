@@ -88,17 +88,23 @@ export default function ConversationList({ onSelectConversation, currentUserId }
       // Get participants for each conversation
       const conversationsWithParticipants = await Promise.all(
         conversations.map(async (conv) => {
-          const { data: participants } = await supabase
+          const { data: participants, error: participantsError } = await supabase
             .from('conversation_participants')
             .select(`
               user_id,
               last_read_at,
               profiles!user_id (
+                id,
+                nickname,
                 full_name,
                 avatar_url
               )
             `)
             .eq('conversation_id', conv.id);
+
+          if (participantsError) {
+            console.error('Error fetching participants for conversation:', conv.id, participantsError);
+          }
 
           const { data: lastMessage } = await supabase
             .from('direct_messages')

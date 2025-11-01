@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe } from 'lucide-react';
+import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe, Sun, Moon } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import BottomNav from './BottomNav';
-import { enrichCommunitiesWithActualCounts } from '../../lib/community-utils';
+import { enrichCommunitiesWithActualCounts, checkForNewPosts, updateLastViewedAt } from '../../lib/community-utils';
 import Skeleton from './Skeleton';
 import ListSkeleton from './ListSkeleton';
 
@@ -17,6 +17,11 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
   const [communitiesLoading, setCommunitiesLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    // Initialize theme from localStorage or default to 'dark'
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme || 'dark';
+  });
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -77,12 +82,48 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       const communitiesList = data?.map(item => item.communities).filter(Boolean) || [];
       // Enrich with actual member counts
       const enrichedCommunities = await enrichCommunitiesWithActualCounts(communitiesList);
-      setCommunities(enrichedCommunities);
+      
+      // Check for new posts in each community
+      const communitiesWithNewPosts = await Promise.all(
+        enrichedCommunities.map(async (community) => {
+          const hasNewPosts = await checkForNewPosts(community.id, userId);
+          return { ...community, hasNewPosts };
+        })
+      );
+      
+      setCommunities(communitiesWithNewPosts);
     } catch (error) {
       console.error('Error loading communities:', error);
     } finally {
       setCommunitiesLoading(false);
     }
+  };
+
+  // Theme management - Apply theme immediately on mount to prevent flash
+  useEffect(() => {
+    const root = document.documentElement;
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'light') {
+      root.setAttribute('data-theme', 'light');
+    } else {
+      root.removeAttribute('data-theme'); // Default is dark
+    }
+  }, []); // Run only on mount
+
+  // Theme management - Apply theme to document when it changes
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'light') {
+      root.setAttribute('data-theme', 'light');
+    } else {
+      root.removeAttribute('data-theme'); // Default is dark
+    }
+    // Save to localStorage
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
   };
 
   useEffect(() => {
@@ -147,12 +188,27 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               console.log('🔵 Loading profile for user...');
               const { data: profile, error: profileError } = await supabase
                 .from('profiles')
-                .select('is_admin')
+                .select('is_admin, is_banned')
                 .eq('id', user.id)
                 .maybeSingle();
               
               if (profileError && profileError.code !== 'PGRST116') {
                 console.error('❌ Profile error:', profileError);
+              }
+              
+              // Check if user is banned
+              if (profile && profile.is_banned) {
+                console.log('⚠️ User is banned, signing out...');
+                await supabase.auth.signOut();
+                if (mounted) {
+                  setUser(null);
+                  setLoading(false);
+                  // Redirect to login page
+                  if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+                    window.location.href = '/login';
+                  }
+                }
+                return;
               }
               
               setIsAdmin(profile?.is_admin || false);
@@ -192,12 +248,26 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               try {
                 const { data: profile, error: profileError } = await supabase
                   .from('profiles')
-                  .select('is_admin')
+                  .select('is_admin, is_banned')
                   .eq('id', session.user.id)
                   .maybeSingle();
                 
                 if (profileError && profileError.code !== 'PGRST116') {
                   console.error('Error checking admin status:', profileError);
+                }
+                
+                // Check if user is banned
+                if (profile && profile.is_banned) {
+                  console.log('⚠️ User is banned, signing out...');
+                  await supabase.auth.signOut();
+                  if (mounted) {
+                    setUser(null);
+                    // Redirect to login page
+                    if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+                      window.location.href = '/login';
+                    }
+                  }
+                  return;
                 }
                 
                 setIsAdmin(profile?.is_admin || false);
@@ -249,6 +319,71 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     return () => clearTimeout(timer);
   }, [loading, user, navigate, location.pathname]);
 
+  // Memoize community IDs to avoid unnecessary subscription recreations
+  const communityIdsString = communities.map(c => c.id).filter(Boolean).sort().join(',');
+  const communityIds = useMemo(() => {
+    return new Set(communities.map(c => c.id).filter(Boolean));
+  }, [communityIdsString]);
+
+  // Extract current community ID from location pathname if on community page
+  const currentCommunityId = useMemo(() => {
+    const match = location.pathname.match(/^\/community\/([^\/]+)$/);
+    return match ? match[1] : null;
+  }, [location.pathname]);
+
+  // Clear indicator for currently viewed community
+  useEffect(() => {
+    if (currentCommunityId && user?.id) {
+      setCommunities(prev => 
+        prev.map(comm => 
+          comm.id === currentCommunityId ? { ...comm, hasNewPosts: false } : comm
+        )
+      );
+    }
+  }, [currentCommunityId, user?.id]);
+
+  // Realtime subscription for new posts in joined communities
+  useEffect(() => {
+    if (!user?.id || communityIds.size === 0) return;
+
+    console.log('Setting up realtime subscription for new posts in communities:', Array.from(communityIds));
+
+    // Subscribe to all post inserts and filter client-side
+    // This is more reliable than trying to use complex filters
+    const channel = supabase
+      .channel('community-new-posts')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'posts'
+        },
+        async (payload) => {
+          const newPost = payload.new;
+          const communityId = newPost.community_id;
+          
+          // Only process if this post is in a joined community and not from current user
+          if (communityId && communityIds.has(communityId) && newPost.user_id !== user.id) {
+            console.log('New post detected in community:', communityId);
+            
+            // Update the community's hasNewPosts status
+            setCommunities(prev => 
+              prev.map(comm => 
+                comm.id === communityId ? { ...comm, hasNewPosts: true } : comm
+              )
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up realtime subscription for new posts');
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, communityIds]);
+
   // Ripple effect function
   const createRipple = (event) => {
     const button = event.currentTarget;
@@ -293,6 +428,16 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
   };
 
   const navigateToCommunity = (communityId) => {
+    // Clear the new posts indicator immediately when navigating
+    if (user?.id && communityId) {
+      updateLastViewedAt(communityId, user.id);
+      // Update local state to remove indicator immediately
+      setCommunities(prev => 
+        prev.map(comm => 
+          comm.id === communityId ? { ...comm, hasNewPosts: false } : comm
+        )
+      );
+    }
     navigate(`/community/${communityId}`);
     closeDrawer();
   };
@@ -428,7 +573,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
 
         {/* Communities Section */}
         <div className="mobile-drawer-nav">
-          <div className="py-2">
+          <div className="flex flex-col h-full">
             {/* Create Community Button - Always at top */}
             <button
               onClick={() => {
@@ -436,7 +581,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                 closeDrawer();
               }}
               onMouseDown={createRipple}
-              className="w-full flex items-center justify-between p-3 rounded-none transition-colors ripple-effect hover:bg-gray-700/50 text-gray-300"
+              className="w-full flex items-center justify-between p-3 rounded-none transition-colors ripple-effect hover:bg-gray-700/50 text-gray-300 flex-shrink-0"
             >
               <div className="flex-1 min-w-0 text-left">
                 <div className="flex items-center gap-2">
@@ -450,7 +595,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
             <button
               onClick={navigateToJoinCommunity}
               onMouseDown={createRipple}
-              className="w-full flex items-center justify-between p-3 rounded-none transition-colors ripple-effect hover:bg-gray-700/50 text-gray-300"
+              className="w-full flex items-center justify-between p-3 rounded-none transition-colors ripple-effect hover:bg-gray-700/50 text-gray-300 flex-shrink-0"
             >
               <div className="flex-1 min-w-0 text-left">
                 <div className="flex items-center gap-2">
@@ -460,34 +605,47 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               </div>
             </button>
 
-            {communitiesLoading ? (
-              <ListSkeleton variant="community" count={3} />
-            ) : communities.length > 0 ? (
-              <div className="space-y-1 max-h-64 overflow-y-auto">
-                {communities.map((community) => (
-                  <button
-                    key={community.id}
-                    onClick={() => navigateToCommunity(community.id)}
-                    onMouseDown={createRipple}
-                    className={`w-full flex items-center justify-between p-3 rounded-none transition-colors ripple-effect ${
-                      currentPage === 'community' ? 'bg-indigo-500/20 text-indigo-300' : 'hover:bg-gray-700/50 text-gray-300'
-                    }`}
-                  >
-                    <div className="flex-1 min-w-0 text-left">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 flex-shrink-0" />
-                        <span className="font-medium text-sm truncate">{community.name}</span>
+            {/* Communities List - Takes remaining space */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {communitiesLoading ? (
+                <ListSkeleton variant="community" count={3} />
+              ) : communities.length > 0 ? (
+                <div className="space-y-1">
+                  {communities.map((community) => (
+                    <button
+                      key={community.id}
+                      onClick={() => navigateToCommunity(community.id)}
+                      onMouseDown={createRipple}
+                      className={`w-full flex items-center justify-between p-3 rounded-none transition-all duration-200 ripple-effect ${
+                        currentPage === 'community' 
+                          ? 'bg-indigo-500/20 text-indigo-300' 
+                          : 'hover:bg-gray-700/50 text-gray-300'
+                      } ${
+                        community.hasNewPosts
+                          ? 'ring-1 ring-indigo-400/50 bg-indigo-500/10'
+                          : ''
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0 text-left">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 flex-shrink-0" />
+                          <span className={`font-medium text-sm truncate ${
+                            community.hasNewPosts && currentPage !== 'community' ? 'text-indigo-300' : ''
+                          }`}>
+                            {community.name}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <Users className="w-8 h-8 text-gray-500 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">No communities yet</p>
-              </div>
-            )}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <Users className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+                  <p className="text-sm text-gray-400">No communities yet</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -508,6 +666,24 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               <span className="mobile-drawer-text">Admin Panel</span>
             </button>
           )}
+          <button
+            onClick={() => {
+              toggleTheme();
+              closeDrawer();
+            }}
+            onMouseDown={createRipple}
+            className="mobile-drawer-item ripple-effect text-gray-300 hover:text-yellow-400"
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          >
+            {theme === 'dark' ? (
+              <Sun className="mobile-drawer-icon" />
+            ) : (
+              <Moon className="mobile-drawer-icon" />
+            )}
+            <span className="mobile-drawer-text">
+              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </span>
+          </button>
           <button
             onClick={handleLogout}
             onMouseDown={createRipple}

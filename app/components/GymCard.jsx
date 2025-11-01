@@ -1,54 +1,11 @@
 import React from 'react';
-import { MapPin, Star, Clock, Users, ChevronRight, Heart } from 'lucide-react';
+import { MapPin, Star, Clock, Users, ChevronRight } from 'lucide-react';
 import { formatDistance } from '../../lib/geolocation';
 
 const GymCard = React.memo(function GymCard({
   gym,
-  onOpen,
-  isFavorite = false,
-  onToggleFavorite
+  onOpen
 }) {
-  const getCountryFlag = (country) => {
-    const flagMap = {
-      'United Kingdom': '🇬🇧',
-      'UK': '🇬🇧',
-      'Germany': '🇩🇪',
-      'France': '🇫🇷',
-      'United States': '🇺🇸',
-      'USA': '🇺🇸',
-      'Spain': '🇪🇸',
-      'Italy': '🇮🇹',
-      'Netherlands': '🇳🇱',
-      'Belgium': '🇧🇪',
-      'Switzerland': '🇨🇭',
-      'Austria': '🇦🇹',
-      'Poland': '🇵🇱',
-      'Czech Republic': '🇨🇿',
-      'Sweden': '🇸🇪',
-      'Norway': '🇳🇴',
-      'Denmark': '🇩🇰',
-      'Finland': '🇫🇮',
-      'Canada': '🇨🇦',
-      'Australia': '🇦🇺',
-      'Japan': '🇯🇵',
-      'South Korea': '🇰🇷',
-      'China': '🇨🇳',
-      'Brazil': '🇧🇷',
-      'Mexico': '🇲🇽',
-      'Argentina': '🇦🇷',
-      'Portugal': '🇵🇹',
-      'Greece': '🇬🇷',
-      'Turkey': '🇹🇷',
-      'Russia': '🇷🇺',
-      'India': '🇮🇳',
-      'Singapore': '🇸🇬',
-      'Thailand': '🇹🇭',
-      'New Zealand': '🇳🇿',
-      'Ireland': '🇮🇪',
-    };
-    return flagMap[country] || '🌍';
-  };
-
   const getFacilityIcon = (facility) => {
     const iconMap = {
       'Cafe': '☕',
@@ -110,15 +67,18 @@ const GymCard = React.memo(function GymCard({
         )}
         
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h3 className="mobile-subheading truncate" style={{ marginBottom: '12px' }}>{gym.name}</h3>
+          <div className="flex items-center gap-2" style={{ marginBottom: '12px', flexWrap: 'wrap' }}>
+            <h3 className="mobile-subheading truncate" style={{ margin: 0, flex: '1 1 auto', minWidth: 0 }}>{gym.name}</h3>
+            {typeof gym.distance_km === 'number' && (
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-md whitespace-nowrap flex-shrink-0" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}>
+                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{formatDistance(gym.distance_km)}</span>
+              </div>
+            )}
+          </div>
 
           <div className="minimal-flex mobile-text-xs text-gray-400 items-center" style={{ marginBottom: '12px', flexWrap: 'wrap', gap: '4px' }}>
-            <span className="text-lg flex-shrink-0" title={gym.country}>{getCountryFlag(gym.country)}</span>
-            <MapPin className="minimal-icon flex-shrink-0" style={{ marginLeft: '4px', marginRight: '6px' }} />
+            <MapPin className="minimal-icon flex-shrink-0" style={{ marginRight: '6px' }} />
             <span className="truncate">{gym.city}, {gym.country}</span>
-            {typeof gym.distance_km === 'number' && (
-              <span className="ml-2 text-indigo-300 whitespace-nowrap">• {formatDistance(gym.distance_km)} away</span>
-            )}
           </div>
 
           <p className="mobile-text-xs text-gray-300 line-clamp-2" style={{ lineHeight: '1.7' }}>
@@ -150,28 +110,6 @@ const GymCard = React.memo(function GymCard({
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end', flexShrink: 0 }}>
-          {/* Heart Favorite Button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleFavorite?.(gym.id);
-            }}
-            className={`mobile-touch-target p-2 rounded-full transition-all duration-200 ${
-              isFavorite 
-                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
-                : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600/50 hover:text-red-400'
-            }`}
-            style={{ marginBottom: '8px' }}
-            title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-          >
-            <Heart 
-              className={`minimal-icon transition-all duration-200 ${
-                isFavorite ? 'fill-current' : ''
-              }`} 
-              style={{ width: '18px', height: '18px' }} 
-            />
-          </button>
-
           <div className="minimal-flex mobile-text-xs text-indigo-400" style={{ marginBottom: '8px' }}>
             <span className="font-medium">{gym.price_range}</span>
           </div>

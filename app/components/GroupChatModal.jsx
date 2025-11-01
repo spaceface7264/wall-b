@@ -27,7 +27,7 @@ export default function GroupChatModal({ isOpen, onClose, onCreateGroup, current
       // Get all users except current user
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, email')
+        .select('id, full_name, nickname, handle, avatar_url')
         .neq('id', currentUserId)
         .order('full_name', { ascending: true });
 
@@ -48,9 +48,10 @@ export default function GroupChatModal({ isOpen, onClose, onCreateGroup, current
 
   const filteredUsers = users.filter(user => {
     const name = user.full_name?.toLowerCase() || '';
-    const email = user.email?.toLowerCase() || '';
+    const nickname = user.nickname?.toLowerCase() || '';
+    const handle = user.handle?.toLowerCase() || '';
     const search = searchTerm.toLowerCase();
-    return name.includes(search) || email.includes(search);
+    return name.includes(search) || nickname.includes(search) || handle.includes(search);
   });
 
   const toggleUserSelection = (user) => {
@@ -251,8 +252,10 @@ export default function GroupChatModal({ isOpen, onClose, onCreateGroup, current
                 >
                   <Avatar url={user.avatar_url} size={40} />
                   <div className="flex-1 text-left">
-                    <h3 className="font-medium">{user.full_name || 'Community Member'}</h3>
-                    <p className="text-sm opacity-70 truncate">{user.email}</p>
+                    <h3 className="font-medium">{user.nickname || user.full_name || 'Community Member'}</h3>
+                    {user.handle && (
+                      <p className="text-sm opacity-70 truncate">@{user.handle}</p>
+                    )}
                   </div>
                   {isSelected && (
                     <Check className="w-5 h-5 text-white" />

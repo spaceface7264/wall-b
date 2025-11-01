@@ -1,7 +1,6 @@
 
 
-import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRef } from 'react';
 
 export default function TabNavigation({ 
   tabs = [], 
@@ -9,37 +8,7 @@ export default function TabNavigation({
   onTabChange, 
   className = '' 
 }) {
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
   const scrollContainerRef = useRef(null);
-
-  const checkScrollButtons = () => {
-    if (scrollContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-      setCanScrollLeft(scrollLeft > 0);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
-    }
-  };
-
-  useEffect(() => {
-    checkScrollButtons();
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.addEventListener('scroll', checkScrollButtons);
-      return () => container.removeEventListener('scroll', checkScrollButtons);
-    }
-  }, [tabs]);
-
-  const scroll = (direction) => {
-    if (scrollContainerRef.current) {
-      const scrollAmount = 200;
-      const newScrollLeft = scrollContainerRef.current.scrollLeft + (direction === 'left' ? -scrollAmount : scrollAmount);
-      scrollContainerRef.current.scrollTo({
-        left: newScrollLeft,
-        behavior: 'smooth'
-      });
-    }
-  };
 
   const scrollToTab = (index) => {
     if (scrollContainerRef.current) {
@@ -67,25 +36,6 @@ export default function TabNavigation({
 
   return (
     <div className={`relative ${className}`}>
-      {/* Scroll Buttons */}
-      {canScrollLeft && (
-        <button
-          onClick={() => scroll('left')}
-          className="absolute left-0 top-0 z-10 h-12 w-8 bg-gradient-to-r from-gray-900 to-transparent flex items-center justify-center text-gray-400 hover:text-white transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-      )}
-      
-      {canScrollRight && (
-        <button
-          onClick={() => scroll('right')}
-          className="absolute right-0 top-0 z-10 h-12 w-8 bg-gradient-to-l from-gray-900 to-transparent flex items-center justify-center text-gray-400 hover:text-white transition-colors"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      )}
-
       {/* Tab Container */}
       <div
         ref={scrollContainerRef}
@@ -93,7 +43,9 @@ export default function TabNavigation({
         style={{
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
-          WebkitScrollbar: { display: 'none' }
+          WebkitScrollbar: { display: 'none' },
+          paddingLeft: '0',
+          paddingRight: '0'
         }}
       >
         <div className="flex space-x-1 min-w-max">
@@ -104,6 +56,8 @@ export default function TabNavigation({
               className={`
                 relative flex items-center justify-center px-4 py-3 min-h-[48px] whitespace-nowrap
                 text-sm font-medium transition-all duration-200
+                ${index === 0 ? 'pl-4' : ''}
+                ${index === tabs.length - 1 ? 'pr-4' : ''}
                 ${activeTab === tab.id
                   ? 'text-indigo-400 bg-indigo-500/10'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/50'

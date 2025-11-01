@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
-import { MapPin, Phone, Mail, Globe, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import { MapPin, Phone, Mail, Globe, ArrowLeft, CheckCircle, AlertCircle, List } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
 import { useToast } from '../../providers/ToastProvider';
 import FormSkeleton from '../../components/FormSkeleton';
@@ -11,6 +11,29 @@ const countries = [
   'Netherlands', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Switzerland', 'Austria', 'Belgium',
   'Poland', 'Czech Republic', 'Hungary', 'Portugal', 'Greece', 'Ireland', 'New Zealand', 'Japan',
   'South Korea', 'Singapore', 'Hong Kong', 'Other'
+];
+
+const availableFacilities = [
+  'Kilter Board',
+  'Moon Board',
+  'Spray Wall',
+  'Shower',
+  'Parking',
+  'Cafe',
+  'Shop',
+  'Training Area',
+  'Yoga Studio',
+  'Kids Area',
+  'Locker Rooms',
+  'Equipment Rental',
+  'Sauna',
+  'Massage',
+  'Bike Storage',
+  'Outdoor Terrace',
+  'Lead Climbing',
+  'Top Rope',
+  'Auto Belay',
+  'Pro Shop'
 ];
 
 export default function GymRequestPage() {
@@ -29,7 +52,8 @@ export default function GymRequestPage() {
     phone: '',
     email: '',
     website: '',
-    description: ''
+    description: '',
+    facilities: []
   });
 
   const [errors, setErrors] = useState({});
@@ -62,6 +86,15 @@ export default function GymRequestPage() {
         [name]: ''
       }));
     }
+  };
+
+  const handleFacilityToggle = (facility) => {
+    setFormData(prev => ({
+      ...prev,
+      facilities: prev.facilities.includes(facility)
+        ? prev.facilities.filter(f => f !== facility)
+        : [...prev.facilities, facility]
+    }));
   };
 
   const validateForm = () => {
@@ -119,7 +152,8 @@ export default function GymRequestPage() {
           phone: formData.phone.trim() || null,
           email: formData.email.trim() || null,
           website: formData.website.trim() || null,
-          description: formData.description.trim() || null
+          description: formData.description.trim() || null,
+          facilities: formData.facilities.length > 0 ? formData.facilities : null
         })
         .select();
 
@@ -185,7 +219,8 @@ export default function GymRequestPage() {
                           phone: '',
                           email: '',
                           website: '',
-                          description: ''
+                          description: '',
+                          facilities: []
                         });
                         setErrors({});
                       }}
@@ -372,6 +407,40 @@ export default function GymRequestPage() {
                   <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                     <AlertCircle className="w-4 h-4" />
                     {errors.website}
+                  </p>
+                )}
+              </div>
+
+              {/* Facilities */}
+              <div>
+                <label className="minimal-label flex items-center gap-2 mb-2">
+                  <List className="w-4 h-4" />
+                  Facilities
+                </label>
+                <p className="text-sm text-gray-400 mb-3">
+                  Select all facilities available at this gym (optional)
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {availableFacilities.map((facility) => (
+                    <label
+                      key={facility}
+                      className="flex items-center gap-2 p-3 rounded-lg border border-gray-700 bg-gray-800/50 hover:bg-gray-700/50 cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.facilities.includes(facility)}
+                        onChange={() => handleFacilityToggle(facility)}
+                        className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
+                      />
+                      <span className="text-sm text-gray-200 select-none">
+                        {facility}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {formData.facilities.length > 0 && (
+                  <p className="text-xs text-gray-400 mt-2">
+                    {formData.facilities.length} facility{formData.facilities.length !== 1 ? 'ies' : ''} selected
                   </p>
                 )}
               </div>

@@ -65,6 +65,50 @@ export default function NotificationBell({ userId }) {
     return colors[type] || 'text-gray-400';
   };
 
+  // Get actor name from notification
+  const getActorName = (notification) => {
+    if (notification.actor_profile) {
+      return notification.actor_profile.nickname || notification.actor_profile.full_name || 'Someone';
+    }
+    // Fallback: try to extract from message
+    const message = notification.message || '';
+    const match = message.match(/^([^ ]+)/);
+    return match ? match[1] : 'Someone';
+  };
+
+  // Get event snippet
+  const getEventSnippet = (notification) => {
+    if (!notification.event) return null;
+    
+    const event = notification.event;
+    const eventDate = event.event_date ? new Date(event.event_date) : null;
+    
+    const parts = [];
+    
+    if (eventDate) {
+      const now = new Date();
+      const diffDays = Math.floor((eventDate - now) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays < 0) {
+        parts.push('Past event');
+      } else if (diffDays === 0) {
+        parts.push('Today ' + eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+      } else if (diffDays === 1) {
+        parts.push('Tomorrow ' + eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+      } else if (diffDays < 7) {
+        parts.push(eventDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+      } else {
+        parts.push(eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      }
+    }
+    
+    if (event.location) {
+      parts.push(event.location);
+    }
+    
+    return parts.length > 0 ? parts.join(' • ') : null;
+  };
+
   // Handle notification click with navigation
   const handleNotificationClick = (notification) => {
     markAsRead(notification.id);
@@ -72,7 +116,10 @@ export default function NotificationBell({ userId }) {
     // Navigate based on notification type and data
     const data = notification.data || {};
     
-    if (data.post_id) {
+    if (data.event_id && notification.event) {
+      // Navigate to event detail page
+      navigate(`/community/${data.community_id || ''}/events`);
+    } else if (data.post_id) {
       // Navigate to post detail page
       if (data.community_id) {
         navigate(`/community/${data.community_id}/post/${data.post_id}`);
@@ -165,9 +212,47 @@ export default function NotificationBell({ userId }) {
                               <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 ml-2" />
                             )}
                           </div>
-                          <p className="text-sm text-gray-300 mt-1 line-clamp-2">
-                            {notification.message}
-                          </p>
+                          
+                          {/* Show actor name and event snippet for event notifications */}
+                          {(['event_rsvp', 'event_invite', 'event_reminder'].includes(notification.type)) && notification.event ? (
+                            <>
+                              <div className="mt-1">
+                                <span className="text-sm font-medium text-indigo-400">
+                                  {getActorName(notification)}
+                                </span>
+                                <span className="text-sm text-gray-400 ml-1">
+                                  {notification.type === 'event_rsvp' ? 'RSVPed' : notification.type === 'event_invite' ? 'invited you to' : 'reminder for'}
+                                </span>
+                              </div>
+                              <div className="mt-1.5 p-2 bg-slate-800/50 rounded border border-slate-700/50">
+                                <p className="text-sm font-medium text-white line-clamp-1">
+                                  {notification.event.title || 'Untitled Event'}
+                                </p>
+                                {getEventSnippet(notification) && (
+                                  <p className="text-xs text-gray-400 mt-1 line-clamp-2">
+                                    {getEventSnippet(notification)}
+                                  </p>
+                                )}
+                                {notification.event.description && (
+                                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                                    {notification.event.description}
+                                  </p>
+                                )}
+                              </div>
+                            </>
+                          ) : (
+                            <p className="text-sm text-gray-300 mt-1 line-clamp-2">
+                              {notification.message}
+                            </p>
+                          )}
+                          
+                          {/* Show actor name for other notification types */}
+                          {!['event_rsvp', 'event_invite', 'event_reminder'].includes(notification.type) && notification.actor_profile && (
+                            <p className="text-xs text-indigo-400 mt-1">
+                              {getActorName(notification)}
+                            </p>
+                          )}
+                          
                           <p className="text-xs text-gray-400 mt-2">
                             {formatTime(notification.created_at)}
                           </p>

@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { MapPin, Heart, Plus, MoreHorizontal } from 'lucide-react';
+import { MapPin, Heart, MoreVertical, Navigation } from 'lucide-react';
 import GymCard from '../components/GymCard';
 import { useToast } from '../providers/ToastProvider';
-import { useNearbyGyms } from '../hooks/useGeolocation';
-import { formatDistance } from '../../lib/geolocation';
+import { useGeolocation } from '../hooks/useGeolocation';
+import { calculateDistance } from '../../lib/geolocation';
 import { EmptyGyms } from '../components/EmptyState';
 
 // Note: This component is wrapped with SidebarLayout in App.jsx, so don't wrap here
@@ -14,23 +14,25 @@ export default function Gyms() {
   const [gyms, setGyms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCountry, setFilterCountry] = useState('');
-  const [countries, setCountries] = useState([]);
   const [favoriteGymIds, setFavoriteGymIds] = useState(new Set());
   const [user, setUser] = useState(null);
+  const [geolocationEnabled, setGeolocationEnabled] = useState(() => {
+    const saved = localStorage.getItem('gymsGeolocationEnabled');
+    return saved === 'true';
+  });
   const [showMenu, setShowMenu] = useState(false);
-  const [radiusKm, setRadiusKm] = useState(25);
-  const [sortByDistance, setSortByDistance] = useState(false);
+  const menuRef = useRef(null);
   const navigate = useNavigate();
   const { showToast } = useToast();
-
+  
+  // Geolocation hook
   const {
-    gyms: nearbyGyms,
-    loading: nearbyLoading,
-    error: nearbyError,
-    requestLocation,
     location,
-  } = useNearbyGyms({ radiusKm, limit: 50 });
+    loading: locationLoading,
+    error: locationError,
+    requestLocation,
+    isSupported: geolocationSupported
+  } = useGeolocation();
 
   useEffect(() => {
     getUser();
@@ -187,16 +189,10 @@ export default function Gyms() {
           }
         ];
         setGyms(mockGyms);
-        const uniqueCountries = [...new Set(mockGyms.map(gym => gym.country))];
-        setCountries(uniqueCountries);
       } else if (data && data.length > 0) {
         setGyms(data);
-        const uniqueCountries = [...new Set(data.map(gym => gym.country))];
-        setCountries(uniqueCountries);
       } else {
         setGyms(data || []);
-        const uniqueCountries = [...new Set((data || []).map(gym => gym.country))];
-        setCountries(uniqueCountries);
       }
     } catch (error) {
       console.error('Error fetching gyms:', error);
@@ -205,25 +201,85 @@ export default function Gyms() {
     }
   };
 
-  const filteredGyms = gyms.filter(gym => {
+  // Request location when toggle is enabled and location not available
+  useEffect(() => {
+    if (geolocationEnabled && !location && !locationLoading && geolocationSupported && !locationError) {
+      requestLocation();
+    }
+  }, [geolocationEnabled, location, locationLoading, geolocationSupported, locationError, requestLocation]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showMenu]);
+
+  // Handle location errors
+  useEffect(() => {
+    if (locationError && geolocationEnabled) {
+      if (locationError.message.includes('denied')) {
+        showToast('error', 'Location Access Denied', 'Please enable location permissions to sort by distance');
+      } else if (locationError.message.includes('not supported')) {
+        showToast('error', 'Geolocation Not Supported', 'Your browser does not support geolocation');
+      } else {
+        showToast('error', 'Location Error', locationError.message || 'Unable to get your location');
+      }
+    }
+  }, [locationError, geolocationEnabled, showToast]);
+
+  const handleToggleGeolocation = () => {
+    const newValue = !geolocationEnabled;
+    setGeolocationEnabled(newValue);
+    localStorage.setItem('gymsGeolocationEnabled', String(newValue));
+    
+    if (newValue && !location && !locationLoading && geolocationSupported) {
+      requestLocation();
+    }
+  };
+
+  // Filter gyms by search term
+  let filteredGyms = gyms.filter(gym => {
     const matchesSearch = gym.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          gym.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          gym.country.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCountry = !filterCountry || gym.country === filterCountry;
-    return matchesSearch && matchesCountry;
+    return matchesSearch;
   });
 
-  // If we have nearby results and sorting by distance, decorate and sort
-  let displayedGyms = filteredGyms;
-  if (sortByDistance && Array.isArray(nearbyGyms) && nearbyGyms.length > 0) {
-    const distanceById = new Map(nearbyGyms.map(g => [g.id, g.distance_km]));
-    displayedGyms = filteredGyms
-      .map(g => ({ ...g, distance_km: distanceById.get(g.id) }))
-      .sort((a, b) => {
-        const da = typeof a.distance_km === 'number' ? a.distance_km : Infinity;
-        const db = typeof b.distance_km === 'number' ? b.distance_km : Infinity;
-        return da - db;
-      });
+  // Calculate distances and sort when geolocation is enabled
+  if (geolocationEnabled && location) {
+    filteredGyms = filteredGyms.map(gym => {
+      // Only calculate distance if gym has coordinates
+      if (gym.latitude && gym.longitude) {
+        const distance = calculateDistance(
+          location.latitude,
+          location.longitude,
+          gym.latitude,
+          gym.longitude
+        );
+        return { ...gym, distance_km: distance };
+      }
+      // Gym without coordinates - set to Infinity so it sorts to end
+      return { ...gym, distance_km: Infinity };
+    }).sort((a, b) => {
+      // Sort by distance, gyms without coordinates go to end
+      const distA = a.distance_km || Infinity;
+      const distB = b.distance_km || Infinity;
+      return distA - distB;
+    });
+  } else {
+    // Remove distance property when geolocation is disabled
+    filteredGyms = filteredGyms.map(gym => {
+      const { distance_km, ...gymWithoutDistance } = gym;
+      return gymWithoutDistance;
+    });
   }
 
   const openGym = (gym) => {
@@ -289,99 +345,89 @@ export default function Gyms() {
 
   return (
     <div className="mobile-container">
-        {/* Header */}
-        <div className="animate-fade-in mb-6">
-          <div className="mobile-card-header">
-            <div className="animate-slide-up">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="mobile-card-subtitle text-center mt-4">
-                    Discover bouldering gyms around the world
-                  </p>
-                </div>
-                <div className="relative">
+
+        {/* Search and Menu */}
+        <div className="animate-slide-up" style={{ position: 'relative', zIndex: 50 }}>
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search gyms..."
+              className="flex-1 minimal-input"
+            />
+            <div className="relative flex-shrink-0 z-50" ref={menuRef}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(!showMenu);
+                }}
+                className="p-1.5 hover:bg-gray-700 rounded-md transition-colors"
+                aria-label="More options"
+              >
+                <MoreVertical className="w-4 h-4 text-gray-400" />
+              </button>
+
+              {/* Dropdown Menu */}
+              {showMenu && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-1 rounded-lg shadow-lg z-50"
+                  style={{ 
+                    minWidth: '180px',
+                    backgroundColor: 'var(--bg-surface)', 
+                    border: '1px solid var(--border-color)',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+                    zIndex: 50
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button
-                    onClick={() => setShowMenu(!showMenu)}
-                    className="mobile-btn-secondary p-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleGeolocation();
+                      setShowMenu(false);
+                    }}
+                    disabled={locationLoading}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ 
+                      fontSize: '13px',
+                      color: geolocationEnabled ? 'var(--text-primary)' : 'var(--text-secondary)'
+                    }}
+                    onMouseEnter={(e) => !locationLoading && (e.currentTarget.style.backgroundColor = 'var(--bg-primary)')}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    role="menuitem"
                   >
-                    <MoreHorizontal className="minimal-icon" />
+                    {locationLoading ? (
+                      <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" style={{ flexShrink: 0 }}></div>
+                    ) : (
+                      <Navigation className="w-3.5 h-3.5" style={{ flexShrink: 0, color: geolocationEnabled ? '#3b82f6' : 'var(--text-muted)' }} />
+                    )}
+                    <span>{geolocationEnabled ? 'Turn off location' : 'Turn on location'}</span>
                   </button>
-                  
-                  {showMenu && (
-                    <>
-                      {/* Backdrop */}
-                      <div 
-                        className="fixed inset-0 z-40" 
-                        onClick={() => setShowMenu(false)}
-                      />
-                      
-                      {/* Menu */}
-                      <div className="absolute right-0 top-12 z-50 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl">
-                        <div className="py-1">
-                          <button
-                            onClick={() => {
-                              navigate('/gyms/request');
-                              setShowMenu(false);
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span>Is your gym missing?</span>
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate('/gyms/request');
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
+                    style={{ 
+                      fontSize: '13px',
+                      color: 'var(--text-secondary)',
+                      borderTop: '1px solid var(--border-color)'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    role="menuitem"
+                  >
+                    <MapPin className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
+                    <span>Request Gym</span>
+                  </button>
                 </div>
-              </div>
+              )}
             </div>
           </div>
-        </div>
-
-        {/* Location controls */}
-        <div className="mobile-card animate-slide-up mb-2">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={requestLocation}
-              className="mobile-btn-secondary px-3 py-2"
-            >
-              Use my location
-            </button>
-            <select
-              value={radiusKm}
-              onChange={(e) => setRadiusKm(parseInt(e.target.value, 10))}
-              className="minimal-input w-auto"
-              aria-label="Radius"
-            >
-              <option value={5}>5km</option>
-              <option value={10}>10km</option>
-              <option value={25}>25km</option>
-              <option value={50}>50km</option>
-              <option value={100}>100km</option>
-            </select>
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input
-                type="checkbox"
-                checked={sortByDistance}
-                onChange={(e) => setSortByDistance(e.target.checked)}
-              />
-              Sort by distance
-            </label>
-          </div>
-          {nearbyError && (
-            <p className="mobile-text-xs text-red-400 mt-2">{nearbyError.message}</p>
-          )}
-        </div>
-
-        {/* Search */}
-        <div className="mobile-card animate-slide-up">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search gyms..."
-            className="w-full minimal-input"
-          />
         </div>
 
         {/* Gyms List */}
@@ -410,16 +456,14 @@ export default function Gyms() {
                   </div>
                 ))}
               </div>
-            ) : displayedGyms.length === 0 ? (
+            ) : filteredGyms.length === 0 ? (
               <EmptyGyms onRequestClick={() => navigate('/gyms/request')} />
             ) : (
-              displayedGyms.map((gym, index) => (
+              filteredGyms.map((gym, index) => (
                 <GymCard
                   key={gym.id}
                   gym={gym}
                   onOpen={openGym}
-                  isFavorite={favoriteGymIds.has(gym.id)}
-                  onToggleFavorite={toggleFavorite}
                 />
               ))
             )}

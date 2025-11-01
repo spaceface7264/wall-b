@@ -23,7 +23,7 @@ export default function UserDiscovery({ isOpen, onClose, onStartConversation, cu
       // Get all users except current user
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, email')
+        .select('id, full_name, nickname, handle, avatar_url')
         .neq('id', currentUserId)
         .order('full_name', { ascending: true });
 
@@ -50,10 +50,11 @@ export default function UserDiscovery({ isOpen, onClose, onStartConversation, cu
 
   const filteredUsers = users.filter(user => {
     const name = user.full_name?.toLowerCase() || '';
-    const email = user.email?.toLowerCase() || '';
+    const nickname = user.nickname?.toLowerCase() || '';
+    const handle = user.handle?.toLowerCase() || '';
     const search = searchTerm.toLowerCase();
     
-    return name.includes(search) || email.includes(search);
+    return name.includes(search) || nickname.includes(search) || handle.includes(search);
   });
 
   const handleStartConversation = async (user) => {
@@ -156,11 +157,13 @@ export default function UserDiscovery({ isOpen, onClose, onStartConversation, cu
                     {/* User Info */}
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-white truncate">
-                        {user.full_name || 'Unknown User'}
+                        {user.nickname || user.full_name || 'Unknown User'}
                       </h3>
-                      <p className="text-sm text-gray-400 truncate">
-                        {user.email}
-                      </p>
+                      {user.handle && (
+                        <p className="text-sm text-gray-400 truncate">
+                          @{user.handle}
+                        </p>
+                      )}
                     </div>
 
                     {/* Start Chat Button */}

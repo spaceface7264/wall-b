@@ -37,7 +37,8 @@ export default function MembersList({ communityId, isAdmin = false }) {
           profiles (
             id,
             full_name,
-            email,
+            nickname,
+            handle,
             avatar_url
           )
         `)
@@ -201,9 +202,11 @@ export default function MembersList({ communityId, isAdmin = false }) {
                       {member.role}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-400 truncate">
-                    {profile?.email || 'No email'}
-                  </p>
+                  {profile?.handle && (
+                    <p className="text-sm text-gray-400 truncate">
+                      @{profile.handle}
+                    </p>
+                  )}
                   <p className="text-xs text-gray-500">
                     Joined {formatJoinDate(member.joined_at)}
                   </p>

@@ -25,6 +25,9 @@ export default function PostDetailPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [communityName, setCommunityName] = useState(null);
+  const [authorDisplayName, setAuthorDisplayName] = useState(null);
+  const [authorAvatar, setAuthorAvatar] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -94,6 +97,35 @@ export default function PostDetailPage() {
 
       setPost(postData);
 
+      // Fetch community name
+      const { data: communityData } = await supabase
+        .from('communities')
+        .select('name')
+        .eq('id', communityId)
+        .single();
+      
+      if (communityData) {
+        setCommunityName(communityData.name);
+      }
+
+      // Fetch author's display name and avatar from profiles
+      if (postData.user_id) {
+        const { data: authorProfile } = await supabase
+          .from('profiles')
+          .select('nickname, full_name, avatar_url')
+          .eq('id', postData.user_id)
+          .single();
+        
+        if (authorProfile) {
+          const displayName = authorProfile.nickname || authorProfile.full_name || postData.user_name || 'Anonymous';
+          setAuthorDisplayName(displayName);
+          setAuthorAvatar(authorProfile.avatar_url || null);
+        } else {
+          setAuthorDisplayName(postData.user_name || 'Anonymous');
+          setAuthorAvatar(null);
+        }
+      }
+
       // Check if user liked the post
       if (user) {
         const { data: like } = await supabase
@@ -106,6 +138,7 @@ export default function PostDetailPage() {
       }
 
       // Get comments with proper ordering and user profile data
+      // Top-level comments: newest first, replies: chronological (oldest first) under parent
       const { data: commentsData, error: commentsError } = await supabase
         .from('comments')
         .select(`
@@ -117,7 +150,7 @@ export default function PostDetailPage() {
           )
         `)
         .eq('post_id', postId)
-        .order('created_at', { ascending: true }); // Changed to ascending for proper threading
+        .order('created_at', { ascending: true }); // Load all in chronological order, we'll sort top-level by newest in display
 
       if (commentsError) {
         console.error('❌ Error loading comments with profiles join:', commentsError);
@@ -215,7 +248,7 @@ export default function PostDetailPage() {
         .eq('id', user.id)
         .single();
 
-      const displayName = profile?.nickname || profile?.full_name || user.user_metadata?.full_name || user.email;
+      const displayName = profile?.nickname || profile?.full_name || user.user_metadata?.full_name || 'Anonymous';
 
       const { data: newComment, error } = await supabase
         .from('comments')
@@ -244,22 +277,24 @@ export default function PostDetailPage() {
       }
 
       if (newComment) {
-        // Add comment to local state
-        setComments([newComment, ...comments]);
-        
-        // Update post comment count
-        setPost({ ...post, comment_count: post.comment_count + 1 });
-
-        // If this is a reply, update the parent comment's reply count
+        // Add comment to local state and update parent reply count in one operation
         if (commentData.parentCommentId) {
-          setComments(prevComments => 
-            prevComments.map(comment => 
+          // It's a reply: append to comments and update parent's reply count
+          setComments(prevComments => {
+            const updated = prevComments.map(comment => 
               comment.id === commentData.parentCommentId
                 ? { ...comment, reply_count: (comment.reply_count || 0) + 1 }
                 : comment
-            )
-          );
+            );
+            return [...updated, newComment];
+          });
+        } else {
+          // It's a top-level comment: prepend to comments
+          setComments([newComment, ...comments]);
         }
+        
+        // Update post comment count
+        setPost({ ...post, comment_count: post.comment_count + 1 });
 
         // Create notification for post author (if not the current user)
         if (post.user_id !== user.id) {
@@ -550,8 +585,15 @@ export default function PostDetailPage() {
   };
 
   // Organize comments by parent
-  const topLevelComments = comments.filter(c => !c.parent_comment_id);
-  const getReplies = (commentId) => comments.filter(c => c.parent_comment_id === commentId);
+  // Sort top-level comments: newest first, replies stay in chronological order (oldest first)
+  const topLevelComments = comments
+    .filter(c => !c.parent_comment_id)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Newest first for top-level
+  
+  const getReplies = (commentId) => 
+    comments
+      .filter(c => c.parent_comment_id === commentId)
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at)); // Oldest first for replies
   
   // Count only top-level comments for display
   const topLevelCommentCount = topLevelComments.length;
@@ -559,10 +601,10 @@ export default function PostDetailPage() {
 
 
   if (loading) {
-    return (
-      <SidebarLayout currentPage="community">
-        <div className="mobile-container">
-          <div className="mobile-section">
+  return (
+    <SidebarLayout currentPage="community">
+      <div className="mobile-container">
+        <div className="mobile-section">
             <PostCardSkeleton />
           </div>
         </div>
@@ -583,61 +625,99 @@ export default function PostDetailPage() {
   }
 
   const isOwnPost = user && post.user_id === user.id;
-  const canModerate = isOwnPost || isAdmin;
+  const canEdit = isOwnPost; // Only owners can edit
+  const canDelete = isOwnPost || isAdmin; // Owners and admins can delete
 
   return (
     <SidebarLayout currentPage="community">
       <div className="mobile-container">
 
         {/* Post Card */}
-        <div className="mobile-card animate-fade-in" style={{ marginBottom: '24px' }}>
+        <div className="animate-fade-in w-full border-b border-gray-700/50" style={{ marginBottom: '24px', paddingBottom: '24px' }}>
           <div className="mobile-card-header" style={{ marginBottom: '16px' }}>
-            <div className="minimal-flex justify-between">
-              <div className="flex-1">
-                <div className="minimal-flex" style={{ gap: '12px', marginBottom: '12px' }}>
-                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full minimal-flex-center flex-shrink-0">
-                    <span className="text-white font-semibold">
-                      {post.user_name.charAt(0).toUpperCase()}
+            <div className="mb-4">
+              <div className="flex items-start gap-2 mb-2">
+                {/* Profile Icon */}
+                <div className="flex-shrink-0">
+                  {authorAvatar ? (
+                    <img
+                      src={authorAvatar}
+                      alt={authorDisplayName || 'Author'}
+                      className="w-10 h-10 rounded-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div 
+                    className={`w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full minimal-flex-center ${authorAvatar ? 'hidden' : ''}`}
+                  >
+                    <span className="text-white font-semibold text-sm">
+                      {authorDisplayName ? authorDisplayName.charAt(0).toUpperCase() : 'A'}
                     </span>
                   </div>
-                  <div>
-                    <h3 className="mobile-subheading" style={{ marginBottom: '2px' }}>{post.user_name}</h3>
-                    <p style={{ fontSize: '12px', color: '#9ca3af' }}>
-                      {formatTime(post.created_at)}
-                      {post.updated_at && post.updated_at !== post.created_at && (
-                        <span className="ml-1">(edited)</span>
-                      )}
+                </div>
+
+                {/* Community Name and Creator Name Stacked */}
+                <div className="flex-1 min-w-0">
+                  {/* Community Name with forward slash */}
+                  {communityName && (
+                    <p className="text-sm text-gray-400">
+                      /{communityName}
                     </p>
+                  )}
+                  
+                  {/* Creator Name */}
+                  {authorDisplayName && (
+                    <p className="text-base font-medium text-white">
+                      {authorDisplayName}
+                    </p>
+                  )}
+                </div>
+
+                {/* Time since post */}
+                <div className="flex-shrink-0 pt-0.5">
+                  <p className="text-xs text-gray-400">
+                    {formatTime(post.created_at)}
+                    {post.updated_at && post.updated_at !== post.created_at && (
+                      <span className="ml-1">(edited)</span>
+                    )}
+                  </p>
+                </div>
+
+                {/* Edit/Delete Buttons */}
+                {(canEdit || canDelete) && (
+                  <div className="minimal-flex gap-2 flex-shrink-0">
+                    {canEdit && (
+                      <button
+                        onClick={() => setShowEditModal(true)}
+                        className="mobile-btn-secondary p-2"
+                      >
+                        <Edit2 className="minimal-icon" />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={handleDeletePost}
+                        className="mobile-btn-secondary p-2 text-red-400 hover:text-red-300"
+                      >
+                        <Trash2 className="minimal-icon" />
+                      </button>
+                    )}
                   </div>
-                </div>
-                <span className={getTagClass(post.tag)}>
-                  {getTagLabel(post.tag)}
-                </span>
+                )}
               </div>
-
-              {canModerate && (
-                <div className="minimal-flex gap-2">
-                  <button
-                    onClick={() => setShowEditModal(true)}
-                    className="mobile-btn-secondary p-2"
-                  >
-                    <Edit2 className="minimal-icon" />
-                  </button>
-                  <button
-                    onClick={handleDeletePost}
-                    className="mobile-btn-secondary p-2 text-red-400 hover:text-red-300"
-                  >
-                    <Trash2 className="minimal-icon" />
-                  </button>
-                </div>
-              )}
             </div>
-          </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <h1 className="text-2xl font-bold text-white" style={{ marginBottom: '12px', lineHeight: '1.3' }}>
+            {/* Post Title */}
+            <h1 className="text-2xl font-bold text-white mb-4" style={{ lineHeight: '1.3' }}>
               {post.title}
             </h1>
+          </div>
+
+          {/* Post Body */}
+          <div style={{ marginBottom: '20px' }}>
             <p className="mobile-card-content whitespace-pre-wrap" style={{ lineHeight: '1.7' }}>
               {post.content}
             </p>
@@ -695,7 +775,7 @@ export default function PostDetailPage() {
             </div>
           )}
 
-          <div className="mobile-card-actions" style={{ paddingTop: '16px', marginTop: '16px' }}>
+          <div className="mobile-card-actions" style={{ paddingTop: '0', marginTop: '12px' }}>
             <div className="minimal-flex" style={{ gap: '20px' }}>
               <button
                 onClick={handleLike}
@@ -718,33 +798,19 @@ export default function PostDetailPage() {
           </div>
         </div>
 
-        {/* Add Comment Section */}
-        <div className="mb-6">
-          <h3 className="mobile-subheading mb-3">Add Comment</h3>
+        {/* Comment Input - Under post, before comments */}
+        <div className="mb-6" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))', padding: '0 var(--container-padding-mobile)' }}>
           <CommentInput
             postId={postId}
             onSubmit={handleAddComment}
-            placeholder="Share your thoughts..."
+            placeholder="jump in"
           />
         </div>
 
-
         {/* Comments Section */}
-        <div className="mb-6">
-          <div className="minimal-flex justify-between items-center mb-3">
-            <h3 className="mobile-subheading">
-              Comments ({topLevelCommentCount})
-            </h3>
-            {isAdmin && (
-              <div className="minimal-flex items-center gap-1 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded text-xs text-amber-300">
-                <Shield className="w-3 h-3" />
-                <span>Admin Mode</span>
-              </div>
-            )}
-          </div>
-
+        <div className="mb-6" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
           {topLevelComments.length === 0 ? (
-            <EmptyComments onCreateClick={() => {/* Focus comment input */}} />
+            <EmptyComments onCreateClick={() => {/* Scroll to input field */}} />
           ) : (
             <div>
               {topLevelComments.map((comment) => (

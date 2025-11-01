@@ -1,9 +1,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { Users, MessageCircle, Plus, MessageSquare, Clock, X, ThumbsUp, MapPin, UserPlus, TrendingUp, Calendar, Settings, ArrowLeft, Shield, Info, MoreHorizontal, RefreshCw, Heart, MoreVertical, LogOut, Flag } from 'lucide-react';
+import { Users, MessageCircle, Plus, MessageSquare, Clock, X, ThumbsUp, MapPin, UserPlus, TrendingUp, Calendar, Settings, ArrowLeft, Shield, Info, MoreHorizontal, RefreshCw, Heart, Flag, AlertTriangle, UserMinus } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
-import TabNavigation from '../../components/TabNavigation';
+import ReportCommunityModal from '../../components/ReportCommunityModal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import PostCard from '../../components/PostCard';
 import { EmptyPosts, EmptyEvents, EmptyMembers } from '../../components/EmptyState';
 import EventCard from '../../components/EventCard';
@@ -13,7 +14,7 @@ import CreateEventModal from '../../components/CreateEventModal';
 import MembersList from '../../components/MembersList';
 import CalendarView from '../../components/CalendarView';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getActualMemberCount } from '../../../lib/community-utils';
+import { getActualMemberCount, updateLastViewedAt } from '../../../lib/community-utils';
 import ListSkeleton from '../../components/ListSkeleton';
 
 export default function CommunityPage() {
@@ -37,16 +38,22 @@ export default function CommunityPage() {
   const [rsvpingEvent, setRsvpingEvent] = useState(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [showMenu, setShowMenu] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [eventSearchTerm, setEventSearchTerm] = useState('');
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showRulesModal, setShowRulesModal] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [creator, setCreator] = useState(null);
+  const [moderators, setModerators] = useState([]);
+  const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
   const params = useParams();
   const communityId = params.communityId;
 
   const tabs = [
-    { id: 'posts', label: 'Posts', icon: MessageCircle },
+    { id: 'posts', label: 'Forum', icon: MessageCircle },
     { id: 'members', label: 'Members', icon: Users },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'about', label: 'About', icon: Info }
@@ -59,6 +66,15 @@ export default function CommunityPage() {
       if (user) {
         checkMembership(user.id);
         checkAdminStatus(user.id);
+        // Load user profile for display name
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('nickname, full_name')
+          .eq('id', user.id)
+          .single();
+        if (profile) {
+          setUserProfile(profile);
+        }
       }
     };
     getUser();
@@ -66,12 +82,31 @@ export default function CommunityPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [communityId]);
 
-  // Track last visited community
+  // Track last visited community and update last_viewed_at
   useEffect(() => {
-    if (communityId) {
+    if (communityId && user?.id) {
       localStorage.setItem('lastVisitedCommunity', communityId);
+      // Update last_viewed_at when user visits the community
+      updateLastViewedAt(communityId, user.id);
     }
-  }, [communityId]);
+  }, [communityId, user?.id]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
 
   const loadCommunity = async (retryCount = 0) => {
     try {
@@ -122,8 +157,42 @@ export default function CommunityPage() {
       // Get actual member count to ensure accuracy
       const actualMemberCount = await getActualMemberCount(communityData.id);
       setCommunity({ ...communityData, member_count: actualMemberCount });
+      
+      // Load creator (first member)
+      try {
+        const { data: membersData } = await supabase
+          .from('community_members')
+          .select('user_id, joined_at, role')
+          .eq('community_id', communityData.id)
+          .order('joined_at', { ascending: true })
+          .limit(1);
+        
+        if (membersData && membersData.length > 0) {
+          const firstMember = membersData[0];
+          // Fetch profile separately to avoid RLS issues
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, nickname')
+            .eq('id', firstMember.user_id)
+            .single();
+          
+          setCreator({
+            name: profile?.nickname || profile?.full_name || 'Unknown',
+            joinedAt: firstMember.joined_at
+          });
+        }
+      } catch (error) {
+        console.error('Error loading creator:', error);
+      }
+      
       loadPosts(communityData.id);
       loadEvents(communityData.id);
+      loadModerators(communityData.id);
+      
+      // Update last_viewed_at when community loads successfully
+      if (user?.id) {
+        updateLastViewedAt(communityData.id, user.id);
+      }
     } catch (error) {
       console.error('Error loading community:', error);
       // Only redirect on final retry
@@ -219,6 +288,34 @@ export default function CommunityPage() {
     }
   };
 
+  const loadModerators = async (commId) => {
+    try {
+      const { data: membersData, error } = await supabase
+        .from('community_members')
+        .select(`
+          *,
+          profiles (
+            id,
+            nickname,
+            full_name,
+            avatar_url,
+            handle
+          )
+        `)
+        .eq('community_id', commId)
+        .in('role', ['moderator', 'admin']);
+
+      if (error) {
+        console.error('Error loading moderators:', error);
+        return;
+      }
+
+      setModerators(membersData || []);
+    } catch (error) {
+      console.error('Error loading moderators:', error);
+    }
+  };
+
   const checkMembership = async (userId) => {
     try {
       const { data, error } = await supabase
@@ -276,9 +373,8 @@ export default function CommunityPage() {
 
       setIsMember(true);
       setCommunity(prev => ({ ...prev, member_count: (prev.member_count || 0) + 1 }));
-      setShowSuccessMessage(true);
-      setSuccessMessage('Welcome to the community!');
-      setTimeout(() => setShowSuccessMessage(false), 3000);
+      // Show welcome modal instead of success message
+      setShowWelcomeModal(true);
     } catch (error) {
       console.error('Error joining community:', error);
     } finally {
@@ -289,12 +385,7 @@ export default function CommunityPage() {
   const handleLeaveCommunity = async () => {
     if (!user) return;
 
-    if (!confirm('Are you sure you want to leave this community? You will no longer be able to see posts or participate in discussions.')) {
-      return;
-    }
-
     setLeaving(true);
-    setShowMenu(false);
     try {
       const { error } = await supabase
         .from('community_members')
@@ -304,46 +395,39 @@ export default function CommunityPage() {
 
       if (error) {
         console.error('Error leaving community:', error);
+        showToast('error', 'Error', 'Failed to leave community');
         return;
       }
 
       setIsMember(false);
       setCommunity(prev => ({ ...prev, member_count: Math.max(0, (prev.member_count || 0) - 1) }));
-      setShowSuccessMessage(true);
-      setSuccessMessage('You have left the community');
-      setTimeout(() => setShowSuccessMessage(false), 3000);
+      showToast('success', 'Success', 'You have left the community');
       
       // Redirect to communities page after leaving
       setTimeout(() => {
         navigate('/communities');
-      }, 2000);
+      }, 1500);
     } catch (error) {
       console.error('Error leaving community:', error);
+      showToast('error', 'Error', 'Something went wrong');
     } finally {
       setLeaving(false);
     }
   };
 
-  const handleReportCommunity = async () => {
-    setShowMenu(false);
-    // TODO: Implement report functionality
-    alert('Report functionality coming soon');
-    console.log('Report community:', communityId);
+  const handleReportCommunity = () => {
+    setShowReportModal(true);
   };
 
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowMenu(false);
-      }
-    };
-
-    if (showMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+  const handleReportModalClose = (success) => {
+    setShowReportModal(false);
+    if (success) {
+      setShowSuccessMessage(true);
+      setSuccessMessage('Thank you for reporting. Admins will review this community.');
+      setTimeout(() => setShowSuccessMessage(false), 5000);
     }
-  }, [showMenu]);
+  };
+
 
   const handleDeletePost = async (postId) => {
     if (!user) return;
@@ -485,6 +569,39 @@ export default function CommunityPage() {
     }
   };
 
+  const handleUpdatePost = async (postId, postData) => {
+    if (!user) return;
+
+    try {
+      // Only allow owners to update their posts (admins cannot edit)
+      const { data: updated, error } = await supabase
+        .from('posts')
+        .update({
+          title: postData.title,
+          content: postData.content,
+          tag: postData.tag,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', postId)
+        .eq('user_id', user.id) // Only owner can update
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating post:', error);
+        throw error;
+      }
+
+      if (updated) {
+        // Update the post in the local state
+        setPosts(prev => prev.map(p => p.id === postId ? updated : p));
+      }
+    } catch (error) {
+      console.error('Error updating post:', error);
+      throw error;
+    }
+  };
+
   const handleCreateEvent = async (eventData) => {
     try {
       console.log('🎉 Creating event with data:', eventData);
@@ -542,42 +659,23 @@ export default function CommunityPage() {
       case 'posts':
         return (
           <div className="space-y-4">
-            {/* Admin Mode Banner */}
-            {isAdmin && (
-              <div className="mobile-item mobile-item-divider animate-slide-up">
-                <div className="flex items-center justify-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded">
-                  <Shield className="w-4 h-4 text-amber-400" />
-                  <span className="text-amber-300 text-sm font-medium">Admin Mode - You can moderate all content</span>
-                </div>
-              </div>
-            )}
-
-            {/* Create Post Form */}
-            {isMember && (
-              <div className="animate-slide-up">
-                <div 
-                  onClick={() => setShowNewPostModal(true)}
-                  className="post-create-trigger"
-                >
-                  {/* User Avatar */}
-                  <div className="post-create-avatar">
-                    {user?.user_metadata?.full_name ? user.user_metadata.full_name.charAt(0).toUpperCase() : 'U'}
-                  </div>
-                  
-                  {/* Write something text */}
-                  <div className="post-create-text">
-                    Write something...
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Posts Feed */}
-            <div className="post-feed">
+            <div className="post-feed" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
+              {/* Create Post Button */}
+              {(isMember || isAdmin) && (
+                <button
+                  onClick={() => setShowNewPostModal(true)}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-full text-gray-300 hover:bg-gray-800 hover:border-gray-600 hover:text-white transition-all duration-200 mb-2"
+                  style={{ marginLeft: 'var(--container-padding-mobile)', marginRight: 'var(--container-padding-mobile)', marginBottom: '16px' }}
+                >
+                  <Plus className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-sm font-medium">Create post</span>
+                </button>
+              )}
               {posts.length === 0 ? (
                 <EmptyPosts
                   onCreateClick={() => setShowNewPostModal(true)}
-                  isMember={isMember}
+                  isMember={isMember || isAdmin}
                 />
               ) : (
                 posts.map((post) => (
@@ -635,7 +733,7 @@ export default function CommunityPage() {
               </div>
               
               {/* Create Event Button */}
-              {isMember && (
+              {(isMember || isAdmin) && (
                 <button
                   onClick={() => setShowNewEventModal(true)}
                   className="mobile-btn-secondary minimal-flex gap-2 text-sm px-4 py-2"
@@ -650,7 +748,7 @@ export default function CommunityPage() {
               communityId={communityId} 
               userId={user?.id} 
               searchTerm={eventSearchTerm}
-              isMember={isMember}
+              isMember={isMember || isAdmin}
               onCreateClick={() => setShowNewEventModal(true)}
             />
           </div>
@@ -659,20 +757,20 @@ export default function CommunityPage() {
       case 'about':
         return (
           <div className="space-y-6">
-            {/* Community Info */}
-            <div className="mobile-card-flat p-4">
-              <h4 className="minimal-heading mb-4 minimal-flex">
+            {/* Description */}
+            <div className="animate-slide-up">
+              <h4 className="minimal-heading mb-3 minimal-flex">
                 <Info className="minimal-icon mr-2 text-indigo-400" />
                 About This Community
               </h4>
-              <p className="minimal-text text-sm text-gray-300 leading-relaxed mb-4">
+              <p className="mobile-text-sm text-gray-300 leading-relaxed mb-4">
                 {community?.description || 'No description available.'}
               </p>
               
               {community?.rules && (
                 <div className="mt-4">
                   <h5 className="text-sm font-medium text-white mb-2">Community Rules</h5>
-                  <p className="minimal-text text-sm text-gray-300 leading-relaxed">
+                  <p className="mobile-text-sm text-gray-300 leading-relaxed">
                     {community.rules}
                   </p>
                 </div>
@@ -681,13 +779,13 @@ export default function CommunityPage() {
 
             {/* Gym Connection */}
             {community?.gyms && (
-              <div className="mobile-card-flat p-4">
-                <h4 className="minimal-heading mb-4 minimal-flex">
+              <div className="animate-slide-up">
+                <h4 className="minimal-heading mb-3 minimal-flex">
                   <MapPin className="minimal-icon mr-2 text-indigo-400" />
-                  Connected Gym
+                  Location
                 </h4>
                 <div className="space-y-2">
-                  <h5 className="font-medium text-white">{community.gyms.name}</h5>
+                  <p className="text-sm font-medium text-gray-200">{community.gyms.name}</p>
                   <p className="text-sm text-gray-300">{community.gyms.city}, {community.gyms.country}</p>
                   {community.gyms.address && (
                     <p className="text-sm text-gray-400">{community.gyms.address}</p>
@@ -699,32 +797,51 @@ export default function CommunityPage() {
               </div>
             )}
 
-            {/* Community Stats */}
-            <div className="mobile-card-flat p-4">
+            {/* Moderators List */}
+            <div className="animate-slide-up">
               <h4 className="minimal-heading mb-4 minimal-flex">
-                <TrendingUp className="minimal-icon mr-2 text-indigo-400" />
-                Community Stats
+                <Shield className="minimal-icon mr-2 text-indigo-400" />
+                Moderators
               </h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-indigo-400">{community?.member_count || 0}</div>
-                  <div className="text-sm text-gray-400">Members</div>
+              {moderators.length === 0 ? (
+                <p className="text-sm text-gray-400">No moderators assigned.</p>
+              ) : (
+                <div className="space-y-2">
+                  {moderators.map((moderator) => {
+                    const profile = moderator.profiles;
+                    const displayName = profile?.nickname || profile?.full_name || 'Unknown';
+                    return (
+                      <div
+                        key={moderator.id}
+                        className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg"
+                      >
+                        {profile?.avatar_url ? (
+                          <img
+                            src={profile.avatar_url}
+                            alt={displayName}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                            {displayName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-white truncate">{displayName}</p>
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-blue-500/20 text-blue-300">
+                              {moderator.role === 'admin' ? 'Admin' : 'Moderator'}
+                            </span>
+                          </div>
+                          {profile?.handle && (
+                            <p className="text-sm text-gray-400 truncate">@{profile.handle}</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-indigo-400">{posts.length}</div>
-                  <div className="text-sm text-gray-400">Posts</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-indigo-400">{events.length}</div>
-                  <div className="text-sm text-gray-400">Events</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-indigo-400">
-                    {community?.created_at ? new Date(community.created_at).toLocaleDateString() : 'N/A'}
-                  </div>
-                  <div className="text-sm text-gray-400">Created</div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         );
@@ -772,77 +889,102 @@ export default function CommunityPage() {
   }
 
   return (
-    <SidebarLayout currentPage="community" pageTitle={community?.name}>
+    <SidebarLayout currentPage="community">
       <div className="mobile-container">
         <div className="mobile-section">
-          {/* Tab Navigation */}
-          <div className="animate-slide-up">
-            <TabNavigation
-              tabs={tabs}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-            />
-          </div>
+          {/* Community Header */}
+          <div className="mb-1 animate-fade-in pt-4">
+            <div className="flex items-start justify-between gap-4 mb-3">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-bold text-white mb-2">{community?.name}</h1>
+                <div className="flex flex-col gap-1 text-sm text-gray-400 mb-3">
+                  {community?.gyms && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-gray-300">{community.gyms.name}</span>
+                      {community.gyms.city && (
+                        <span className="text-gray-400">• {community.gyms.city}</span>
+                      )}
+                    </div>
+                  )}
+                  {creator && (
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 flex-shrink-0" />
+                      <span>Created by <span className="text-gray-300">{creator.name}</span></span>
+                      {community?.created_at && (
+                        <span className="text-gray-400">
+                          • {new Date(community.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
-          {/* Header */}
-          <div className="animate-fade-in mb-6">
-            {/* Action Buttons Row */}
-            <div className="flex items-center gap-2 mt-4">
-              {/* Join Button - Only show for non-members */}
-              {!isMember && (
+            {/* Tab Buttons, Join/Joined Button and Menu */}
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1">
+              {/* Scrollable Tab Buttons */}
+              <div className="flex items-center gap-1 min-w-max">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`
+                        flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-all duration-200
+                        ${activeTab === tab.id
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'
+                        }
+                      `}
+                    >
+                      {Icon && <Icon className="w-3.5 h-3.5 flex-shrink-0" />}
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Join/Leave Button */}
+              {!isMember ? (
                 <button
                   onClick={handleJoinCommunity}
                   disabled={joining}
-                  className="mobile-btn-primary flex-1 minimal-flex gap-2 justify-center"
+                  className="px-2.5 py-1 text-sm rounded-full border-2 border-indigo-600 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
                 >
-                  {joining ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Joining...
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="minimal-icon" />
-                      Join Community
-                    </>
-                  )}
+                  {joining ? 'Joining...' : 'Join'}
+                </button>
+              ) : (
+                <button
+                  onClick={handleLeaveCommunity}
+                  className="px-2.5 py-1 text-sm rounded-full bg-indigo-600 text-white hover:bg-indigo-700 transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                >
+                  Joined
                 </button>
               )}
 
-              {/* 3-Dot Menu - Show for all users */}
+              {/* Three-dot menu */}
               <div className="relative flex-shrink-0" ref={menuRef}>
                 <button
                   onClick={() => setShowMenu(!showMenu)}
-                  className="p-2 hover:bg-gray-700 rounded-md transition-colors"
-                  aria-label="More options"
+                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
                 >
-                  <MoreVertical className="w-5 h-5 text-gray-400" />
+                  <MoreHorizontal className="w-5 h-5" />
                 </button>
-
-                {/* Dropdown Menu */}
+                
                 {showMenu && (
-                  <div
-                    role="menu"
-                    className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 min-w-[180px]"
-                  >
-                    {isMember && (
-                      <button
-                        onClick={handleLeaveCommunity}
-                        disabled={leaving}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        role="menuitem"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        {leaving ? 'Leaving...' : 'Leave Community'}
-                      </button>
-                    )}
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50">
                     <button
-                      onClick={handleReportCommunity}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors"
-                      role="menuitem"
+                      onClick={() => {
+                        setShowMenu(false);
+                        handleReportCommunity();
+                      }}
+                      className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-gray-700 flex items-center gap-2 transition-colors"
                     >
                       <Flag className="w-4 h-4" />
-                      Report
+                      Report Community
                     </button>
                   </div>
                 )}
@@ -852,16 +994,15 @@ export default function CommunityPage() {
 
           {/* Success Message */}
           {showSuccessMessage && (
-            <div className="mobile-card animate-slide-up bg-green-500/10 border border-green-500/20">
-              <div className="minimal-flex-center py-2">
+            <div className="animate-slide-up mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+              <div className="minimal-flex-center">
                 <p className="text-green-400 text-sm font-medium">{successMessage}</p>
               </div>
             </div>
           )}
 
-
           {/* Tab Content */}
-          <div className="mobile-card animate-slide-up">
+          <div className="animate-slide-up">
             {renderTabContent()}
           </div>
         </div>
@@ -911,6 +1052,144 @@ export default function CommunityPage() {
         />
       )}
 
+      {showReportModal && (
+        <ReportCommunityModal
+          isOpen={showReportModal}
+          onClose={handleReportModalClose}
+          communityId={communityId}
+          communityName={community?.name || 'Community'}
+        />
+      )}
+
+
+      {/* Welcome Modal - Slides up from bottom */}
+      {showWelcomeModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-4 pointer-events-none">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 pointer-events-auto"
+            onClick={() => setShowWelcomeModal(false)}
+            style={{ animation: 'fadeIn 0.3s ease-out' }}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative w-full max-w-md bg-slate-800 rounded-t-3xl rounded-b-3xl shadow-2xl border border-slate-700 pointer-events-auto animate-slide-up-from-bottom">
+            <div className="p-6">
+              {/* Welcome Header */}
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-1xl font-bold text-white mb-2">
+                  Welcome {(() => {
+                    const displayName = userProfile?.nickname || userProfile?.full_name || user?.user_metadata?.full_name;
+                    return displayName || 'to the Community';
+                  })()}!
+                </h2>
+                <p className="text-slate-400 text-sm">
+                  You're now part of the community. Get started below.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3 pb-6">
+                {/* Create Post Button */}
+                <button
+                  onClick={() => {
+                    setShowWelcomeModal(false);
+                    setShowNewPostModal(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-colors font-medium"
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  Create post
+                </button>
+
+                {/* Community Rules Button */}
+                <button
+                  onClick={() => {
+                    setShowWelcomeModal(false);
+                    setShowRulesModal(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors font-medium border border-slate-600"
+                >
+                  <Shield className="w-5 h-5" />
+                  Community rules
+                </button>
+
+                {/* Skip Button */}
+                <button
+                  onClick={() => setShowWelcomeModal(false)}
+                  className="w-full px-4 py-3 text-slate-400 hover:text-white rounded-xl transition-colors font-medium"
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Community Rules Modal */}
+      {showRulesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => setShowRulesModal(false)}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative w-full max-w-lg bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 max-h-[80vh] overflow-hidden transform transition-all duration-300 animate-slide-up">
+            <div className="p-6 overflow-y-auto max-h-[80vh]">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white">
+                    Community Rules
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setShowRulesModal(false)}
+                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Rules Content */}
+              <div className="text-slate-300 whitespace-pre-wrap">
+                {community?.rules ? (
+                  <p className="text-sm leading-relaxed">{community.rules}</p>
+                ) : (
+                  <div className="text-center py-8">
+                    <Shield className="w-12 h-12 text-slate-500 mx-auto mb-3" />
+                    <p className="text-slate-400 text-sm">
+                      No specific rules have been set for this community yet.
+                    </p>
+                    <p className="text-slate-500 text-xs mt-2">
+                      Please be respectful and follow general community guidelines.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="mt-6 pt-4 border-t border-slate-700">
+                <button
+                  onClick={() => setShowRulesModal(false)}
+                  className="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-medium"
+                >
+                  Got it
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </SidebarLayout>
   );
 }

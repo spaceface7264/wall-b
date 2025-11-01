@@ -70,7 +70,7 @@ export default function BottomNav() {
 
   return (
     <div className="bottom-nav">
-      <div className="flex items-center justify-around h-16 px-2">
+      <div className="bottom-nav-container">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path);
@@ -79,23 +79,15 @@ export default function BottomNav() {
             <button
               key={item.id}
               onClick={() => handleNavigation(item.path)}
-              className={`flex flex-col items-center justify-center min-w-0 flex-1 py-2 px-1 transition-colors duration-200 relative ${
-                active
-                  ? 'text-indigo-400'
-                  : 'text-gray-400 hover:text-gray-300'
-              }`}
+              className={`bottom-nav-item ${active ? 'active' : ''}`}
+              aria-label={item.label}
             >
-              <div className="relative">
-                <Icon className={`w-6 h-6 mb-1 ${active ? 'text-indigo-400' : ''}`} />
+              <div className="bottom-nav-icon-wrapper">
+                <Icon className="bottom-nav-icon" />
                 {item.id === 'chats' && user && (
                   <UnreadBadge userId={user.id} />
                 )}
               </div>
-              <span className={`text-xs font-medium truncate ${
-                active ? 'text-indigo-400' : 'text-gray-400'
-              }`}>
-                {item.label}
-              </span>
             </button>
           );
         })}

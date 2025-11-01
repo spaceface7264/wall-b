@@ -2,7 +2,9 @@
 -- This script ensures proper Row Level Security is enforced for chat tables
 -- Run this to fix the issue where all users can see the same conversations
 
--- Step 1: Drop all existing policies (to avoid conflicts)
+-- Step 1: Drop existing function and all existing policies (to avoid conflicts)
+DROP FUNCTION IF EXISTS user_is_conversation_participant(UUID, UUID);
+
 DROP POLICY IF EXISTS "conversations_select_policy" ON conversations;
 DROP POLICY IF EXISTS "conversations_insert_policy" ON conversations;
 DROP POLICY IF EXISTS "conversations_update_policy" ON conversations;
@@ -31,6 +33,8 @@ ALTER TABLE direct_messages ENABLE ROW LEVEL SECURITY;
 
 -- Step 3: Create secure RLS policies for conversations
 -- Users can only SELECT conversations they participate in
+-- Note: We'll create the helper function in Step 4, but for conversations we can use EXISTS
+-- since conversations doesn't query itself, avoiding recursion
 CREATE POLICY "conversations_select_policy" ON conversations
   FOR SELECT 
   USING (
@@ -59,16 +63,27 @@ CREATE POLICY "conversations_delete_policy" ON conversations
   USING (auth.uid() = created_by);
 
 -- Step 4: Create secure RLS policies for conversation_participants
+-- First, create a helper function to check if user is participant (avoids recursion)
+-- SECURITY DEFINER allows the function to bypass RLS when checking participation
+CREATE OR REPLACE FUNCTION user_is_conversation_participant(conv_id UUID, user_uuid UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  -- This query bypasses RLS because function is SECURITY DEFINER
+  RETURN EXISTS (
+    SELECT 1 
+    FROM conversation_participants 
+    WHERE conversation_id = conv_id 
+      AND user_id = user_uuid
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
 -- Users can only SELECT participants from conversations they are part of
+-- Using the helper function to avoid infinite recursion
 CREATE POLICY "conversation_participants_select_policy" ON conversation_participants
   FOR SELECT 
   USING (
-    EXISTS (
-      SELECT 1 
-      FROM conversation_participants cp2 
-      WHERE cp2.conversation_id = conversation_participants.conversation_id 
-        AND cp2.user_id = auth.uid()
-    )
+    user_id = auth.uid() OR user_is_conversation_participant(conversation_id, auth.uid())
   );
 
 -- Users can only INSERT themselves as participants
@@ -89,15 +104,11 @@ CREATE POLICY "conversation_participants_delete_policy" ON conversation_particip
 
 -- Step 5: Create secure RLS policies for direct_messages
 -- Users can only SELECT messages from conversations they participate in
+-- Using the helper function to avoid potential recursion issues
 CREATE POLICY "direct_messages_select_policy" ON direct_messages
   FOR SELECT 
   USING (
-    EXISTS (
-      SELECT 1 
-      FROM conversation_participants 
-      WHERE conversation_participants.conversation_id = direct_messages.conversation_id 
-        AND conversation_participants.user_id = auth.uid()
-    )
+    user_is_conversation_participant(conversation_id, auth.uid())
   );
 
 -- Users can only INSERT messages to conversations they participate in, and must be the sender
@@ -105,12 +116,7 @@ CREATE POLICY "direct_messages_insert_policy" ON direct_messages
   FOR INSERT 
   WITH CHECK (
     auth.uid() = sender_id 
-    AND EXISTS (
-      SELECT 1 
-      FROM conversation_participants 
-      WHERE conversation_participants.conversation_id = direct_messages.conversation_id 
-        AND conversation_participants.user_id = auth.uid()
-    )
+    AND user_is_conversation_participant(conversation_id, auth.uid())
   );
 
 -- Users can only UPDATE their own messages

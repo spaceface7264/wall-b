@@ -14,13 +14,29 @@ export default function PublicProfile() {
   const [communities, setCommunities] = useState([]);
   const [error, setError] = useState('');
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
-    // Get current user
+    // Get current user and admin status
     const getCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
+      
+      // Check if current user is admin
+      if (user) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', user.id)
+            .maybeSingle();
+          setIsAdmin(profile?.is_admin || false);
+        } catch (error) {
+          console.error('Error checking admin status:', error);
+          setIsAdmin(false);
+        }
+      }
     };
     getCurrentUser();
 
@@ -207,7 +223,7 @@ export default function PublicProfile() {
                 {profile.handle && (
                   <p className="mobile-text-xs text-gray-400 truncate mb-1">@{profile.handle}</p>
                 )}
-                {profile.email && profile.show_email && (
+                {profile.email && profile.show_email && isAdmin && (
                   <p className="mobile-text-xs text-gray-400 truncate mb-1">{profile.email}</p>
                 )}
                 {location && (

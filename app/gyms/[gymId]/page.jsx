@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
-import { MapPin, Clock, Phone, Mail, Globe, Star, Heart, Dumbbell, Users, Calendar, Info, MessageCircle, Plus } from 'lucide-react';
+import { MapPin, Clock, Phone, Mail, Globe, Star, Heart, Dumbbell, Users, Calendar, Info, MessageCircle, Plus, MoreVertical } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
 import TabNavigation from '../../components/TabNavigation';
 import CalendarView from '../../components/CalendarView';
@@ -17,6 +17,8 @@ export default function GymDetail() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('about');
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
   const navigate = useNavigate();
   const params = useParams();
   const { showToast } = useToast();
@@ -33,6 +35,20 @@ export default function GymDetail() {
       fetchGym(params.gymId);
     }
   }, [params.gymId]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showMenu]);
 
   const getUser = async () => {
     try {
@@ -533,22 +549,6 @@ export default function GymDetail() {
       case 'about':
         return (
           <div className="space-y-6">
-            {/* Gym Image */}
-            <div className="w-full h-64 bg-gray-700 rounded-xl overflow-hidden elevation-2">
-              <img 
-                src={gym.image_url} 
-                alt={gym.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                }}
-              />
-              <div className="w-full h-full minimal-flex-center bg-gray-700" style={{display: 'none'}}>
-                <MapPin className="minimal-icon text-gray-400 text-5xl" />
-              </div>
-            </div>
-
             {/* Basic Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="mobile-card-flat p-4">
@@ -775,52 +775,102 @@ export default function GymDetail() {
   return (
     <SidebarLayout currentPage="gyms">
       <div className="mobile-container">
-        {/* Tab Navigation - Moved to top */}
-        <div className="animate-slide-up">
-          <TabNavigation
-            tabs={tabs}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-          />
-        </div>
-
         <div className="mobile-section">
-          {/* Header with Location and Favorite */}
-          <div className="mobile-card animate-fade-in">
-            <div className="minimal-flex-between items-start">
-              <div className="flex-1">
-                <div className="minimal-flex-between items-center mb-2">
-                  <div className="flex-1"></div>
-                  <button 
-                    onClick={toggleFavorite}
-                    className={`mobile-btn-secondary transition-all duration-200 ${
-                      isFavorite 
-                        ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
-                        : 'hover:bg-gray-600/50 hover:text-red-400'
-                    }`}
-                    title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          {/* Gym Header Card */}
+          <div className="mobile-card animate-slide-up" style={{ padding: 0, overflow: 'hidden' }}>
+            {/* Gym Image */}
+            <div className="w-full h-48 bg-gray-700 overflow-hidden">
+              <img 
+                src={gym.image_url} 
+                alt={gym.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  if (e.target.nextSibling) {
+                    e.target.nextSibling.style.display = 'flex';
+                  }
+                }}
+              />
+              <div className="w-full h-full minimal-flex-center bg-gray-700" style={{display: 'none'}}>
+                <MapPin className="minimal-icon text-gray-400 text-5xl" />
+              </div>
+            </div>
+
+            {/* Gym Name, Address, and Menu */}
+            <div className="flex items-start justify-between gap-3" style={{ padding: 'var(--card-padding-mobile)' }}>
+              <div className="flex-1 min-w-0">
+                <h1 className="mobile-heading mb-2 truncate">{gym.name}</h1>
+                <div className="minimal-flex mobile-text-xs text-gray-400 items-center">
+                  <MapPin className="minimal-icon mr-1 flex-shrink-0" style={{ width: '14px', height: '14px' }} />
+                  <span className="truncate">{gym.address}</span>
+                </div>
+              </div>
+              
+              {/* 3-Dot Menu */}
+              <div className="relative flex-shrink-0" ref={menuRef}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu(!showMenu);
+                  }}
+                  className="p-1.5 hover:bg-gray-700 rounded-md transition-colors"
+                  aria-label="More options"
+                >
+                  <MoreVertical className="w-4 h-4 text-gray-400" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {showMenu && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-full mt-1 rounded-lg shadow-lg"
+                    style={{ 
+                      minWidth: '180px',
+                      backgroundColor: 'var(--bg-surface)', 
+                      border: '1px solid var(--border-color)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+                      zIndex: 9999
+                    }}
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Heart 
-                      className={`minimal-icon transition-all duration-200 ${
-                        isFavorite ? 'fill-current' : ''
-                      }`} 
-                    />
-                  </button>
-                </div>
-                <div className="minimal-flex mobile-text-xs text-gray-400 mb-1">
-                  <MapPin className="minimal-icon mr-1" />
-                  <span>{gym.city}, {gym.country}</span>
-                </div>
-                <div className="minimal-flex mobile-text-xs text-gray-400">
-                  <span>{gym.wall_height}</span>
-                </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite();
+                        setShowMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
+                      style={{ 
+                        fontSize: '13px',
+                        color: isFavorite ? 'var(--text-primary)' : 'var(--text-secondary)'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      role="menuitem"
+                    >
+                      <Heart 
+                        className={`w-3.5 h-3.5 ${isFavorite ? 'fill-current text-red-400' : ''}`} 
+                        style={{ flexShrink: 0, color: isFavorite ? '#f87171' : 'var(--text-muted)' }}
+                      />
+                      <span>{isFavorite ? 'Remove from favorites' : 'Add to favorites'}</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
+          {/* Tab Navigation */}
+          <div className="animate-slide-up">
+            <TabNavigation
+              tabs={tabs}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
+          </div>
 
-          {/* Tab Content */}
-          <div className="mobile-card animate-slide-up">
+          {/* Tab Content - Scrollable */}
+          <div className="mobile-card animate-slide-up" style={{ maxHeight: 'calc(100vh - 400px)', overflowY: 'auto' }}>
             {renderTabContent()}
           </div>
         </div>

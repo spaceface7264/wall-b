@@ -93,10 +93,10 @@ export default function CommentThread({
   };
 
   return (
-    <div className={`${depth === 1 ? 'mt-2' : 'mt-4'}`}>
-      <div className={`${depth === 1 ? 'p-3 bg-gray-800/30 rounded' : 'mobile-card-flat p-comfortable'}`}>
+    <div className={`${depth === 1 ? 'mt-2' : ''}`}>
+      <div className={`${depth === 1 ? 'p-3' : 'w-full border-b border-gray-700/50 last:border-b-0 hover:bg-gray-800/30'} transition-all duration-200`} style={depth !== 1 ? { padding: '16px 0' } : {}}>
         {/* Comment Header */}
-        <div className="minimal-flex justify-between items-start mb-2">
+        <div className="minimal-flex justify-between items-start mb-2" style={{ padding: depth !== 1 ? '0 16px' : '0' }}>
           <div className="minimal-flex gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full minimal-flex-center flex-shrink-0">
               <span className="text-white font-semibold text-sm">
@@ -139,7 +139,7 @@ export default function CommentThread({
 
         {/* Comment Content */}
         {isEditing ? (
-          <div className="mb-2">
+          <div className="mb-2" style={{ padding: depth !== 1 ? '0 16px' : '0' }}>
             <textarea
               value={editContent}
               onChange={(e) => setEditContent(e.target.value.slice(0, 500))}
@@ -166,14 +166,14 @@ export default function CommentThread({
             </div>
           </div>
         ) : (
-          <p className="mobile-card-content mb-3">
+          <p className="mobile-card-content mb-3" style={{ padding: depth !== 1 ? '0 16px' : '0' }}>
             {comment.content}
           </p>
         )}
 
         {/* Comment Actions */}
         {!isEditing && (
-          <div className="minimal-flex gap-4 items-center">
+          <div className="minimal-flex gap-4 items-center" style={{ padding: depth !== 1 ? '0 16px' : '0' }}>
             <button
               onClick={handleLike}
               disabled={liking}
@@ -233,10 +233,10 @@ export default function CommentThread({
               <div key={reply.id} className="ml-6 pl-4 border-l-2 border-indigo-500/30 relative">
                 <div className="absolute -left-1 top-0 w-2 h-2 bg-indigo-500 rounded-full"></div>
                 
-                {/* Reply Content - Inline display */}
-                <div className="p-3 bg-gray-800/40 rounded ml-2 border border-gray-700/50">
+                {/* Reply Content - No card styling */}
+                <div className="ml-2 py-2">
                     {/* Reply Header */}
-                    <div className="minimal-flex justify-between items-start mb-2">
+                    <div className="minimal-flex justify-between items-start mb-1">
                       <div className="minimal-flex gap-2">
                         <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full minimal-flex-center flex-shrink-0">
                           <span className="text-white font-semibold text-xs">
@@ -278,7 +278,7 @@ export default function CommentThread({
                     </div>
 
                     {/* Reply Content */}
-                    <p className="mobile-text-xs text-gray-300 mb-3">
+                    <p className="mobile-text-xs text-gray-300 mb-2">
                       {reply.content}
                     </p>
 
@@ -292,8 +292,8 @@ export default function CommentThread({
                         <span>{reply.like_count}</span>
                       </button>
                     </div>
-                  </div>
                 </div>
+              </div>
               ))}
             </div>
           </div>

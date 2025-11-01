@@ -23,7 +23,9 @@ export default function PostCard({
   const [showMenu, setShowMenu] = useState(false);
   const navigate = useNavigate();
   const isOwnPost = post.user_id === currentUserId;
-  const canShowActions = showActions && (isOwnPost || isAdmin);
+  const canEdit = showActions && isOwnPost; // Only owners can edit
+  const canDelete = showActions && (isOwnPost || isAdmin); // Owners and admins can delete
+  const canShowActions = canEdit || canDelete; // Show menu if any action is available
   const isPostLiked = liked || isLiked;
   const isPostLoading = loadingLike || isLiking;
 
@@ -75,10 +77,13 @@ export default function PostCard({
     const date = new Date(timestamp);
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
     
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInDays < 365) return `${diffInDays}d ago`;
     return date.toLocaleDateString();
   };
 
@@ -206,12 +211,13 @@ export default function PostCard({
 
   return (
     <div 
-      className="post-card animate-fade-in"
+      className="animate-fade-in w-full border-b border-gray-700/50 last:border-b-0 hover:bg-gray-800/30 transition-all duration-200"
       onClick={handleOpen}
+      style={{ padding: '16px 0', cursor: 'pointer' }}
     >
       {/* Header */}
-      <div className="post-header">
-        <div className="post-author-info">
+      <div className="post-header" style={{ padding: '0 16px', marginBottom: '12px' }}>
+        <div className="post-author-info flex-1">
           {authorAvatar ? (
             <img 
               src={authorAvatar} 
@@ -228,65 +234,62 @@ export default function PostCard({
             </div>
           )}
           <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
               <button
                 onClick={handleProfileClick}
-              className="post-author-name"
+                className="post-author-name"
               >
-              {authorName}
+                {authorName}
               </button>
-            <div className="post-meta">
-              <Clock className="post-meta-icon" />
-              <span>{formatTime(post.created_at)}</span>
-              {post.tag && (
-                <>
-                  <span className="post-meta-separator">•</span>
-              <span className={getTagClass(post.tag)}>
-                {getTagLabel(post.tag)}
+              <span className="text-xs text-gray-400">
+                {formatTime(post.created_at)}
               </span>
-                </>
-              )}
             </div>
           </div>
         </div>
         
-          {canShowActions && (
+        {canShowActions && (
           <div className="post-menu-container relative">
-              <button 
-                onClick={toggleMenu}
+            <button 
+              onClick={toggleMenu}
               className="post-menu-btn"
-              >
+            >
               <MoreHorizontal className="w-4 h-4" />
-              </button>
-              {showMenu && (
+            </button>
+            {showMenu && (
               <>
                 <div 
                   className="post-menu-overlay"
                   onClick={() => setShowMenu(false)}
                 />
                 <div className="post-menu-dropdown">
-                  <button
-                    onClick={handleEdit}
-                    className="post-menu-item"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    <span>Edit Post</span>
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    className="post-menu-item post-menu-item-danger"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span>Delete Post</span>
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={handleEdit}
+                      className="post-menu-item"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      <span>Edit Post</span>
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button
+                      onClick={handleDelete}
+                      className="post-menu-item post-menu-item-danger"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete Post</span>
+                    </button>
+                  )}
                 </div>
               </>
-              )}
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Content */}
-      <div className="post-content">
+      <div className="post-content" style={{ padding: '0 16px' }}>
         <h3 className="post-title">{post.title}</h3>
         
         {post.content && (
@@ -359,7 +362,7 @@ export default function PostCard({
       </div>
       
       {/* Actions */}
-      <div className="post-actions">
+      <div className="post-actions" style={{ padding: '0 16px', marginTop: '12px' }}>
           <button 
             onClick={handleLike}
           disabled={isPostLoading}

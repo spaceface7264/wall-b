@@ -187,9 +187,6 @@ export default function UserProfile({ userId, showBackButton = true }) {
                   {profile.handle && (
                     <p className="mobile-text-xs text-gray-400">@{profile.handle}</p>
                   )}
-                  {profile.email && (
-                    <p className="mobile-card-subtitle truncate">{profile.email}</p>
-                  )}
                   {location && (
                     <p className="mobile-text-xs text-gray-400 mt-1 truncate flex items-center gap-1">
                       <MapPin className="w-3 h-3" />

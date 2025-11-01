@@ -59,8 +59,9 @@ export default function GroupMembersModal({ isOpen, onClose, conversation, curre
           profiles!user_id (
             id,
             full_name,
-            avatar_url,
-            email
+            nickname,
+            handle,
+            avatar_url
           )
         `)
         .eq('conversation_id', conversation.id)
@@ -90,9 +91,9 @@ export default function GroupMembersModal({ isOpen, onClose, conversation, curre
         
         // If fallback worked, get profiles separately
         const userIds = fallbackData.map(p => p.user_id);
-        const { data: profiles, error: profilesError } = await supabase
+          const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, full_name, avatar_url, email')
+          .select('id, full_name, nickname, handle, avatar_url')
           .in('id', userIds);
           
         if (profilesError) {
@@ -132,7 +133,7 @@ export default function GroupMembersModal({ isOpen, onClose, conversation, curre
       
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, email')
+        .select('id, full_name, nickname, handle, avatar_url')
         .not('id', 'in', `(${currentMemberIds.join(',')})`)
         .order('full_name', { ascending: true });
 
@@ -222,16 +223,18 @@ export default function GroupMembersModal({ isOpen, onClose, conversation, curre
 
   const filteredMembers = members.filter(member => {
     const name = member.profiles?.full_name?.toLowerCase() || '';
-    const email = member.profiles?.email?.toLowerCase() || '';
+    const nickname = member.profiles?.nickname?.toLowerCase() || '';
+    const handle = member.profiles?.handle?.toLowerCase() || '';
     const search = searchTerm.toLowerCase();
-    return name.includes(search) || email.includes(search);
+    return name.includes(search) || nickname.includes(search) || handle.includes(search);
   });
 
   const filteredAvailableUsers = availableUsers.filter(user => {
     const name = user.full_name?.toLowerCase() || '';
-    const email = user.email?.toLowerCase() || '';
+    const nickname = user.nickname?.toLowerCase() || '';
+    const handle = user.handle?.toLowerCase() || '';
     const search = searchTerm.toLowerCase();
-    return name.includes(search) || email.includes(search);
+    return name.includes(search) || nickname.includes(search) || handle.includes(search);
   });
 
   const formatJoinDate = (timestamp) => {
@@ -336,11 +339,13 @@ export default function GroupMembersModal({ isOpen, onClose, conversation, curre
                       className="flex items-center gap-3 p-3 bg-slate-800 rounded-lg"
                     >
                       <Avatar url={user.avatar_url} size={40} />
-                      <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-white truncate">
-                          {user.full_name || 'Unknown User'}
+                          {user.nickname || user.full_name || 'Unknown User'}
                         </h4>
-                        <p className="text-sm text-slate-400 truncate">{user.email}</p>
+                        {user.handle && (
+                          <p className="text-sm text-slate-400 truncate">@{user.handle}</p>
+                        )}
                       </div>
                       <button
                         onClick={() => handleAddMember(user)}
@@ -394,9 +399,11 @@ export default function GroupMembersModal({ isOpen, onClose, conversation, curre
                               <Crown className="w-4 h-4 text-yellow-400" title="Group Admin" />
                             )}
                           </div>
-                          <p className="text-sm text-slate-400 truncate">
-                            {member.profiles?.email}
-                          </p>
+                          {member.profiles?.handle && (
+                            <p className="text-sm text-slate-400 truncate">
+                              @{member.profiles.handle}
+                            </p>
+                          )}
                           <p className="text-xs text-slate-500">
                             Joined {formatJoinDate(member.joined_at)}
                           </p>

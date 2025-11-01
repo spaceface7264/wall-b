@@ -23,7 +23,17 @@ export function useNotifications(userId) {
       
       const { data, error } = await supabase
         .from('notifications')
-        .select('*')
+        .select(`
+          *,
+          events:data->event_id (
+            id,
+            title,
+            description,
+            event_date,
+            location,
+            event_type
+          )
+        `)
         .eq('user_id', user.id) // Use the authenticated user's ID
         .order('created_at', { ascending: false })
         .limit(50);
@@ -34,7 +44,44 @@ export function useNotifications(userId) {
         return;
       }
 
-      setNotifications(data || []);
+      // Enrich notifications with profile names and event details
+      const enrichedNotifications = await Promise.all(
+        (data || []).map(async (notification) => {
+          const notificationData = notification.data || {};
+          let enriched = { ...notification };
+
+          // Get profile information for the actor (person who triggered the notification)
+          if (notificationData.commenter_id || notificationData.liker_id || notificationData.rsvper_id) {
+            const actorId = notificationData.commenter_id || notificationData.liker_id || notificationData.rsvper_id;
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('id, nickname, full_name, avatar_url')
+              .eq('id', actorId)
+              .single();
+            
+            if (!profileError && profile) {
+              enriched.actor_profile = profile;
+            }
+          }
+
+          // Get event details if event_id exists
+          if (notificationData.event_id) {
+            const { data: event, error: eventError } = await supabase
+              .from('events')
+              .select('id, title, description, event_date, location, event_type')
+              .eq('id', notificationData.event_id)
+              .single();
+            
+            if (!eventError && event) {
+              enriched.event = event;
+            }
+          }
+
+          return enriched;
+        })
+      );
+
+      setNotifications(enrichedNotifications);
     } catch (error) {
       console.error('Error loading notifications:', error);
     } finally {

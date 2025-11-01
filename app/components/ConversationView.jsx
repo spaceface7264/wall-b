@@ -122,15 +122,19 @@ export default function ConversationView({ conversation, currentUserId, onBack }
       // Get sender profiles for each message
       const messagesWithProfiles = await Promise.all(
         (data || []).map(async (message) => {
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('full_name, avatar_url')
+            .select('id, nickname, full_name, avatar_url')
             .eq('id', message.sender_id)
             .single();
 
+          if (profileError) {
+            console.error('Error fetching profile for sender:', message.sender_id, profileError);
+          }
+
           return {
             ...message,
-            profiles: profile || { full_name: 'Unknown User', avatar_url: null }
+            profiles: profile || { nickname: null, full_name: 'Unknown User', avatar_url: null }
           };
         })
       );
@@ -168,15 +172,19 @@ export default function ConversationView({ conversation, currentUserId, onBack }
           const newMessage = payload.new;
           
           // Get sender profile for the new message
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('full_name, avatar_url')
+            .select('id, nickname, full_name, avatar_url')
             .eq('id', newMessage.sender_id)
             .single();
 
+          if (profileError) {
+            console.error('Error fetching profile for new message sender:', newMessage.sender_id, profileError);
+          }
+
           const messageWithProfile = {
             ...newMessage,
-            profiles: profile || { full_name: 'Unknown User', avatar_url: null }
+            profiles: profile || { nickname: null, full_name: 'Unknown User', avatar_url: null }
           };
 
           setMessages(prev => {
@@ -336,16 +344,20 @@ export default function ConversationView({ conversation, currentUserId, onBack }
         setNewMessage(messageText); // Restore message on error
       } else {
         // Get sender profile for the real message
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('full_name, avatar_url')
+          .select('id, nickname, full_name, avatar_url')
           .eq('id', currentUserId)
           .single();
+
+        if (profileError) {
+          console.error('Error fetching profile for current user:', profileError);
+        }
 
         // Replace optimistic message with real one
         setMessages(prev => prev.map(msg => 
           msg.id === tempId 
-            ? { ...data, profiles: profile || { full_name: 'You', avatar_url: null }, sending: false, isNew: true }
+            ? { ...data, profiles: profile || { nickname: null, full_name: 'You', avatar_url: null }, sending: false, isNew: true }
             : msg
         ));
         

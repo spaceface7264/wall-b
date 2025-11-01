@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Plus, MapPin, Calendar, MessageCircle, Search, Filter, Building, Globe } from 'lucide-react';
+import { Users, Plus, MapPin, Calendar, MessageCircle, Building, Globe, AlertTriangle } from 'lucide-react';
 import CommunityCard from '../components/CommunityCard';
+import ReportCommunityModal from '../components/ReportCommunityModal';
+import ConfirmationModal from '../components/ConfirmationModal';
 import { useToast } from '../providers/ToastProvider';
 import { enrichCommunitiesWithActualCounts } from '../../lib/community-utils';
-import { EmptyCommunities, EmptySearch } from '../components/EmptyState';
+import { EmptyCommunities } from '../components/EmptyState';
 import ListSkeleton from '../components/ListSkeleton';
 
 export default function CommunitiesPage() {
   const [user, setUser] = useState(null);
   const [communities, setCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
   const [myCommunities, setMyCommunities] = useState([]);
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -300,27 +300,15 @@ export default function CommunitiesPage() {
     }
   };
 
+  // Filter out invalid communities and communities the user has already joined
   const filteredCommunities = communities.filter(community => {
     // Safety checks for null/undefined values
     if (!community || !community.name) {
       return false;
     }
-    
-    const name = (community.name || '').toLowerCase();
-    const description = (community.description || '').toLowerCase();
-    const searchLower = searchTerm.toLowerCase();
-    
-    const matchesSearch = name.includes(searchLower) || description.includes(searchLower);
-    
-    // Check filter - use community_type if it exists, otherwise infer from gym_id
-    const isGymCommunity = community.community_type === 'gym' || (community.community_type === undefined && community.gym_id);
-    const isGeneralCommunity = community.community_type === 'general' || (community.community_type === undefined && !community.gym_id);
-    
-    const matchesFilter = filterType === 'all' || 
-                         (filterType === 'gym' && isGymCommunity) ||
-                         (filterType === 'general' && isGeneralCommunity);
-    
-    return matchesSearch && matchesFilter;
+    // Exclude communities user is already a member of (they're shown in "My Communities")
+    const isMember = myCommunities.some(c => c.id === community.id);
+    return !isMember;
   });
 
   const [joiningCommunity, setJoiningCommunity] = useState(null);
@@ -360,21 +348,33 @@ export default function CommunitiesPage() {
     }
   };
 
+
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportingCommunity, setReportingCommunity] = useState(null);
+  
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [leavingCommunityId, setLeavingCommunityId] = useState(null);
+
   const handleLeaveCommunity = async (communityId) => {
     if (!user) {
       return;
     }
 
-    if (!confirm('Are you sure you want to leave this community? You will no longer be able to see posts or participate in discussions.')) {
+    setLeavingCommunityId(communityId);
+    setShowLeaveModal(true);
+  };
+
+  const handleConfirmLeave = async () => {
+    if (!user || !leavingCommunityId) {
       return;
     }
 
-    setLeavingCommunity(communityId);
+    setLeavingCommunity(leavingCommunityId);
     try {
       const { error } = await supabase
         .from('community_members')
         .delete()
-        .eq('community_id', communityId)
+        .eq('community_id', leavingCommunityId)
         .eq('user_id', user.id);
 
       if (error) {
@@ -393,13 +393,22 @@ export default function CommunitiesPage() {
       showToast('error', 'Error', 'Something went wrong');
     } finally {
       setLeavingCommunity(null);
+      setLeavingCommunityId(null);
     }
   };
 
   const handleReportCommunity = async (communityId) => {
-    // TODO: Implement report functionality
-    showToast('info', 'Report', 'Report functionality coming soon');
-    console.log('Report community:', communityId);
+    const community = communities.find(c => c.id === communityId) || myCommunities.find(c => c.id === communityId);
+    setReportingCommunity({ id: communityId, name: community?.name || 'Community' });
+    setShowReportModal(true);
+  };
+
+  const handleReportModalClose = (success) => {
+    setShowReportModal(false);
+    setReportingCommunity(null);
+    if (success) {
+      showToast('success', 'Report Submitted', 'Thank you for reporting. Admins will review this community.');
+    }
   };
 
   if (loading) {
@@ -416,83 +425,14 @@ export default function CommunitiesPage() {
     <>
       <div className="mobile-container">
         <div className="mobile-section">
-          {/* Header */}
-          <div className="mobile-card animate-fade-in">
-            <div className="minimal-flex-between items-center mb-4">
-              <div className="flex-1">
-                <p className="mobile-text-sm text-gray-300">
-                  Connect with climbers and share your passion
-                </p>
-              </div>
-              <button
-                onClick={() => navigate('/community/new')}
-                className="mobile-btn-primary minimal-flex gap-2 ml-4"
-              >
-                <Plus className="minimal-icon" />
-                Create
-              </button>
-            </div>
-
-            {/* Search and Filter */}
-            <div className="space-y-4">
-              {/* Search Bar */}
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search communities..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-indigo-500"
-                />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              </div>
-
-              {/* Filter Buttons */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setFilterType('all')}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                    filterType === 'all'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setFilterType('gym')}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                    filterType === 'gym'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
-                >
-                  <Building className="w-4 h-4 inline mr-1" />
-                  Gym
-                </button>
-                <button
-                  onClick={() => setFilterType('general')}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                    filterType === 'general'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
-                >
-                  <Globe className="w-4 h-4 inline mr-1" />
-                  General
-                </button>
-              </div>
-            </div>
-          </div>
-
           {/* My Communities */}
           {myCommunities.length > 0 && (
-            <div className="mobile-card animate-slide-up">
+            <div className="animate-slide-up">
               <h2 className="minimal-heading mb-4 minimal-flex">
                 <Users className="minimal-icon mr-2 text-indigo-400" />
                 My Communities
               </h2>
-              <div className="space-y-3">
+              <div className="-mx-4 md:-mx-6" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
                 {myCommunities.map((community) => (
                   <CommunityCard
                     key={community.id}
@@ -510,47 +450,58 @@ export default function CommunitiesPage() {
           )}
 
           {/* All Communities */}
-          <div className="mobile-card animate-slide-up">
+          <div className="animate-slide-up">
             <h2 className="minimal-heading mb-4 minimal-flex">
               <Globe className="minimal-icon mr-2 text-indigo-400" />
               All Communities
             </h2>
             
             {filteredCommunities.length === 0 ? (
-              searchTerm || filterType !== 'all' ? (
-                <EmptySearch
-                  searchTerm={searchTerm || filterType}
-                  onClearSearch={() => {
-                    setSearchTerm('');
-                    setFilterType('all');
-                  }}
-                />
-              ) : (
-                <EmptyCommunities onCreateClick={() => navigate('/community/new')} />
-              )
+              <EmptyCommunities onCreateClick={() => navigate('/community/new')} />
             ) : (
-              <div className="space-y-3">
-                {filteredCommunities.map((community) => {
-                  const isMemberOfThis = myCommunities.some(c => c.id === community.id);
-                  return (
-                    <CommunityCard
-                      key={community.id}
-                      community={community}
-                      isMember={isMemberOfThis}
-                      onJoin={handleJoinCommunity}
-                      onLeave={handleLeaveCommunity}
-                      onReport={handleReportCommunity}
-                      onOpen={() => navigate(`/community/${community.id}`)}
-                      joining={joiningCommunity === community.id}
-                      leaving={leavingCommunity === community.id}
-                    />
-                  );
-                })}
+              <div className="-mx-4 md:-mx-6" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
+                {filteredCommunities.map((community) => (
+                  <CommunityCard
+                    key={community.id}
+                    community={community}
+                    isMember={false}
+                    onJoin={handleJoinCommunity}
+                    onLeave={handleLeaveCommunity}
+                    onReport={handleReportCommunity}
+                    onOpen={() => navigate(`/community/${community.id}`)}
+                    joining={joiningCommunity === community.id}
+                    leaving={leavingCommunity === community.id}
+                  />
+                ))}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {showReportModal && reportingCommunity && (
+        <ReportCommunityModal
+          isOpen={showReportModal}
+          onClose={handleReportModalClose}
+          communityId={reportingCommunity.id}
+          communityName={reportingCommunity.name}
+        />
+      )}
+
+      <ConfirmationModal
+        isOpen={showLeaveModal}
+        onClose={() => {
+          setShowLeaveModal(false);
+          setLeavingCommunityId(null);
+        }}
+        onConfirm={handleConfirmLeave}
+        title="Leave Community"
+        message="Are you sure you want to leave this community? You will no longer be able to see posts or participate in discussions."
+        confirmText="Leave"
+        cancelText="Cancel"
+        icon={AlertTriangle}
+        variant="warning"
+      />
     </>
   );
 }

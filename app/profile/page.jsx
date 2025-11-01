@@ -267,9 +267,6 @@ export default function Profile() {
                 {!isEditing ? (
                   <>
                     <h2 className="mobile-card-title truncate mb-1">{displayName}</h2>
-                {profileData.email && (
-                      <p className="mobile-text-xs text-gray-400 truncate mb-1">{profileData.email}</p>
-                )}
                 {location && (
                       <p className="mobile-text-xs text-gray-400 truncate minimal-flex gap-1">
                         <MapPin className="w-3 h-3 flex-shrink-0" />
