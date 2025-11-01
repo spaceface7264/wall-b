@@ -57,8 +57,6 @@ export function Toast({
       >
         <X className="w-4 h-4" />
       </button>
-      
-      {duration && <div className="toast-progress" />}
     </div>
   );
 }

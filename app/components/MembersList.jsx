@@ -23,41 +23,87 @@ export default function MembersList({ communityId, isAdmin = false }) {
     if (communityId) {
       loadMembers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [communityId, currentPage, searchTerm]);
 
   const loadMembers = async () => {
     try {
       setLoading(true);
       
-      // Try to get members from community_members table
-      const { data, error } = await supabase
+      // First, get all members from community_members table
+      const { data: membersData, error: membersError } = await supabase
         .from('community_members')
-        .select(`
-          *,
-          profiles (
-            id,
-            full_name,
-            nickname,
-            handle,
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('community_id', communityId)
         .order('joined_at', { ascending: false });
 
-      if (error) {
-        console.log('community_members table not accessible, showing empty state');
+      if (membersError) {
+        console.error('Error loading members:', membersError);
         setMembers([]);
         setTotalMembers(0);
         setTotalPages(1);
         return;
       }
 
-      setMembers(data || []);
-      setTotalMembers(data?.length || 0);
-      setTotalPages(1);
+      if (!membersData || membersData.length === 0) {
+        setMembers([]);
+        setTotalMembers(0);
+        setTotalPages(1);
+        return;
+      }
+
+      // Get user IDs and load profiles separately to avoid RLS issues
+      const userIds = membersData.map(m => m.user_id);
+      
+      // Try to get profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, nickname, handle, avatar_url')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error loading profiles:', profilesError);
+      }
+
+      // Combine members with profiles
+      const membersWithProfiles = membersData.map(member => {
+        const profile = profiles?.find(p => p.id === member.user_id);
+        return {
+          ...member,
+          profiles: profile || null
+        };
+      });
+
+      // Filter by search term if provided
+      let filteredMembers = membersWithProfiles;
+      if (searchTerm.trim()) {
+        const searchLower = searchTerm.toLowerCase();
+        filteredMembers = membersWithProfiles.filter(member => {
+          const profile = member.profiles;
+          const searchableText = [
+            profile?.full_name || '',
+            profile?.nickname || '',
+            profile?.handle || '',
+            member.role || ''
+          ].join(' ').toLowerCase();
+          return searchableText.includes(searchLower);
+        });
+      }
+
+      // Calculate pagination
+      const total = filteredMembers.length;
+      setTotalMembers(total);
+      const pages = Math.ceil(total / membersPerPage);
+      setTotalPages(pages || 1);
+
+      // Apply pagination
+      const startIndex = (currentPage - 1) * membersPerPage;
+      const endIndex = startIndex + membersPerPage;
+      const paginatedMembers = filteredMembers.slice(startIndex, endIndex);
+
+      setMembers(paginatedMembers);
     } catch (error) {
-      console.log('Error loading members, showing empty state');
+      console.error('Error loading members:', error);
       setMembers([]);
       setTotalMembers(0);
       setTotalPages(1);
@@ -165,26 +211,28 @@ export default function MembersList({ communityId, isAdmin = false }) {
           {members.map((member) => {
             const profile = member.profiles;
             const RoleIcon = getRoleIcon(member.role);
+            const displayName = profile?.nickname || profile?.full_name || 'Unknown User';
             
             return (
               <div
                 key={member.id}
-                className="flex items-center gap-3 p-3 bg-gray-800 rounded hover:bg-gray-700 transition-colors"
+                className="flex items-center gap-3 p-3 bg-gray-800 rounded hover:bg-gray-700 transition-colors cursor-pointer"
+                onClick={() => handleProfileClick(member.user_id)}
               >
                 {/* Avatar */}
                 <div className="relative">
                   {profile?.avatar_url ? (
                     <img
                       src={profile.avatar_url}
-                      alt={profile.full_name || 'Member'}
+                      alt={displayName}
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
                     <div className="w-10 h-10 bg-[#087E8B] rounded-full flex items-center justify-center text-white font-medium text-sm">
-                      {getInitials(profile?.full_name || 'M')}
+                      {getInitials(displayName)}
                     </div>
                   )}
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-gray-800 rounded-full flex items-center justify-center">
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-gray-800 rounded-full flex items-center justify-center border border-gray-700">
                     <RoleIcon className="w-2.5 h-2.5 text-gray-400" />
                   </div>
                 </div>
@@ -193,14 +241,19 @@ export default function MembersList({ communityId, isAdmin = false }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <button
-                      onClick={() => handleProfileClick(member.user_id)}
-                      className="font-medium text-[#087E8B] hover:text-[#087E8B] transition-colors truncate text-left"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleProfileClick(member.user_id);
+                      }}
+                      className="font-medium text-white hover:text-[#087E8B] transition-colors truncate text-left"
                     >
-                      {profile?.nickname || profile?.full_name || 'Unknown User'}
+                      {displayName}
                     </button>
-                    <span className={`px-2 py-0.5 text-xs rounded-full ${getRoleColor(member.role)}`}>
-                      {member.role}
-                    </span>
+                    {member.role !== 'member' && (
+                      <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${getRoleColor(member.role)}`}>
+                        {member.role === 'admin' ? 'Admin' : 'Moderator'}
+                      </span>
+                    )}
                   </div>
                   {profile?.handle && (
                     <p className="text-sm text-gray-400 truncate">
@@ -214,7 +267,7 @@ export default function MembersList({ communityId, isAdmin = false }) {
 
                 {/* Admin Actions */}
                 {isAdmin && member.role !== 'admin' && (
-                  <div className="flex gap-1">
+                  <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                     <button
                       className="p-1 text-gray-400 hover:text-blue-400 transition-colors"
                       title="Promote to moderator"

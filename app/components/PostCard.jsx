@@ -1,6 +1,7 @@
 import { Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal, Edit2, Trash2, Calendar, User } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ConfirmationModal from './ConfirmationModal';
 
 export default function PostCard({ 
   post, 
@@ -21,6 +22,7 @@ export default function PostCard({
   compact = false
 }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const navigate = useNavigate();
   const isOwnPost = post.user_id === currentUserId;
   const canEdit = showActions && isOwnPost; // Only owners can edit
@@ -146,9 +148,12 @@ export default function PostCard({
   const handleDelete = (e) => {
     e.stopPropagation();
     setShowMenu(false);
-    if (confirm('Are you sure you want to delete this post?')) {
-      if (onDelete) onDelete(post.id);
-    }
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = () => {
+    if (onDelete) onDelete(post.id);
+    setShowDeleteModal(false);
   };
 
   const toggleMenu = (e) => {
@@ -402,6 +407,19 @@ export default function PostCard({
             </button>
           )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title="Delete Post"
+        message={`Are you sure you want to delete "${post.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        icon={Trash2}
+      />
     </div>
   );
 }

@@ -45,9 +45,6 @@ const CommunityCard = React.memo(function CommunityCard({
     });
   }
   
-  // Get image from gym relation if available
-  const imageUrl = gymData?.image_url || community.image_url;
-  
   // Get tags from community tags or post tags
   const tags = community.tags || [];
   
@@ -102,35 +99,6 @@ const CommunityCard = React.memo(function CommunityCard({
       style={{ padding: '16px' }}
     >
       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-        {/* Community Image */}
-        {imageUrl && (
-          <div style={{ 
-            flexShrink: 0, 
-            width: '100px', 
-            height: '100px',
-            minWidth: '100px',
-            minHeight: '100px',
-            backgroundColor: '#1e1e1e',
-            borderRadius: '4px',
-            border: '1px solid #333333',
-            overflow: 'hidden'
-          }}>
-            <img
-              src={imageUrl}
-              alt={community.name}
-              style={{ 
-                width: '100%', 
-                height: '100%', 
-                objectFit: 'cover',
-                display: 'block'
-              }}
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
-            />
-          </div>
-        )}
-        
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -185,7 +153,7 @@ const CommunityCard = React.memo(function CommunityCard({
                       disabled={leaving}
                       className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                       style={{ 
-                        fontSize: '13px',
+                        fontSize: '11px',
                         color: '#ef4444'
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
@@ -199,10 +167,10 @@ const CommunityCard = React.memo(function CommunityCard({
                   <button
                     onClick={handleReport}
                     className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
-                    style={{ 
-                      fontSize: '13px',
-                      color: 'var(--text-secondary)'
-                    }}
+                      style={{ 
+                        fontSize: '11px',
+                        color: 'var(--text-secondary)'
+                      }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     role="menuitem"

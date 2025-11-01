@@ -141,9 +141,7 @@ export default function NotificationBell({ userId }) {
       >
         <Bell className="minimal-icon" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
+          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-blue-500 rounded-full" />
         )}
       </button>
 
@@ -157,15 +155,16 @@ export default function NotificationBell({ userId }) {
           />
           
           {/* Panel */}
-          <div className="absolute right-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] bg-gray-900 border border-gray-700 rounded-lg shadow-xl">
+          <div className="absolute right-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] bg-gray-900 border border-gray-700 rounded shadow-xl" style={{ borderRadius: 4 }}>
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
-              <h3 className="text-lg font-semibold text-white">Notifications</h3>
+            <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700">
+              <h3 className="text-sm font-medium text-white" style={{ fontSize: '13px' }}>Notifications</h3>
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
-                    className="text-xs text-gray-400 hover:text-white transition-colors"
+                    className="text-gray-400 hover:text-white transition-colors"
+                    style={{ fontSize: '11px' }}
                   >
                     Mark all read
                   </button>
@@ -174,7 +173,7 @@ export default function NotificationBell({ userId }) {
                   onClick={() => setIsOpen(false)}
                   className="p-1 text-gray-400 hover:text-white transition-colors"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -182,78 +181,75 @@ export default function NotificationBell({ userId }) {
             {/* Notifications List */}
             <div className="max-h-96 overflow-y-auto">
               {loading ? (
-                <div className="p-4 text-center text-gray-400">
+                <div className="p-3 text-center text-gray-400" style={{ fontSize: '11px' }}>
                   Loading notifications...
                 </div>
               ) : notifications.length === 0 ? (
-                <div className="p-4 text-center text-gray-400">
+                <div className="p-3 text-center text-gray-400" style={{ fontSize: '11px' }}>
                   No notifications yet
                 </div>
               ) : (
-                <div className="divide-y divide-gray-700">
+                <div className="divide-y divide-gray-700/50">
                   {notifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className={`p-4 hover:bg-gray-800/50 transition-colors cursor-pointer ${
-                        !notification.is_read ? 'bg-blue-500/5 border-l-2 border-l-blue-500' : ''
+                      className={`px-3 py-2 hover:bg-gray-800/50 transition-colors cursor-pointer ${
+                        !notification.is_read ? 'bg-blue-500/5' : ''
                       }`}
                       onClick={() => handleNotificationClick(notification)}
                     >
-                      <div className="flex items-start gap-3">
-                        <div className={`text-lg ${getNotificationColor(notification.type)}`}>
+                      <div className="flex items-start gap-2">
+                        <div className={`flex-shrink-0 ${getNotificationColor(notification.type)}`} style={{ fontSize: '14px' }}>
                           {getNotificationIcon(notification.type)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-medium text-white truncate">
-                              {notification.title}
-                            </h4>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-white truncate" style={{ fontSize: '11px', fontWeight: 500 }}>
+                                {notification.title}
+                              </h4>
+                              
+                              {/* Show actor name and event snippet for event notifications */}
+                              {(['event_rsvp', 'event_invite', 'event_reminder'].includes(notification.type)) && notification.event ? (
+                                <>
+                                  <div className="mt-0.5">
+                                    <span className="text-[#087E8B]" style={{ fontSize: '11px' }}>
+                                      {getActorName(notification)}
+                                    </span>
+                                    <span className="text-gray-400 ml-1" style={{ fontSize: '11px' }}>
+                                      {notification.type === 'event_rsvp' ? 'RSVPed' : notification.type === 'event_invite' ? 'invited you to' : 'reminder for'}
+                                    </span>
+                                  </div>
+                                  <div className="mt-1 p-1.5 bg-gray-800/50 rounded border border-gray-700/50" style={{ borderRadius: 4 }}>
+                                    <p className="text-white line-clamp-1" style={{ fontSize: '11px', fontWeight: 500 }}>
+                                      {notification.event.title || 'Untitled Event'}
+                                    </p>
+                                    {getEventSnippet(notification) && (
+                                      <p className="text-gray-400 mt-0.5 line-clamp-1" style={{ fontSize: '10px' }}>
+                                        {getEventSnippet(notification)}
+                                      </p>
+                                    )}
+                                  </div>
+                                </>
+                              ) : (
+                                <p className="text-gray-300 mt-0.5 line-clamp-2" style={{ fontSize: '11px' }}>
+                                  {notification.message}
+                                </p>
+                              )}
+                              
+                              {/* Show actor name for other notification types */}
+                              {!['event_rsvp', 'event_invite', 'event_reminder'].includes(notification.type) && notification.actor_profile && (
+                                <p className="text-[#087E8B] mt-0.5" style={{ fontSize: '10px' }}>
+                                  {getActorName(notification)}
+                                </p>
+                              )}
+                            </div>
                             {!notification.is_read && (
-                              <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 ml-2" />
+                              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0 mt-0.5" />
                             )}
                           </div>
                           
-                          {/* Show actor name and event snippet for event notifications */}
-                          {(['event_rsvp', 'event_invite', 'event_reminder'].includes(notification.type)) && notification.event ? (
-                            <>
-                              <div className="mt-1">
-                                <span className="text-sm font-medium text-[#087E8B]">
-                                  {getActorName(notification)}
-                                </span>
-                                <span className="text-sm text-gray-400 ml-1">
-                                  {notification.type === 'event_rsvp' ? 'RSVPed' : notification.type === 'event_invite' ? 'invited you to' : 'reminder for'}
-                                </span>
-                              </div>
-                              <div className="mt-1.5 p-2 bg-slate-800/50 rounded border border-slate-700/50">
-                                <p className="text-sm font-medium text-white line-clamp-1">
-                                  {notification.event.title || 'Untitled Event'}
-                                </p>
-                                {getEventSnippet(notification) && (
-                                  <p className="text-xs text-gray-400 mt-1 line-clamp-2">
-                                    {getEventSnippet(notification)}
-                                  </p>
-                                )}
-                                {notification.event.description && (
-                                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                                    {notification.event.description}
-                                  </p>
-                                )}
-                              </div>
-                            </>
-                          ) : (
-                            <p className="text-sm text-gray-300 mt-1 line-clamp-2">
-                              {notification.message}
-                            </p>
-                          )}
-                          
-                          {/* Show actor name for other notification types */}
-                          {!['event_rsvp', 'event_invite', 'event_reminder'].includes(notification.type) && notification.actor_profile && (
-                            <p className="text-xs text-[#087E8B] mt-1">
-                              {getActorName(notification)}
-                            </p>
-                          )}
-                          
-                          <p className="text-xs text-gray-400 mt-2">
+                          <p className="text-gray-400 mt-1" style={{ fontSize: '10px' }}>
                             {formatTime(notification.created_at)}
                           </p>
                         </div>
@@ -266,8 +262,8 @@ export default function NotificationBell({ userId }) {
 
             {/* Footer */}
             {notifications.length > 0 && (
-              <div className="p-4 border-t border-gray-700">
-                <button className="w-full text-sm text-gray-400 hover:text-white transition-colors">
+              <div className="px-3 py-2 border-t border-gray-700/50">
+                <button className="w-full text-gray-400 hover:text-white transition-colors" style={{ fontSize: '11px' }}>
                   View all notifications
                 </button>
               </div>

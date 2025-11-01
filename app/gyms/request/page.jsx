@@ -38,6 +38,7 @@ const availableFacilities = [
 
 export default function GymRequestPage() {
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -63,6 +64,17 @@ export default function GymRequestPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         setUser(user);
+        
+        // Check if user is admin
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', user.id)
+            .single();
+          
+          setIsAdmin(profile?.is_admin || false);
+        }
       } catch (error) {
         console.error('Error getting user:', error);
       } finally {
@@ -139,8 +151,51 @@ export default function GymRequestPage() {
 
     setSubmitting(true);
     try {
-      console.log('Submitting gym request for user:', user.id);
+      console.log('Submitting gym request for user:', user.id, 'isAdmin:', isAdmin);
       
+      // If admin, directly create the gym instead of creating a request
+      if (isAdmin) {
+        // Prepare facilities - ensure it's an array
+        const facilities = Array.isArray(formData.facilities) && formData.facilities.length > 0 
+          ? formData.facilities 
+          : [];
+
+        const { data, error } = await supabase
+          .from('gyms')
+          .insert({
+            name: formData.gym_name.trim(),
+            country: formData.country,
+            city: formData.city.trim(),
+            address: formData.address.trim() || '',
+            phone: formData.phone.trim() || null,
+            email: formData.email.trim() || null,
+            website: formData.website.trim() || null,
+            description: formData.description.trim() || null,
+            facilities: facilities
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error creating gym:', error);
+          showToast('error', 'Error', `Failed to create gym: ${error.message || 'Please check console for details'}`);
+          setSubmitting(false);
+          return;
+        }
+
+        console.log('Gym created successfully:', data);
+        setSubmitted(true);
+        showToast('success', 'Gym Created!', 'The gym has been added to the database.');
+        
+        // Navigate to the newly created gym
+        setTimeout(() => {
+          navigate(`/gyms/${data.id}`);
+        }, 1500);
+        setSubmitting(false);
+        return;
+      }
+      
+      // Regular user flow: create a gym request
       const { data, error } = await supabase
         .from('gym_requests')
         .insert({

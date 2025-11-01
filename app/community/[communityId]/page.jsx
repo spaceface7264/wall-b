@@ -15,6 +15,7 @@ import MembersList from '../../components/MembersList';
 import CalendarView from '../../components/CalendarView';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getActualMemberCount, updateLastViewedAt } from '../../../lib/community-utils';
+import { useToast } from '../../providers/ToastProvider';
 import ListSkeleton from '../../components/ListSkeleton';
 
 export default function CommunityPage() {
@@ -46,10 +47,14 @@ export default function CommunityPage() {
   const [userProfile, setUserProfile] = useState(null);
   const [creator, setCreator] = useState(null);
   const [moderators, setModerators] = useState([]);
+  const [userCommunityRole, setUserCommunityRole] = useState(null); // 'member', 'moderator', 'admin', or null
   const [showMenu, setShowMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
   const menuRef = useRef(null);
+  const menuButtonRef = useRef(null);
   const navigate = useNavigate();
   const params = useParams();
+  const { showToast } = useToast();
   const communityId = params.communityId;
 
   const tabs = [
@@ -320,19 +325,24 @@ export default function CommunityPage() {
     try {
       const { data, error } = await supabase
         .from('community_members')
-        .select('id')
+        .select('id, role')
         .eq('community_id', communityId)
         .eq('user_id', userId)
         .single();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error checking membership:', error);
+        setIsMember(false);
+        setUserCommunityRole(null);
         return;
       }
 
       setIsMember(!!data);
+      setUserCommunityRole(data?.role || null);
     } catch (error) {
       console.error('Error checking membership:', error);
+      setIsMember(false);
+      setUserCommunityRole(null);
     }
   };
 
@@ -979,31 +989,124 @@ export default function CommunityPage() {
               </div>
 
               {/* Three-dot menu */}
-              <div className="relative flex-shrink-0" ref={menuRef}>
+              <div className="relative flex-shrink-0">
                 <button
-                  onClick={() => setShowMenu(!showMenu)}
+                  ref={menuButtonRef}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (menuButtonRef.current) {
+                      const rect = menuButtonRef.current.getBoundingClientRect();
+                      setMenuPosition({
+                        top: rect.bottom + 8,
+                        right: window.innerWidth - rect.right
+                      });
+                    }
+                    setShowMenu(!showMenu);
+                  }}
                   className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
                 >
                   <MoreHorizontal className="w-5 h-5" />
                 </button>
-                
-                {showMenu && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50">
-                    <button
-                      onClick={() => {
-                        setShowMenu(false);
-                        handleReportCommunity();
-                      }}
-                      className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-gray-700 flex items-center gap-2 transition-colors"
-                    >
-                      <Flag className="w-4 h-4" />
-                      Report Community
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           </div>
+
+          {/* Menu Overlay and Dropdown - rendered outside container */}
+          {showMenu && (
+            <>
+              {/* Overlay to close menu */}
+              <div 
+                className="fixed inset-0 z-[1000]" 
+                onClick={() => setShowMenu(false)}
+              />
+              
+              {/* Dropdown Menu - fixed positioning */}
+              <div 
+                ref={menuRef}
+                className="fixed w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-[1100]"
+                style={{ 
+                  top: `${menuPosition.top}px`,
+                  right: `${menuPosition.right}px`,
+                  maxHeight: 'calc(100vh - 20px)',
+                  overflowY: 'auto'
+                }}
+              >
+                {/* Leave Community - show if member but not community admin */}
+                {isMember && userCommunityRole !== 'admin' && userCommunityRole !== 'moderator' && (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      handleLeaveCommunity();
+                    }}
+                    disabled={leaving}
+                    className="w-full text-left px-4 py-3 text-red-400 hover:bg-gray-700 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border-b border-gray-700"
+                    style={{ fontSize: '11px' }}
+                  >
+                    <UserMinus className="w-4 h-4" />
+                    {leaving ? 'Leaving...' : 'Leave Community'}
+                  </button>
+                )}
+                
+                {/* Refresh */}
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    loadCommunity();
+                    loadPosts(communityId);
+                    loadEvents(communityId);
+                  }}
+                  className="w-full text-left px-4 py-3 text-gray-300 hover:bg-gray-700 flex items-center gap-2 transition-colors"
+                  style={{ fontSize: '11px' }}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Refresh
+                </button>
+                
+                {/* Community Settings - for community admins/moderators and global admins */}
+                {(userCommunityRole === 'admin' || userCommunityRole === 'moderator' || isAdmin) && (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      navigate(`/community/${communityId}/settings`);
+                    }}
+                    className="w-full text-left px-4 py-3 text-gray-300 hover:bg-gray-700 flex items-center gap-2 transition-colors border-t border-gray-700"
+                    style={{ fontSize: '11px' }}
+                  >
+                    <Settings className="w-4 h-4" />
+                    Community Settings
+                  </button>
+                )}
+                
+                {/* Edit Community - for global admins only */}
+                {isAdmin && (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      navigate(`/admin?community=${communityId}`);
+                    }}
+                    className="w-full text-left px-4 py-3 text-gray-300 hover:bg-gray-700 flex items-center gap-2 transition-colors border-t border-gray-700"
+                    style={{ fontSize: '11px' }}
+                  >
+                    <Shield className="w-4 h-4" />
+                    Edit Community (Admin)
+                  </button>
+                )}
+                
+                {/* Report Community */}
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    handleReportCommunity();
+                  }}
+                    className="w-full text-left px-4 py-3 text-red-400 hover:bg-gray-700 flex items-center gap-2 transition-colors border-t border-gray-700"
+                    style={{ fontSize: '11px' }}
+                >
+                  <Flag className="w-4 h-4" />
+                  Report Community
+                </button>
+              </div>
+            </>
+          )}
 
           {/* Success Message */}
           {showSuccessMessage && (

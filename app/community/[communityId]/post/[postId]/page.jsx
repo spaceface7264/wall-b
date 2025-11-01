@@ -738,7 +738,7 @@ export default function PostDetailPage() {
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
                             style={{ 
-                              fontSize: '13px',
+                              fontSize: '11px',
                               color: 'var(--text-secondary)'
                             }}
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
@@ -758,7 +758,7 @@ export default function PostDetailPage() {
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
                             style={{ 
-                              fontSize: '13px',
+                              fontSize: '11px',
                               color: '#ef4444'
                             }}
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}

@@ -1,28 +1,11 @@
 import React from 'react';
-import { MapPin, Star, Clock, Users, ChevronRight } from 'lucide-react';
+import { MapPin, ChevronRight } from 'lucide-react';
 import { formatDistance } from '../../lib/geolocation';
 
 const GymCard = React.memo(function GymCard({
   gym,
   onOpen
 }) {
-  const getFacilityIcon = (facility) => {
-    const iconMap = {
-      'Cafe': '☕',
-      'Shop': '🛍️',
-      'Training Area': '💪',
-      'Yoga Studio': '🧘',
-      'Kids Area': '👶',
-      'Locker Rooms': '🔒',
-      'Parking': '🚗',
-      'Equipment Rental': '🎒',
-      'Sauna': '🧖',
-      'Massage': '💆',
-      'Bike Storage': '🚲'
-    };
-    return iconMap[facility] || '🏢';
-  };
-
   const facilities = Array.isArray(gym.facilities) ? gym.facilities : JSON.parse(gym.facilities || '[]');
 
 
@@ -54,6 +37,9 @@ const GymCard = React.memo(function GymCard({
                 width: '100%', 
                 height: '100%', 
                 objectFit: 'cover',
+                objectPosition: gym.image_focal_x !== undefined && gym.image_focal_y !== undefined
+                  ? `${gym.image_focal_x * 100}% ${gym.image_focal_y * 100}%`
+                  : 'center',
                 display: 'block'
               }}
               onError={(e) => {
@@ -104,7 +90,7 @@ const GymCard = React.memo(function GymCard({
                   className="mobile-text-xs bg-gray-800/50 px-2 py-1 rounded text-gray-300"
                   style={{ fontSize: '10px' }}
                 >
-                  {getFacilityIcon(facility)} {facility}
+                  {facility}
                 </span>
               ))}
               {facilities.length > 3 && (
@@ -120,12 +106,6 @@ const GymCard = React.memo(function GymCard({
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end', flexShrink: 0 }}>
-          {gym.price_range && (
-          <div className="minimal-flex mobile-text-xs text-[#087E8B]" style={{ marginBottom: '8px' }}>
-            <span className="font-medium">{gym.price_range}</span>
-          </div>
-          )}
-
           <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
             <ChevronRight className="minimal-icon text-gray-400" style={{ width: '16px', height: '16px' }} />
           </div>

@@ -581,7 +581,11 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                 closeDrawer();
               }}
               onMouseDown={createRipple}
-              className="w-full flex items-center justify-between p-3 rounded-none transition-colors ripple-effect hover:bg-gray-700/50 text-gray-300 flex-shrink-0"
+              className={`w-full flex items-center justify-between p-3 rounded-none transition-all duration-200 ripple-effect flex-shrink-0 ${
+                location.pathname === '/community/new'
+                  ? 'bg-[#087E8B]/20 text-[#087E8B]'
+                  : 'text-gray-300 hover:bg-gray-700/50'
+              }`}
             >
               <div className="flex-1 min-w-0 text-left">
                 <div className="flex items-center gap-2">
@@ -595,7 +599,11 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
             <button
               onClick={navigateToJoinCommunity}
               onMouseDown={createRipple}
-              className="w-full flex items-center justify-between p-3 rounded-none transition-colors ripple-effect hover:bg-gray-700/50 text-gray-300 flex-shrink-0"
+              className={`w-full flex items-center justify-between p-3 rounded-none transition-all duration-200 ripple-effect flex-shrink-0 ${
+                location.pathname === '/communities'
+                  ? 'bg-[#087E8B]/20 text-[#087E8B]'
+                  : 'text-gray-300 hover:bg-gray-700/50'
+              }`}
             >
               <div className="flex-1 min-w-0 text-left">
                 <div className="flex items-center gap-2">
@@ -617,11 +625,11 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                       onClick={() => navigateToCommunity(community.id)}
                       onMouseDown={createRipple}
                       className={`w-full flex items-center justify-between p-3 rounded-none transition-all duration-200 ripple-effect ${
-                        currentPage === 'community' 
+                        currentCommunityId === community.id
                           ? 'bg-[#087E8B]/20 text-[#087E8B]' 
-                          : 'hover:bg-gray-700/50 text-gray-300'
+                          : 'text-gray-300 hover:bg-gray-700/50'
                       } ${
-                        community.hasNewPosts
+                        community.hasNewPosts && currentCommunityId !== community.id
                           ? 'ring-1 ring-[#087E8B]/50 bg-[#087E8B]/10'
                           : ''
                       }`}
@@ -629,9 +637,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                       <div className="flex-1 min-w-0 text-left">
                         <div className="flex items-center gap-2">
                           <Users className="w-4 h-4 flex-shrink-0" />
-                          <span className={`font-medium text-sm truncate ${
-                            community.hasNewPosts && currentPage !== 'community' ? 'text-[#087E8B]' : ''
-                          }`}>
+                          <span className="font-medium text-sm truncate">
                             {community.name}
                           </span>
                         </div>
@@ -656,10 +662,10 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
             <button
               onClick={() => navigateToPage('admin')}
               onMouseDown={createRipple}
-              className={`mobile-drawer-item ripple-effect ${
+              className={`mobile-drawer-item ripple-effect transition-all duration-200 ${
                 currentPage === 'admin' 
-                  ? 'bg-amber-500/20 text-amber-300'
-                  : 'text-gray-300 hover:text-amber-300'
+                  ? 'bg-[#087E8B]/20 text-[#087E8B]'
+                  : 'text-gray-300 hover:bg-gray-700/50'
               }`}
             >
               <Shield className="mobile-drawer-icon" />
@@ -672,7 +678,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               closeDrawer();
             }}
             onMouseDown={createRipple}
-            className="mobile-drawer-item ripple-effect text-gray-300 hover:text-yellow-400"
+            className="mobile-drawer-item ripple-effect text-gray-300 hover:bg-gray-700/50 transition-all duration-200"
             aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
           >
             {theme === 'dark' ? (
@@ -687,7 +693,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           <button
             onClick={handleLogout}
             onMouseDown={createRipple}
-            className="mobile-drawer-item ripple-effect text-red-400 hover:text-red-300"
+            className="mobile-drawer-item ripple-effect text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-200"
           >
             <LogOut className="mobile-drawer-icon" />
             <span className="mobile-drawer-text">Logout</span>

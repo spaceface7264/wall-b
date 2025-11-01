@@ -1,16 +1,36 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
-import { MapPin, Clock, Phone, Mail, Globe, Star, Heart, Dumbbell, Users, Calendar, Info, MessageCircle, Plus, MoreVertical, Edit2, Trash2, X, Shield } from 'lucide-react';
+import { MapPin, Clock, Phone, Mail, Globe, Star, Heart, Dumbbell, Users, Calendar, Info, MessageCircle, Plus, MoreVertical, Edit2, Trash2, X, Shield, Upload, List, Crosshair } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
 import TabNavigation from '../../components/TabNavigation';
 import CalendarView from '../../components/CalendarView';
 import CommunityCard from '../../components/CommunityCard';
 import { EmptyCommunities } from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import FocalPointSelector from '../../components/FocalPointSelector';
 import { useToast } from '../../providers/ToastProvider';
 import { enrichCommunitiesWithActualCounts } from '../../../lib/community-utils';
 import GymDetailSkeleton from '../../components/GymDetailSkeleton';
+
+const availableFacilities = [
+  'Kilter Board',
+  'Moon Board',
+  'Spray Wall',
+  'Shower',
+  'Parking',
+  'Cafe',
+  'Shop',
+  'Training Area',
+  'Yoga Studio',
+  'Kids Area',
+  'Locker Rooms',
+  'Equipment Rental',
+  'Sauna',
+  'Massage',
+  'Bike Storage',
+  'Outdoor Terrace'
+];
 
 export default function GymDetail() {
   const [gym, setGym] = useState(null);
@@ -25,6 +45,16 @@ export default function GymDetail() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingGym, setEditingGym] = useState(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [selectedFacilities, setSelectedFacilities] = useState([]);
+  const [originalGymData, setOriginalGymData] = useState(null);
+  const [showChangesConfirmation, setShowChangesConfirmation] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState(null);
+  const [imageFocalX, setImageFocalX] = useState(0.5);
+  const [imageFocalY, setImageFocalY] = useState(0.5);
+  const [showFocalPointSelector, setShowFocalPointSelector] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
   const params = useParams();
@@ -123,9 +153,11 @@ export default function GymDetail() {
     }
   };
 
-  const fetchGym = async (gymId) => {
+  const fetchGym = async (gymId, skipLoading = false) => {
     try {
+      if (!skipLoading) {
       setLoading(true);
+      }
       console.log('Fetching gym with ID:', gymId);
       
       // If gymId is numeric (mock data), use mock data directly
@@ -154,9 +186,7 @@ export default function GymDetail() {
               sunday: "8:00-22:00"
             },
             price_range: "£15-25",
-            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert"],
-            wall_height: "4-5 meters",
-            boulder_count: 200
+            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert"]
           },
           {
             id: "22222222-2222-2222-2222-222222222222",
@@ -180,9 +210,7 @@ export default function GymDetail() {
               sunday: "9:00-23:00"
             },
             price_range: "€18-28",
-            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert", "Competition"],
-            wall_height: "4-6 meters",
-            boulder_count: 300
+            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert", "Competition"]
           },
           {
             id: "33333333-3333-3333-3333-333333333333",
@@ -206,9 +234,7 @@ export default function GymDetail() {
               sunday: "9:00-21:00"
             },
             price_range: "€16-26",
-            difficulty_levels: ["Beginner", "Intermediate", "Advanced"],
-            wall_height: "3.5-5 meters",
-            boulder_count: 150
+            difficulty_levels: ["Beginner", "Intermediate", "Advanced"]
           }
         ];
         
@@ -264,9 +290,7 @@ export default function GymDetail() {
               sunday: "8:00-22:00"
             },
             price_range: "£15-25",
-            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert"],
-            wall_height: "4-5 meters",
-            boulder_count: 200
+            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert"]
           },
           {
             id: "22222222-2222-2222-2222-222222222222",
@@ -290,9 +314,7 @@ export default function GymDetail() {
               sunday: "9:00-23:00"
             },
             price_range: "€18-28",
-            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert", "Competition"],
-            wall_height: "4-6 meters",
-            boulder_count: 300
+            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert", "Competition"]
           },
           {
             id: "33333333-3333-3333-3333-333333333333",
@@ -316,9 +338,7 @@ export default function GymDetail() {
               sunday: "9:00-21:00"
             },
             price_range: "€16-26",
-            difficulty_levels: ["Beginner", "Intermediate", "Advanced"],
-            wall_height: "3.5-5 meters",
-            boulder_count: 150
+            difficulty_levels: ["Beginner", "Intermediate", "Advanced"]
           }
         ];
         
@@ -339,7 +359,9 @@ export default function GymDetail() {
       console.error('Error fetching gym:', error);
       setGym(null);
     } finally {
+      if (!skipLoading) {
       setLoading(false);
+      }
     }
   };
 
@@ -536,17 +558,111 @@ export default function GymDetail() {
     });
   };
 
+  const calculateChanges = (originalData, newData) => {
+    const changes = [];
+    
+    // Helper to format facilities
+    const formatFacilities = (facilities) => {
+      if (!facilities || facilities.length === 0) return 'None';
+      return Array.isArray(facilities) ? facilities.join(', ') : facilities;
+    };
+    
+    // Helper to format opening hours
+    const formatOpeningHours = (hours) => {
+      if (!hours || Object.keys(hours).length === 0) return 'Not set';
+      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      return days.map(day => {
+        const dayName = day.charAt(0).toUpperCase() + day.slice(1);
+        return `${dayName}: ${hours[day] || 'Closed'}`;
+      }).join('; ');
+    };
+    
+    // Compare each field
+    const fields = [
+      { key: 'name', label: 'Name' },
+      { key: 'description', label: 'Description' },
+      { key: 'address', label: 'Address' },
+      { key: 'city', label: 'City' },
+      { key: 'country', label: 'Country' },
+      { key: 'phone', label: 'Phone' },
+      { key: 'email', label: 'Email' },
+      { key: 'website', label: 'Website' },
+      { key: 'image_url', label: 'Image URL' },
+    ];
+    
+    fields.forEach(field => {
+      const oldVal = (originalData[field.key] || '').trim();
+      const newVal = (newData[field.key] || '').trim();
+      
+      if (oldVal !== newVal) {
+        changes.push({
+          field: field.label,
+          oldValue: oldVal || '(empty)',
+          newValue: newVal || '(empty)'
+        });
+      }
+    });
+    
+    // Compare facilities
+    const oldFacilities = Array.isArray(originalData.facilities) ? originalData.facilities : [];
+    const newFacilities = Array.isArray(newData.facilities) ? newData.facilities : [];
+    const oldFacilitiesStr = oldFacilities.sort().join(',');
+    const newFacilitiesStr = newFacilities.sort().join(',');
+    
+    if (oldFacilitiesStr !== newFacilitiesStr) {
+      changes.push({
+        field: 'Facilities',
+        oldValue: formatFacilities(oldFacilities),
+        newValue: formatFacilities(newFacilities)
+      });
+    }
+    
+    // Compare opening hours
+    const oldHours = originalData.opening_hours || {};
+    const newHours = newData.opening_hours || {};
+    const oldHoursStr = JSON.stringify(oldHours);
+    const newHoursStr = JSON.stringify(newHours);
+    
+    if (oldHoursStr !== newHoursStr) {
+      changes.push({
+        field: 'Opening Hours',
+        oldValue: formatOpeningHours(oldHours),
+        newValue: formatOpeningHours(newHours)
+      });
+    }
+    
+    // Compare focal point
+    const oldFocalX = originalData.image_focal_x ?? 0.5;
+    const oldFocalY = originalData.image_focal_y ?? 0.5;
+    const newFocalX = newData.image_focal_x ?? 0.5;
+    const newFocalY = newData.image_focal_y ?? 0.5;
+    
+    if (Math.abs(oldFocalX - newFocalX) > 0.01 || Math.abs(oldFocalY - newFocalY) > 0.01) {
+      changes.push({
+        field: 'Image Focal Point',
+        oldValue: `X: ${(oldFocalX * 100).toFixed(0)}%, Y: ${(oldFocalY * 100).toFixed(0)}%`,
+        newValue: `X: ${(newFocalX * 100).toFixed(0)}%, Y: ${(newFocalY * 100).toFixed(0)}%`
+      });
+    }
+    
+    return changes;
+  };
+
   const handleUpdateGym = async (gymData) => {
     if (!gym || !isAdmin) {
       console.error('Cannot update: missing gym or not admin', { gym: !!gym, isAdmin });
       showToast('error', 'Error', 'Missing gym data or not authorized');
-      return;
+      setShowEditModal(false);
+      setEditingGym(null);
+      return false;
     }
 
     // Only update if gym.id is a valid UUID (not mock data)
     if (!isValidUUID(gym.id)) {
       showToast('error', 'Error', 'Cannot edit mock gym data');
-      return;
+      setShowEditModal(false);
+      setEditingGym(null);
+      return false;
     }
 
     try {
@@ -569,10 +685,15 @@ export default function GymDetail() {
 
       if (!name || !address || !city || !country) {
         showToast('error', 'Error', 'Name, address, city, and country are required fields');
-        return;
+        return false;
       }
 
       // Clean up empty strings to null for optional fields only
+      // Prepare facilities - ensure it's always an array
+      const facilities = Array.isArray(gymData.facilities) 
+        ? (gymData.facilities.length > 0 ? gymData.facilities : [])
+        : [];
+
       const cleanedData = {
         name: name,
         description: (gymData.description || '').trim() || null,
@@ -582,9 +703,11 @@ export default function GymDetail() {
         phone: (gymData.phone || '').trim() || null,
         email: (gymData.email || '').trim() || null,
         website: (gymData.website || '').trim() || null,
-        image_url: (gymData.image_url || '').trim() || null,
-        facilities: Array.isArray(gymData.facilities) && gymData.facilities.length > 0 ? gymData.facilities : [],
-        opening_hours: cleanedOpeningHours,
+        image_url: uploadedImageUrl || (gymData.image_url || '').trim() || null,
+        image_focal_x: imageFocalX,
+        image_focal_y: imageFocalY,
+        facilities: facilities,
+        opening_hours: Object.keys(cleanedOpeningHours).length > 0 ? cleanedOpeningHours : {},
         updated_at: new Date().toISOString()
       };
 
@@ -606,29 +729,131 @@ export default function GymDetail() {
           hint: error.hint,
           code: error.code
         });
-        showToast('error', 'Error', `Failed to update gym: ${error.message}`);
-        return;
+        
+        // Provide helpful error message for missing columns
+        let errorMessage = error.message;
+        if (error.message && error.message.includes('facilities')) {
+          errorMessage = 'Missing facilities column. Please run the migration script: sql-scripts/add-missing-gym-columns.sql';
+        } else if (error.message && error.message.includes('schema cache')) {
+          errorMessage = 'Schema cache error. Please refresh the Supabase schema cache or run the migration script.';
+        }
+        
+        showToast('error', 'Error', `Failed to update gym: ${errorMessage}`);
+        return false;
       }
 
+      console.log('Update response:', { data, error });
       console.log('Gym updated successfully:', data);
 
-      // Update local state with the returned data
-      if (data) {
-        setGym(data);
+      // Always close modal and reset states
         setShowEditModal(false);
         setEditingGym(null);
+      setUploadedImageUrl(null);
+      setImagePreview(null);
+      setSelectedFacilities([]);
+      setOriginalGymData(null);
+      setShowChangesConfirmation(false);
+      setPendingChanges(null);
+      setImageFocalX(0.5);
+      setImageFocalY(0.5);
+      setShowFocalPointSelector(false);
+
+      // Always reload gym data to ensure we have the latest state from database
+      // This handles cases where RLS policies might filter returned data
+      console.log('Reloading gym data to ensure latest state...');
+      await fetchGym(gym.id, true); // Skip loading spinner during refresh
+      
         showToast('success', 'Success', 'Gym updated successfully');
-      } else {
-        // Fallback: reload gym data
-        await fetchGym(gym.id);
-        setShowEditModal(false);
-        setEditingGym(null);
-        showToast('success', 'Success', 'Gym updated successfully');
-      }
+        return true;
     } catch (error) {
       console.error('Error updating gym:', error);
       console.error('Error stack:', error.stack);
       showToast('error', 'Error', `Something went wrong: ${error.message}`);
+      // Still close modal even on error to allow retry
+      setShowEditModal(false);
+      setEditingGym(null);
+      setUploadedImageUrl(null);
+      setImagePreview(null);
+      setSelectedFacilities([]);
+      setOriginalGymData(null);
+      setShowChangesConfirmation(false);
+      setPendingChanges(null);
+      setImageFocalX(0.5);
+      setImageFocalY(0.5);
+      setShowFocalPointSelector(false);
+      return false;
+    }
+  };
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Invalid File', 'Please select a valid image file.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('error', 'File Too Large', 'Image size must be less than 5MB.');
+      return;
+    }
+
+    setIsUploadingImage(true);
+    
+    try {
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `gyms/${gym?.id || 'temp'}/${Date.now()}.${fileExt}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('post-media')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        showToast('error', 'Upload Failed', `Failed to upload: ${uploadError.message}`);
+        setIsUploadingImage(false);
+        setImagePreview(null);
+        return;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('post-media')
+        .getPublicUrl(fileName);
+
+      setUploadedImageUrl(publicUrl);
+      // Reset focal point to center when new image is uploaded
+      setImageFocalX(0.5);
+      setImageFocalY(0.5);
+      showToast('success', 'Uploaded!', 'Image uploaded successfully!');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      showToast('error', 'Upload Failed', 'Failed to upload image.');
+      setImagePreview(null);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleRemoveUploadedImage = () => {
+    setUploadedImageUrl(null);
+    setImagePreview(null);
+    // Reset focal point to center
+    setImageFocalX(0.5);
+    setImageFocalY(0.5);
+    // Reset the file input
+    const fileInput = document.getElementById('gym-image-upload');
+    if (fileInput) {
+      fileInput.value = '';
     }
   };
 
@@ -913,6 +1138,11 @@ export default function GymDetail() {
                 src={gym.image_url} 
                 alt={gym.name}
                 className="w-full h-full object-cover"
+                style={{
+                  objectPosition: gym.image_focal_x !== undefined && gym.image_focal_y !== undefined
+                    ? `${gym.image_focal_x * 100}% ${gym.image_focal_y * 100}%`
+                    : 'center'
+                }}
                 onError={(e) => {
                   e.target.style.display = 'none';
                   if (e.target.nextSibling) {
@@ -990,6 +1220,21 @@ export default function GymDetail() {
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingGym(gym);
+                            setUploadedImageUrl(null);
+                            setImagePreview(null);
+                            // Initialize selected facilities from gym data
+                            const gymFacilities = Array.isArray(gym.facilities) 
+                              ? gym.facilities 
+                              : (typeof gym.facilities === 'string' ? JSON.parse(gym.facilities || '[]') : []);
+                            setSelectedFacilities(gymFacilities);
+                            // Store original data for comparison
+                            setOriginalGymData({
+                              ...gym,
+                              facilities: gymFacilities
+                            });
+                            // Initialize focal point from gym data or default to center
+                            setImageFocalX(gym.image_focal_x ?? 0.5);
+                            setImageFocalY(gym.image_focal_y ?? 0.5);
                             setShowEditModal(true);
                             setShowMenu(false);
                           }}
@@ -1057,6 +1302,13 @@ export default function GymDetail() {
                 onClick={() => {
                   setShowEditModal(false);
                   setEditingGym(null);
+                  setUploadedImageUrl(null);
+                  setImagePreview(null);
+                  setSelectedFacilities([]);
+                  setOriginalGymData(null);
+                  setImageFocalX(0.5);
+                  setImageFocalY(0.5);
+                  setShowFocalPointSelector(false);
                 }}
                 className="text-gray-400 hover:text-white"
               >
@@ -1068,32 +1320,52 @@ export default function GymDetail() {
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
-                  const formData = new FormData(e.target);
-                  const facilitiesValue = formData.get('facilities') || '';
-                  const facilities = facilitiesValue ? facilitiesValue.split(',').map(f => f.trim()).filter(f => f) : [];
-                  const openingHours = {
-                    monday: formData.get('monday') || '',
-                    tuesday: formData.get('tuesday') || '',
-                    wednesday: formData.get('wednesday') || '',
-                    thursday: formData.get('thursday') || '',
-                    friday: formData.get('friday') || '',
-                    saturday: formData.get('saturday') || '',
-                    sunday: formData.get('sunday') || ''
-                  };
+                  try {
+                    const formData = new FormData(e.target);
+                    const openingHours = {
+                      monday: formData.get('monday') || '',
+                      tuesday: formData.get('tuesday') || '',
+                      wednesday: formData.get('wednesday') || '',
+                      thursday: formData.get('thursday') || '',
+                      friday: formData.get('friday') || '',
+                      saturday: formData.get('saturday') || '',
+                      sunday: formData.get('sunday') || ''
+                    };
 
-                  await handleUpdateGym({
-                    name: formData.get('name') || '',
-                    description: formData.get('description') || '',
-                    address: formData.get('address') || '',
-                    city: formData.get('city') || '',
-                    country: formData.get('country') || '',
-                    phone: formData.get('phone') || '',
-                    email: formData.get('email') || '',
-                    website: formData.get('website') || '',
-                    image_url: formData.get('image_url') || '',
-                    facilities: facilities,
-                    opening_hours: openingHours
-                  });
+                    const newData = {
+                      name: formData.get('name') || '',
+                      description: formData.get('description') || '',
+                      address: formData.get('address') || '',
+                      city: formData.get('city') || '',
+                      country: formData.get('country') || '',
+                      phone: formData.get('phone') || '',
+                      email: formData.get('email') || '',
+                      website: formData.get('website') || '',
+                      image_url: uploadedImageUrl || formData.get('image_url') || '',
+                      image_focal_x: imageFocalX,
+                      image_focal_y: imageFocalY,
+                      facilities: selectedFacilities,
+                      opening_hours: openingHours
+                    };
+
+                    // Calculate changes and show confirmation
+                    const changes = calculateChanges(originalGymData, newData);
+                    
+                    if (changes.length === 0) {
+                      showToast('info', 'No Changes', 'No changes were made.');
+                      return;
+                    }
+
+                    // Store pending changes and show confirmation
+                    setPendingChanges({ data: newData, changes });
+                    // Show confirmation (keep edit modal open in background)
+                    setShowChangesConfirmation(true);
+                  } catch (error) {
+                    console.error('Error in form submission:', error);
+                    showToast('error', 'Error', 'Failed to process changes. Please try again.');
+                    setShowChangesConfirmation(false);
+                    setPendingChanges(null);
+                  }
                 }}
                 className="space-y-4"
               >
@@ -1176,26 +1448,135 @@ export default function GymDetail() {
                       className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Image URL</label>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Gym Image</label>
+                    
+                    {/* Image Preview */}
+                    {(imagePreview || uploadedImageUrl || editingGym?.image_url) && (
+                      <div className="mb-3 relative">
+                        <img
+                          src={imagePreview || uploadedImageUrl || editingGym?.image_url}
+                          alt="Gym preview"
+                          className="w-full h-48 object-cover rounded border border-gray-700"
+                          style={{ 
+                            borderRadius: 4,
+                            objectPosition: `${imageFocalX * 100}% ${imageFocalY * 100}%`
+                          }}
+                        />
+                        <div className="absolute top-2 right-2 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowFocalPointSelector(true)}
+                            className="p-2 bg-[#087E8B] hover:bg-[#066a75] text-white rounded-full transition-colors"
+                            title="Set focal point"
+                          >
+                            <Crosshair className="w-4 h-4" />
+                          </button>
+                          {(imagePreview || uploadedImageUrl) && (
+                            <button
+                              type="button"
+                              onClick={handleRemoveUploadedImage}
+                              className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors"
+                              title="Remove image"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* File Upload Option */}
+                    <div className="mb-3">
+                      <label
+                        htmlFor="gym-image-upload"
+                        className={`
+                          flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed rounded cursor-pointer transition-colors
+                          ${isUploadingImage 
+                            ? 'border-gray-600 bg-gray-800 cursor-not-allowed' 
+                            : 'border-gray-500 bg-gray-800/50 hover:border-gray-400 hover:bg-gray-800'
+                          }
+                        `}
+                        style={{ borderRadius: 4 }}
+                      >
+                        <Upload className={`w-4 h-4 text-gray-400 ${isUploadingImage ? 'animate-pulse' : ''}`} />
+                        <span className="text-sm text-gray-300">
+                          {isUploadingImage ? 'Uploading...' : 'Upload Image File'}
+                        </span>
+                      </label>
+                      <input
+                        id="gym-image-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={isUploadingImage}
+                        className="hidden"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        JPG, PNG, or WebP. Max 5MB.
+                      </p>
+                    </div>
+
+                    {/* URL Input Option */}
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex-1 h-px bg-gray-700"></div>
+                        <span className="text-xs text-gray-500 px-2">OR</span>
+                        <div className="flex-1 h-px bg-gray-700"></div>
+                      </div>
                     <input
                       type="url"
                       name="image_url"
                       defaultValue={editingGym.image_url || ''}
+                        placeholder="https://example.com/image.jpg"
                       className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                        disabled={!!uploadedImageUrl}
                     />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Enter an image URL instead
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Facilities (comma-separated)</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+                    <List className="w-4 h-4" />
+                    Facilities
+                  </label>
+                  <p className="text-xs text-gray-400 mb-3">
+                    Select all facilities available at this gym
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {availableFacilities.map((facility) => (
+                      <label
+                        key={facility}
+                        className="flex items-center gap-2 p-3 rounded-lg border border-gray-700 bg-gray-800/50 hover:bg-gray-700/50 cursor-pointer transition-colors"
+                        style={{ borderRadius: 4 }}
+                      >
                   <input
-                    type="text"
-                    name="facilities"
-                    defaultValue={Array.isArray(editingGym.facilities) ? editingGym.facilities.join(', ') : (typeof editingGym.facilities === 'string' ? editingGym.facilities : '')}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
-                    placeholder="Cafe, Shop, Training Area"
-                  />
+                          type="checkbox"
+                          checked={selectedFacilities.includes(facility)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedFacilities([...selectedFacilities, facility]);
+                            } else {
+                              setSelectedFacilities(selectedFacilities.filter(f => f !== facility));
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#087E8B] focus:ring-2 focus:ring-[#087E8B] focus:ring-offset-0"
+                        />
+                        <span className="text-sm text-gray-200 select-none">
+                          {facility}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  {selectedFacilities.length > 0 && (
+                    <p className="text-xs text-gray-400 mt-2">
+                      {selectedFacilities.length} facility{selectedFacilities.length !== 1 ? 'ies' : ''} selected
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1222,6 +1603,13 @@ export default function GymDetail() {
                     onClick={() => {
                       setShowEditModal(false);
                       setEditingGym(null);
+                      setUploadedImageUrl(null);
+                      setImagePreview(null);
+                      setSelectedFacilities([]);
+                      setOriginalGymData(null);
+                      setImageFocalX(0.5);
+                      setImageFocalY(0.5);
+                      setShowFocalPointSelector(false);
                     }}
                     className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white hover:bg-gray-700 transition-colors"
                   >
@@ -1235,6 +1623,118 @@ export default function GymDetail() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Focal Point Selector Modal */}
+      {showFocalPointSelector && (imagePreview || uploadedImageUrl || editingGym?.image_url) && (
+        <FocalPointSelector
+          imageUrl={imagePreview || uploadedImageUrl || editingGym?.image_url}
+          focalX={imageFocalX}
+          focalY={imageFocalY}
+          onFocalPointChange={(x, y) => {
+            setImageFocalX(x);
+            setImageFocalY(y);
+          }}
+          onClose={() => setShowFocalPointSelector(false)}
+          aspectRatio="square"
+        />
+      )}
+
+      {/* Changes Confirmation Modal */}
+      {showChangesConfirmation && pendingChanges && (
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" style={{ borderRadius: 4 }}>
+            <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Confirm Changes</h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  Review the changes you're about to make to "{gym?.name}"
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowChangesConfirmation(false);
+                  setPendingChanges(null);
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto flex-1 p-4">
+              <div className="space-y-4">
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded p-3" style={{ borderRadius: 4 }}>
+                  <p className="text-sm text-blue-300 font-medium mb-1">
+                    {pendingChanges.changes.length} change{pendingChanges.changes.length !== 1 ? 's' : ''} detected
+                  </p>
+                  <p className="text-xs text-blue-200/80">
+                    Please review all changes below before confirming.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {pendingChanges.changes.map((change, index) => (
+                    <div 
+                      key={index} 
+                      className="border border-gray-700 rounded p-3 bg-gray-800/50"
+                      style={{ borderRadius: 4 }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-sm font-semibold text-white">{change.field}:</span>
+                            <span className="text-xs px-2 py-0.5 bg-gray-700 rounded text-gray-300">
+                              Changed
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div>
+                              <p className="text-xs text-gray-400 mb-1">Previous:</p>
+                              <p className="text-sm text-gray-300 bg-red-500/10 border border-red-500/20 rounded p-2 break-words">
+                                {change.oldValue}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-400 mb-1">New:</p>
+                              <p className="text-sm text-white bg-green-500/10 border border-green-500/20 rounded p-2 break-words">
+                                {change.newValue}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 p-4 border-t border-gray-700 flex-shrink-0">
+              <button
+                onClick={() => {
+                  setShowChangesConfirmation(false);
+                  setPendingChanges(null);
+                }}
+                className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const success = await handleUpdateGym(pendingChanges.data);
+                  if (!success) {
+                    console.error('Gym update failed');
+                  }
+                }}
+                className="flex-1 px-4 py-2 bg-[#087E8B] text-white rounded hover:bg-[#066a75] transition-colors"
+              >
+                Confirm Changes
+              </button>
             </div>
           </div>
         </div>

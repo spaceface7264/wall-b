@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
-import { Users, MapPin, Info, ArrowLeft, CheckCircle, AlertCircle, Building } from 'lucide-react';
+import { Users, MapPin, Info, ArrowLeft, CheckCircle, AlertCircle, Building, ChevronDown } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
 import FormSkeleton from '../../components/FormSkeleton';
+import GymSelectorModal from '../../components/GymSelectorModal';
 import { useToast } from '../../providers/ToastProvider';
 
 export default function CreateCommunityPage() {
@@ -12,6 +13,8 @@ export default function CreateCommunityPage() {
   const [submitting, setSubmitting] = useState(false);
   const [gyms, setGyms] = useState([]);
   const [submitted, setSubmitted] = useState(false);
+  const [showGymSelector, setShowGymSelector] = useState(false);
+  const [selectedGym, setSelectedGym] = useState(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { showToast } = useToast();
@@ -42,6 +45,15 @@ export default function CreateCommunityPage() {
               gym_id: gymIdFromUrl,
               community_type: 'gym'
             }));
+            // Load the gym details
+            const { data: gymData } = await supabase
+              .from('gyms')
+              .select('id, name, city, country')
+              .eq('id', gymIdFromUrl)
+              .single();
+            if (gymData) {
+              setSelectedGym(gymData);
+            }
           }
         }
       } catch (error) {
@@ -83,6 +95,32 @@ export default function CreateCommunityPage() {
       setErrors(prev => ({
         ...prev,
         [name]: ''
+      }));
+    }
+  };
+
+  const handleGymSelect = async (gymId) => {
+    setFormData(prev => ({
+      ...prev,
+      gym_id: gymId
+    }));
+    
+    // Load gym details for display
+    const { data: gymData } = await supabase
+      .from('gyms')
+      .select('id, name, city, country')
+      .eq('id', gymId)
+      .single();
+    
+    if (gymData) {
+      setSelectedGym(gymData);
+    }
+    
+    // Clear error if any
+    if (errors.gym_id) {
+      setErrors(prev => ({
+        ...prev,
+        gym_id: ''
       }));
     }
   };
@@ -323,24 +361,37 @@ export default function CreateCommunityPage() {
                     <MapPin className="w-4 h-4" />
                     Select Gym *
                   </label>
-                  <select
-                    name="gym_id"
-                    value={formData.gym_id}
-                    onChange={handleInputChange}
-                    className={`minimal-input w-full ${errors.gym_id ? 'border-red-500' : ''}`}
+                  <button
+                    type="button"
+                    onClick={() => setShowGymSelector(true)}
+                    className={`minimal-input w-full text-left flex items-center justify-between ${
+                      errors.gym_id ? 'border-red-500' : ''
+                    } ${selectedGym ? '' : 'text-gray-500'}`}
                   >
-                    <option value="">Choose a gym</option>
-                    {gyms.map(gym => (
-                      <option key={gym.id} value={gym.id}>
-                        {gym.name} - {gym.city}, {gym.country}
-                      </option>
-                    ))}
-                  </select>
+                    <span>
+                      {selectedGym 
+                        ? `${selectedGym.name} - ${selectedGym.city}, ${selectedGym.country}`
+                        : 'Choose a gym'}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  </button>
                   {errors.gym_id && (
                     <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                       <AlertCircle className="w-4 h-4" />
                       {errors.gym_id}
                     </p>
+                  )}
+                  {selectedGym && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedGym(null);
+                        setFormData(prev => ({ ...prev, gym_id: '' }));
+                      }}
+                      className="text-xs text-gray-400 hover:text-gray-300 mt-1"
+                    >
+                      Clear selection
+                    </button>
                   )}
                 </div>
               )}
@@ -445,6 +496,14 @@ export default function CreateCommunityPage() {
           </div>
         </div>
       </div>
+
+      {/* Gym Selector Modal */}
+      <GymSelectorModal
+        isOpen={showGymSelector}
+        onClose={() => setShowGymSelector(false)}
+        selectedGymId={formData.gym_id}
+        onSelectGym={handleGymSelect}
+      />
     </SidebarLayout>
   );
 }

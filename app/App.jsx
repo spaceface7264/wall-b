@@ -4,6 +4,7 @@ import LoginPage from './LoginPage.jsx'
 import CommunitiesPage from './community/page.jsx'
 import CommunityPage from './community/[communityId]/page.jsx'
 import PostDetailPage from './community/[communityId]/post/[postId]/page.jsx'
+import CommunitySettingsPage from './community/[communityId]/settings/page.jsx'
 import CreateCommunityPage from './community/new/page.jsx'
 import ChatPage from './chat/page.jsx'
 import GymsPage from './gyms/page.jsx'
@@ -35,6 +36,7 @@ function App() {
           <Route path="/community/new" element={<CreateCommunityPage />} />
           {/* CommunityPage, PostDetailPage, and GymPage wrap themselves so they can set dynamic titles */}
           <Route path="/community/:communityId" element={<CommunityPage />} />
+          <Route path="/community/:communityId/settings" element={<CommunitySettingsPage />} />
           <Route path="/community/:communityId/post/:postId" element={<PostDetailPage />} />
           <Route path="/chat" element={<SidebarLayout currentPage="chat" pageTitle="Chat"><ChatPage /></SidebarLayout>} />
           <Route path="/gyms" element={<SidebarLayout currentPage="gyms" pageTitle="Gyms"><GymsPage /></SidebarLayout>} />

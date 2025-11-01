@@ -21,7 +21,9 @@ export default function Gyms() {
     return saved === 'true';
   });
   const [showMenu, setShowMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
   const menuRef = useRef(null);
+  const menuButtonRef = useRef(null);
   const navigate = useNavigate();
   const { showToast } = useToast();
   
@@ -105,9 +107,7 @@ export default function Gyms() {
               sunday: "8:00-22:00"
             },
             price_range: "£15-25",
-            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert"],
-            wall_height: "4-5 meters",
-            boulder_count: 200
+            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert"]
           },
           {
             id: "22222222-2222-2222-2222-222222222222",
@@ -131,9 +131,7 @@ export default function Gyms() {
               sunday: "9:00-23:00"
             },
             price_range: "€18-28",
-            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert", "Competition"],
-            wall_height: "4-6 meters",
-            boulder_count: 300
+            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert", "Competition"]
           },
           {
             id: "33333333-3333-3333-3333-333333333333",
@@ -157,9 +155,7 @@ export default function Gyms() {
               sunday: "9:00-21:00"
             },
             price_range: "€16-26",
-            difficulty_levels: ["Beginner", "Intermediate", "Advanced"],
-            wall_height: "3.5-5 meters",
-            boulder_count: 150
+            difficulty_levels: ["Beginner", "Intermediate", "Advanced"]
           },
           {
             id: "44444444-4444-4444-4444-444444444444",
@@ -183,9 +179,7 @@ export default function Gyms() {
               sunday: "7:00-22:00"
             },
             price_range: "$22-32",
-            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert", "Competition"],
-            wall_height: "5-15 meters",
-            boulder_count: 250
+            difficulty_levels: ["Beginner", "Intermediate", "Advanced", "Expert", "Competition"]
           }
         ];
         setGyms(mockGyms);
@@ -208,17 +202,28 @@ export default function Gyms() {
     }
   }, [geolocationEnabled, location, locationLoading, geolocationSupported, locationError, requestLocation]);
 
-  // Close menu when clicking outside
+  // Close menu when clicking outside or pressing Escape
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      if (menuRef.current && !menuRef.current.contains(event.target) && 
+          menuButtonRef.current && !menuButtonRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape' && showMenu) {
         setShowMenu(false);
       }
     };
 
     if (showMenu) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('keydown', handleEscape);
+      };
     }
   }, [showMenu]);
 
@@ -356,10 +361,20 @@ export default function Gyms() {
               placeholder="Search gyms..."
               className="flex-1 minimal-input"
             />
-            <div className="relative flex-shrink-0 z-50" ref={menuRef}>
+            <div className="relative flex-shrink-0">
               <button
+                ref={menuButtonRef}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (!showMenu) {
+                    // Calculate menu position
+                    const button = e.currentTarget;
+                    const rect = button.getBoundingClientRect();
+                    setMenuPosition({
+                      top: rect.bottom + 4,
+                      right: window.innerWidth - rect.right
+                    });
+                  }
                   setShowMenu(!showMenu);
                 }}
                 className="p-1.5 hover:bg-gray-700 rounded-md transition-colors"
@@ -370,18 +385,30 @@ export default function Gyms() {
 
               {/* Dropdown Menu */}
               {showMenu && (
-                <div
-                  role="menu"
-                  className="absolute right-0 top-full mt-1 rounded-lg shadow-lg z-50"
-                  style={{ 
-                    minWidth: '180px',
-                    backgroundColor: 'var(--bg-surface)', 
-                    border: '1px solid var(--border-color)',
-                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
-                    zIndex: 50
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <>
+                  {/* Overlay to close menu */}
+                  <div 
+                    className="fixed inset-0 z-[1000]" 
+                    onClick={() => setShowMenu(false)}
+                  />
+                  
+                  {/* Dropdown Menu - fixed positioning */}
+                  <div
+                    role="menu"
+                    ref={menuRef}
+                    className="fixed rounded-lg shadow-xl z-[1100]"
+                    style={{ 
+                      top: `${menuPosition.top}px`,
+                      right: `${menuPosition.right}px`,
+                      minWidth: '180px',
+                      backgroundColor: 'var(--bg-surface)', 
+                      border: '1px solid var(--border-color)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+                      maxHeight: 'calc(100vh - 20px)',
+                      overflowY: 'auto'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -391,7 +418,7 @@ export default function Gyms() {
                     disabled={locationLoading}
                     className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ 
-                      fontSize: '13px',
+                      fontSize: '11px',
                       color: geolocationEnabled ? 'var(--text-primary)' : 'var(--text-secondary)'
                     }}
                     onMouseEnter={(e) => !locationLoading && (e.currentTarget.style.backgroundColor = 'var(--bg-primary)')}
@@ -413,7 +440,7 @@ export default function Gyms() {
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
                     style={{ 
-                      fontSize: '13px',
+                      fontSize: '11px',
                       color: 'var(--text-secondary)',
                       borderTop: '1px solid var(--border-color)'
                     }}
@@ -425,6 +452,7 @@ export default function Gyms() {
                     <span>Request Gym</span>
                   </button>
                 </div>
+                </>
               )}
             </div>
           </div>

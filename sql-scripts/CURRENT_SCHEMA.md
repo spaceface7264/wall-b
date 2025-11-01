@@ -249,8 +249,6 @@ Gym/climbing facility information.
 - `opening_hours` (JSONB, default: '{}') - Opening hours per day
 - `price_range` (TEXT) - e.g., "€15-25"
 - `difficulty_levels` (TEXT[]) - Array of available difficulty levels
-- `wall_height` (TEXT) - e.g., "4-5 meters"
-- `boulder_count` (INTEGER)
 - `created_at` (TIMESTAMPTZ)
 - `updated_at` (TIMESTAMPTZ)
 
