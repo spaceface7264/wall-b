@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { MapPin, Clock, Phone, Mail, Globe, Star, Heart, Dumbbell, Users, Calendar, Info, MessageCircle, Plus, MoreVertical, Edit2, Trash2, X, Shield, Upload, List, Crosshair } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
@@ -58,6 +58,7 @@ export default function GymDetail() {
   const menuRef = useRef(null);
   const navigate = useNavigate();
   const params = useParams();
+  const [searchParams] = useSearchParams();
   const { showToast } = useToast();
 
   const tabs = [
@@ -71,7 +72,13 @@ export default function GymDetail() {
     if (params.gymId) {
       fetchGym(params.gymId);
     }
-  }, [params.gymId]);
+    
+    // Check for tab query parameter
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['details', 'communities', 'events'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [params.gymId, searchParams]);
 
   // Close menu when clicking outside
   useEffect(() => {

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { User as UserIcon, Settings, Save, Camera, X, MapPin, Users, MessageCircle, Heart, Calendar as EventIcon, Edit2, Globe } from 'lucide-react';
+import { User as UserIcon, Settings, Save, Camera, X, MapPin, Users, MessageCircle, Heart, Calendar as EventIcon, Edit2, Globe, MoreVertical, Eye, EyeOff, Building } from 'lucide-react';
 import SidebarLayout from '../components/SidebarLayout';
 import { useToast } from '../providers/ToastProvider';
 import { enrichCommunitiesWithActualCounts } from '../../lib/community-utils';
@@ -17,6 +18,12 @@ export default function Profile() {
   const [isUploading, setIsUploading] = useState(false);
   const [showImageUpload, setShowImageUpload] = useState(false);
   const [communities, setCommunities] = useState([]);
+  const [favoriteGyms, setFavoriteGyms] = useState([]);
+  const [loadingFavorites, setLoadingFavorites] = useState(false);
+  const [gymMenuOpen, setGymMenuOpen] = useState(null);
+  const [gymMenuPosition, setGymMenuPosition] = useState({ top: 0, right: 0, flipUp: false });
+  const gymMenuRef = useRef(null);
+  const gymMenuButtonRef = useRef(null);
   const [error, setError] = useState('');
   const isSavingRef = useRef(false);
   
@@ -104,6 +111,9 @@ export default function Profile() {
             const enrichedCommunities = await enrichCommunitiesWithActualCounts(communitiesList);
             setCommunities(enrichedCommunities);
           }
+
+          // Load favorite gyms
+          await loadFavoriteGyms(user.id);
         }
       } catch (err) {
         console.error('Error loading profile:', err);
@@ -115,6 +125,145 @@ export default function Profile() {
 
     loadProfile();
   }, [navigate]);
+
+  const loadFavoriteGyms = async (userId) => {
+    try {
+      setLoadingFavorites(true);
+      
+      // First, get the favorite gym IDs
+      const { data: favorites, error: favoritesError } = await supabase
+        .from('user_favorite_gyms')
+        .select('id, hidden, gym_id')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (favoritesError) {
+        console.error('Error loading favorite gyms:', favoritesError);
+        return;
+      }
+
+      if (!favorites || favorites.length === 0) {
+        setFavoriteGyms([]);
+        return;
+      }
+
+      // Load all favorites (including hidden) - users can always see their own hidden gyms
+      // Hidden gyms are only filtered for public profile views
+      const allFavorites = favorites;
+      
+      // Get gym IDs
+      const gymIds = allFavorites.map(fav => fav.gym_id);
+
+      // Fetch gym data separately
+      const { data: gymsData, error: gymsError } = await supabase
+        .from('gyms')
+        .select('*')
+        .in('id', gymIds);
+
+      if (gymsError) {
+        console.error('Error loading gym data:', gymsError);
+        return;
+      }
+
+      // Map favorites to gyms with favorite metadata
+      const gymsMap = new Map(gymsData?.map(gym => [gym.id, gym]) || []);
+      
+      const allGyms = allFavorites
+        .map(fav => {
+          const gym = gymsMap.get(fav.gym_id);
+          if (!gym) return null;
+          return {
+            ...gym,
+            favorite_id: fav.id,
+            hidden: fav.hidden
+          };
+        })
+        .filter(Boolean);
+
+      setFavoriteGyms(allGyms);
+    } catch (error) {
+      console.error('Error loading favorite gyms:', error);
+    } finally {
+      setLoadingFavorites(false);
+    }
+  };
+
+  // Handle clicks outside menu
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (gymMenuRef.current && !gymMenuRef.current.contains(event.target) && 
+          gymMenuButtonRef.current && !gymMenuButtonRef.current.contains(event.target)) {
+        setGymMenuOpen(null);
+      }
+    };
+
+    if (gymMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [gymMenuOpen]);
+
+  const handleToggleHideGym = async (gymId, currentHidden) => {
+    if (!currentUser) return;
+    
+    try {
+      const { error } = await supabase
+        .from('user_favorite_gyms')
+        .update({ hidden: !currentHidden })
+        .eq('user_id', currentUser.id)
+        .eq('gym_id', gymId);
+
+      if (error) {
+        showToast('error', 'Error', 'Failed to update gym visibility');
+        return;
+      }
+
+      // Update local state - just update the hidden flag, don't remove from display
+      setFavoriteGyms(prev => 
+        prev.map(gym => 
+          gym.id === gymId 
+            ? { ...gym, hidden: !currentHidden }
+            : gym
+        )
+      );
+
+      showToast('success', 'Updated', `Gym ${currentHidden ? 'shown' : 'hidden'} from public profile`);
+      setGymMenuOpen(null);
+    } catch (error) {
+      console.error('Error toggling gym visibility:', error);
+      showToast('error', 'Error', 'Something went wrong');
+    }
+  };
+
+  const handleRemoveFavorite = async (gymId) => {
+    if (!currentUser) return;
+    
+    try {
+      const { error } = await supabase
+        .from('user_favorite_gyms')
+        .delete()
+        .eq('user_id', currentUser.id)
+        .eq('gym_id', gymId);
+
+      if (error) {
+        showToast('error', 'Error', 'Failed to remove from favorites');
+        return;
+      }
+
+      // Remove from local state
+      setFavoriteGyms(prev => prev.filter(gym => gym.id !== gymId));
+      showToast('success', 'Removed', 'Gym removed from favorites');
+      setGymMenuOpen(null);
+    } catch (error) {
+      console.error('Error removing favorite:', error);
+      showToast('error', 'Error', 'Something went wrong');
+    }
+  };
+
+  const handleViewCommunities = (gymId) => {
+    navigate(`/gyms/${gymId}?tab=communities`);
+    setGymMenuOpen(null);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -405,66 +554,6 @@ export default function Profile() {
             )}
           </div>
 
-          {/* Climbing Information */}
-          <div className="mobile-card animate-slide-up">
-            <h2 className="profile-section-header">Climbing Info</h2>
-            <div className="mobile-grid-3">
-              <div className="profile-field">
-                <label className="minimal-label">Current Grade</label>
-                {!isEditing ? (
-                  <p className="profile-info-value">{profileData.climbing_grade || 'Not set'}</p>
-                ) : (
-                  <input
-                    type="text"
-                    name="climbing_grade"
-                    value={profileData.climbing_grade}
-                    onChange={handleInputChange}
-                    className="minimal-input"
-                    placeholder="e.g., V6, 5.12a"
-                  />
-                )}
-              </div>
-              
-              <div className="profile-field">
-                <label className="minimal-label">Years Climbing</label>
-                {!isEditing ? (
-                  <p className="profile-info-value">{profileData.years_climbing || 'Not set'}</p>
-                ) : (
-                  <input
-                    type="number"
-                    name="years_climbing"
-                    value={profileData.years_climbing}
-                    onChange={handleInputChange}
-                    className="minimal-input"
-                    placeholder="0"
-                    min="0"
-                  />
-                )}
-              </div>
-              
-              <div className="profile-field">
-                <label className="minimal-label">Favorite Style</label>
-                {!isEditing ? (
-                  <p className="profile-info-value capitalize">{profileData.favorite_style || 'Not set'}</p>
-                ) : (
-                  <select
-                    name="favorite_style"
-                    value={profileData.favorite_style}
-                    onChange={handleInputChange}
-                    className="minimal-input"
-                  >
-                    <option value="">Select style</option>
-                    <option value="bouldering">Bouldering</option>
-                    <option value="sport">Sport Climbing</option>
-                    <option value="trad">Traditional</option>
-                    <option value="toprope">Top Rope</option>
-                    <option value="all">All Styles</option>
-                  </select>
-                )}
-              </div>
-            </div>
-          </div>
-
           {/* Additional Info */}
           <div className="mobile-card animate-slide-up">
             <h2 className="profile-section-header">Additional Information</h2>
@@ -636,7 +725,7 @@ export default function Profile() {
                     >
                       <div className="minimal-flex-between">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-white truncate">{community.name}</h3>
+                          <h3 className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>{community.name}</h3>
                           {community.gyms && (
                             <p className="mobile-text-xs text-gray-400 truncate">
                               {community.gyms.name} • {community.gyms.city}
@@ -653,6 +742,273 @@ export default function Profile() {
                 </div>
             </div>
           )}
+
+          {/* Favorite Gyms */}
+          <div className="mobile-card animate-slide-up">
+            <h2 className="profile-section-header minimal-flex gap-2">
+              <Building className="minimal-icon text-[#087E8B]" />
+              Favorite Gyms ({favoriteGyms.filter(g => !g.hidden).length})
+              {favoriteGyms.filter(g => g.hidden).length > 0 && (
+                <span className="text-xs text-gray-400 font-normal">
+                  ({favoriteGyms.filter(g => g.hidden).length} hidden)
+                </span>
+              )}
+            </h2>
+            
+            {loadingFavorites ? (
+              <div className="space-y-3">
+                {[1, 2].map(i => (
+                  <div key={i} className="flex gap-3">
+                    <div className="w-12 h-12 bg-gray-800 rounded animate-pulse" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-gray-800 rounded w-3/4 animate-pulse" />
+                      <div className="h-3 bg-gray-800 rounded w-1/2 animate-pulse" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : favoriteGyms.length === 0 ? (
+              <div className="text-center py-8">
+                <Building className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
+                <p className="text-gray-400 text-sm mb-2">No favorite gyms yet</p>
+                <button
+                  onClick={() => navigate('/gyms')}
+                  className="text-[#087E8B] text-sm hover:underline"
+                >
+                  Explore gyms
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {favoriteGyms.map((gym) => (
+                  <div
+                    key={gym.id}
+                    className="profile-community-item relative"
+                    onClick={() => navigate(`/gyms/${gym.id}`)}
+                    style={{
+                      opacity: gym.hidden ? 0.6 : 1
+                    }}
+                  >
+                    <div className="minimal-flex-between">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {/* Gym Image */}
+                        <div className="w-12 h-12 flex-shrink-0 rounded overflow-hidden relative" style={{ backgroundColor: '#1e1e1e' }}>
+                          {gym.image_url ? (
+                            <img 
+                              src={gym.image_url} 
+                              alt={gym.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full minimal-flex-center bg-[#087E8B]">
+                              <span className="text-white font-semibold text-lg">
+                                {gym.name?.charAt(0).toUpperCase() || 'G'}
+                              </span>
+                            </div>
+                          )}
+                          {gym.hidden && (
+                            <div className="absolute top-0 right-0 bg-gray-800/90 rounded-bl p-0.5">
+                              <EyeOff className="w-3 h-3 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium truncate" style={{ color: gym.hidden ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+                              {gym.name}
+                            </h3>
+                            {gym.hidden && (
+                              <span className="text-xs text-gray-500 flex-shrink-0" title="Hidden from public profile">
+                                (Hidden)
+                              </span>
+                            )}
+                          </div>
+                          <p className="mobile-text-xs text-gray-400 truncate">
+                            <MapPin className="w-3 h-3 inline mr-1" />
+                            {gym.city}, {gym.country}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 3-Dot Menu Button */}
+                      <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          ref={gymMenuOpen === gym.id ? gymMenuButtonRef : null}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const button = e.currentTarget;
+                            const rect = button.getBoundingClientRect();
+                            
+                            // DEBUG: Log button position
+                            console.log('🔍 Button clicked - Position debug:', {
+                              buttonRect: {
+                                top: rect.top,
+                                bottom: rect.bottom,
+                                left: rect.left,
+                                right: rect.right,
+                                height: rect.height,
+                                width: rect.width
+                              },
+                              viewport: {
+                                width: window.innerWidth,
+                                height: window.innerHeight,
+                                scrollY: window.scrollY
+                              }
+                            });
+                            
+                            // Calculate menu dimensions (approximate)
+                            const menuHeight = 120; // Approximate height for 3 menu items
+                            const menuWidth = 180;
+                            const spacing = 4;
+                            
+                            // Check if there's enough space below, accounting for navbar (typically ~60-80px)
+                            const spaceBelow = window.innerHeight - rect.bottom;
+                            const spaceAbove = rect.top;
+                            const navbarHeight = 70; // Approximate navbar height
+                            
+                            // Position menu below button if there's enough space, otherwise above
+                            const shouldFlipUp = spaceBelow < menuHeight && spaceAbove > menuHeight + navbarHeight;
+                            
+                            const calculatedPosition = {
+                              top: shouldFlipUp ? undefined : rect.bottom + spacing,
+                              bottom: shouldFlipUp ? window.innerHeight - rect.top + spacing : undefined,
+                              right: window.innerWidth - rect.right,
+                              flipUp: shouldFlipUp
+                            };
+                            
+                            // DEBUG: Log calculated position
+                            console.log('🔍 Calculated menu position:', {
+                              ...calculatedPosition,
+                              spaceBelow,
+                              spaceAbove,
+                              menuHeight,
+                              shouldFlipUp
+                            });
+                            
+                            setGymMenuPosition(calculatedPosition);
+                            setGymMenuOpen(gymMenuOpen === gym.id ? null : gym.id);
+                          }}
+                          className="p-2 hover:bg-gray-700 rounded-md transition-colors"
+                          aria-label="Gym options"
+                        >
+                          <MoreVertical className="w-4 h-4 text-gray-400" />
+                        </button>
+
+                        {/* Dropdown Menu - Rendered via Portal to avoid positioning issues */}
+                        {gymMenuOpen === gym.id && createPortal(
+                          <>
+                            {/* Overlay */}
+                            <div 
+                              className="fixed inset-0 z-[1000]" 
+                              onClick={() => setGymMenuOpen(null)}
+                            />
+                            
+                            {/* Menu */}
+                            <div
+                              ref={(el) => {
+                                gymMenuRef.current = el;
+                                if (el && gymMenuOpen === gym.id) {
+                                  // DEBUG: Log actual rendered position
+                                  const menuRect = el.getBoundingClientRect();
+                                  console.log('🔍 Menu rendered - Actual position:', {
+                                    computed: {
+                                      top: window.getComputedStyle(el).top,
+                                      bottom: window.getComputedStyle(el).bottom,
+                                      right: window.getComputedStyle(el).right
+                                    },
+                                    boundingRect: {
+                                      top: menuRect.top,
+                                      bottom: menuRect.bottom,
+                                      left: menuRect.left,
+                                      right: menuRect.right,
+                                      width: menuRect.width,
+                                      height: menuRect.height
+                                    },
+                                    expected: gymMenuPosition
+                                  });
+                                }
+                              }}
+                              className="fixed rounded-lg shadow-xl z-[1100]"
+                              style={{ 
+                                top: gymMenuPosition.flipUp ? undefined : (gymMenuPosition.top !== undefined ? `${gymMenuPosition.top}px` : 'auto'),
+                                bottom: gymMenuPosition.flipUp ? (gymMenuPosition.bottom !== undefined ? `${gymMenuPosition.bottom}px` : 'auto') : undefined,
+                                right: gymMenuPosition.right !== undefined ? `${gymMenuPosition.right}px` : 'auto',
+                                minWidth: '180px',
+                                backgroundColor: 'var(--bg-surface)', 
+                                border: '1px solid var(--border-color)',
+                                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+                                maxHeight: 'calc(100vh - 80px)',
+                                overflowY: 'auto'
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={() => handleToggleHideGym(gym.id, gym.hidden || false)}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
+                                style={{ 
+                                  fontSize: '13px',
+                                  color: 'var(--text-secondary)'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                              >
+                                {gym.hidden ? (
+                                  <>
+                                    <Eye className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
+                                    <span>Show on public profile</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <EyeOff className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
+                                    <span>Hide from public profile</span>
+                                  </>
+                                )}
+                              </button>
+                              
+                              <button
+                                onClick={() => handleRemoveFavorite(gym.id)}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
+                                style={{ 
+                                  fontSize: '13px',
+                                  color: '#ef4444',
+                                  borderTop: '1px solid var(--border-color)'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                              >
+                                <Heart className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
+                                <span>Remove from favorites</span>
+                              </button>
+                              
+                              <button
+                                onClick={() => handleViewCommunities(gym.id)}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
+                                style={{ 
+                                  fontSize: '13px',
+                                  color: 'var(--text-secondary)',
+                                  borderTop: '1px solid var(--border-color)'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                              >
+                                <Users className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
+                                <span>View communities</span>
+                              </button>
+                            </div>
+                          </>,
+                          document.body
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </SidebarLayout>

@@ -32,8 +32,6 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     
     setCommunitiesLoading(true);
     try {
-      console.log('Loading communities for user:', userId);
-      
       // First, let's try a simple query to see if the table exists
       const { data: testData, error: testError } = await supabase
         .from('community_members')
@@ -53,7 +51,6 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           return;
         }
         
-        console.log('Using communities table directly:', communitiesData);
         setCommunities(communitiesData || []);
         return;
       }
@@ -78,7 +75,6 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
         return;
       }
 
-      console.log('Communities data:', data);
       const communitiesList = data?.map(item => item.communities).filter(Boolean) || [];
       // Enrich with actual member counts
       const enrichedCommunities = await enrichCommunitiesWithActualCounts(communitiesList);
@@ -130,8 +126,6 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     let mounted = true;
     let timeoutId;
 
-    console.log('🔵 SidebarLayout useEffect starting');
-
     // SAFETY: Timeout to prevent infinite loading
     timeoutId = setTimeout(() => {
       if (mounted) {
@@ -142,8 +136,6 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
 
     const getUser = async () => {
       try {
-        console.log('🔵 getUser() called, checking supabase client...');
-        
         // Check if supabase exists
         if (!supabase) {
           console.error('❌ CRITICAL: supabase client is undefined!');
@@ -156,15 +148,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
         }
 
         // Use getSession() instead of getUser() - it's faster and more reliable
-        console.log('🔵 Calling supabase.auth.getSession()...');
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        console.log('🔵 getSession() completed:', { 
-          hasSession: !!session, 
-          hasUser: !!session?.user,
-          hasError: !!sessionError,
-          errorMessage: sessionError?.message 
-        });
         
         if (sessionError) {
           console.error('❌ Session error:', sessionError);
@@ -180,12 +164,10 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
 
         if (mounted) {
           setUser(user);
-          console.log('🔵 User state set:', user ? `User ID: ${user.id}` : 'null');
           
           // Check if user is admin and load communities
           if (user) {
             try {
-              console.log('🔵 Loading profile for user...');
               const { data: profile, error: profileError } = await supabase
                 .from('profiles')
                 .select('is_admin, is_banned')
@@ -220,7 +202,6 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           }
           
           clearTimeout(timeoutId);
-          console.log('🔵 Setting loading to false');
           setLoading(false);
         }
       } catch (error) {
@@ -240,7 +221,6 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     try {
       const { data: { subscription: sub } } = supabase.auth.onAuthStateChange(
         async (event, session) => {
-          console.log('🔵 Auth state changed:', event);
           if (mounted) {
             setUser(session?.user ?? null);
             
@@ -292,7 +272,6 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     }
 
     return () => {
-      console.log('🔵 SidebarLayout cleanup');
       mounted = false;
       clearTimeout(timeoutId);
       if (subscription) {
@@ -477,7 +456,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       <div className="mobile-app mobile-safe-area flex items-center justify-center animate-fade-in" style={{ backgroundColor: '#252526' }}>
         <div className="text-center animate-bounce-in">
           <div className="w-8 h-8 border-4 border-[#087E8B] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="minimal-text">Loading Wall-B...</p>
+          <p className="minimal-text">Loading Rocha...</p>
         </div>
       </div>
     );
@@ -536,10 +515,10 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       <div className={`mobile-drawer ${drawerOpen ? 'open' : ''}`}>
 
         {/* Search Section */}
-        <div className="px-4 py-4 border-b border-gray-700">
+        <div className="px-4 py-4 border-b" style={{ borderColor: 'var(--divider-color)' }}>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" />
+              <Search className="h-4 w-4" style={{ color: 'var(--text-muted)' }} />
             </div>
             <input
               type="text"
@@ -547,14 +526,17 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               onChange={handleSearchChange}
               onKeyPress={handleKeyPress}
               placeholder="Search communities..."
-              className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm placeholder-gray-400 focus:outline-none focus:border-[#087E8B]"
+              className="minimal-input w-full pl-10 pr-10"
             />
             {searchQuery && (
               <button
                 onClick={clearSearch}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
               >
-                <X className="h-4 w-4 text-gray-400 hover:text-white" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
@@ -563,7 +545,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           {isSearchActive && (
             <button
               onClick={handleSearchAllCommunities}
-              className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-[#087E8B] hover:bg-[#066a75] text-white rounded transition-colors"
+              className="mobile-btn-primary w-full mt-3 flex items-center justify-center gap-2"
             >
               <Search className="w-4 h-4" />
               <span className="font-medium">Search all communities</span>
@@ -581,36 +563,28 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                 closeDrawer();
               }}
               onMouseDown={createRipple}
-              className={`w-full flex items-center justify-between p-3 rounded-none transition-all duration-200 ripple-effect flex-shrink-0 ${
+              className={`mobile-drawer-item ripple-effect w-full flex-shrink-0 ${
                 location.pathname === '/community/new'
-                  ? 'bg-[#087E8B]/20 text-[#087E8B]'
-                  : 'text-gray-300 hover:bg-gray-700/50'
+                  ? 'active'
+                  : ''
               }`}
             >
-              <div className="flex-1 min-w-0 text-left">
-                <div className="flex items-center gap-2">
-                  <PlusCircle className="w-4 h-4 flex-shrink-0" />
-                  <span className="font-medium text-sm truncate">Create Community</span>
-                </div>
-              </div>
+              <PlusCircle className="mobile-drawer-icon" />
+              <span className="mobile-drawer-text">Create Community</span>
             </button>
 
             {/* Explore Communities Button */}
             <button
               onClick={navigateToJoinCommunity}
               onMouseDown={createRipple}
-              className={`w-full flex items-center justify-between p-3 rounded-none transition-all duration-200 ripple-effect flex-shrink-0 ${
+              className={`mobile-drawer-item ripple-effect w-full flex-shrink-0 ${
                 location.pathname === '/communities'
-                  ? 'bg-[#087E8B]/20 text-[#087E8B]'
-                  : 'text-gray-300 hover:bg-gray-700/50'
+                  ? 'active'
+                  : ''
               }`}
             >
-              <div className="flex-1 min-w-0 text-left">
-                <div className="flex items-center gap-2">
-                  <Compass className="w-4 h-4 flex-shrink-0" />
-                  <span className="font-medium text-sm truncate">Explore Communities</span>
-                </div>
-              </div>
+              <Compass className="mobile-drawer-icon" />
+              <span className="mobile-drawer-text">Explore Communities</span>
             </button>
 
             {/* Communities List - Takes remaining space */}
@@ -624,31 +598,32 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                       key={community.id}
                       onClick={() => navigateToCommunity(community.id)}
                       onMouseDown={createRipple}
-                      className={`w-full flex items-center justify-between p-3 rounded-none transition-all duration-200 ripple-effect ${
+                      className={`mobile-drawer-item ripple-effect w-full ${
                         currentCommunityId === community.id
-                          ? 'bg-[#087E8B]/20 text-[#087E8B]' 
-                          : 'text-gray-300 hover:bg-gray-700/50'
+                          ? 'active'
+                          : ''
                       } ${
                         community.hasNewPosts && currentCommunityId !== community.id
-                          ? 'ring-1 ring-[#087E8B]/50 bg-[#087E8B]/10'
+                          ? 'ring-1 ring-[#087E8B]/50'
                           : ''
                       }`}
+                      style={
+                        community.hasNewPosts && currentCommunityId !== community.id
+                          ? { backgroundColor: 'var(--accent-primary-lighter)' }
+                          : {}
+                      }
                     >
-                      <div className="flex-1 min-w-0 text-left">
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 flex-shrink-0" />
-                          <span className="font-medium text-sm truncate">
-                            {community.name}
-                          </span>
-                        </div>
-                      </div>
+                      <Users className="mobile-drawer-icon" />
+                      <span className="mobile-drawer-text truncate">
+                        {community.name}
+                      </span>
                     </button>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <Users className="w-8 h-8 text-gray-500 mx-auto mb-2" />
-                  <p className="text-sm text-gray-400">No communities yet</p>
+                  <Users className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No communities yet</p>
                 </div>
               )}
             </div>
@@ -662,10 +637,10 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
             <button
               onClick={() => navigateToPage('admin')}
               onMouseDown={createRipple}
-              className={`mobile-drawer-item ripple-effect transition-all duration-200 ${
+              className={`mobile-drawer-item ripple-effect ${
                 currentPage === 'admin' 
-                  ? 'bg-[#087E8B]/20 text-[#087E8B]'
-                  : 'text-gray-300 hover:bg-gray-700/50'
+                  ? 'active'
+                  : ''
               }`}
             >
               <Shield className="mobile-drawer-icon" />
@@ -678,7 +653,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               closeDrawer();
             }}
             onMouseDown={createRipple}
-            className="mobile-drawer-item ripple-effect text-gray-300 hover:bg-gray-700/50 transition-all duration-200"
+            className="mobile-drawer-item ripple-effect"
             aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
           >
             {theme === 'dark' ? (
