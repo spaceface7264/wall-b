@@ -132,7 +132,7 @@ export function EmptyPosts({ onCreateClick, isMember = false }) {
         {/* Description */}
         <p className="mobile-text-sm text-gray-400 mb-4 leading-relaxed">
           {isMember
-            ? "Be the first to share something! Post about your latest climb, ask a question, or share some beta."
+          ? "Be the first to share something! Post about your latest climb, ask a question, or share some beta."
             : "Join this community to see posts and engage with members!"}
         </p>
       </div>

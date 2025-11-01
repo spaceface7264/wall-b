@@ -34,18 +34,18 @@ const GymCard = React.memo(function GymCard({
     >
       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', padding: '0 16px' }}>
         {/* Gym Image */}
-        <div style={{ 
-          flexShrink: 0, 
+          <div style={{ 
+            flexShrink: 0, 
           width: '100px', 
           height: '100px',
           minWidth: '100px',
           minHeight: '100px',
-          backgroundColor: '#1e1e1e',
-          borderRadius: '4px',
-          border: '1px solid #333333',
+            backgroundColor: '#1e1e1e',
+            borderRadius: '4px',
+            border: '1px solid #333333',
           overflow: 'hidden',
           position: 'relative'
-        }}>
+          }}>
           {(gym.image_url || gym.image) ? (
             <img
               src={gym.image_url || gym.image}
@@ -121,9 +121,9 @@ const GymCard = React.memo(function GymCard({
 
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end', flexShrink: 0 }}>
           {gym.price_range && (
-            <div className="minimal-flex mobile-text-xs text-[#087E8B]" style={{ marginBottom: '8px' }}>
-              <span className="font-medium">{gym.price_range}</span>
-            </div>
+          <div className="minimal-flex mobile-text-xs text-[#087E8B]" style={{ marginBottom: '8px' }}>
+            <span className="font-medium">{gym.price_range}</span>
+          </div>
           )}
 
           <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>

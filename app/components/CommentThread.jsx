@@ -1,7 +1,119 @@
-import { useState } from 'react';
-import { Heart, Reply, Edit2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Heart, Reply, Edit2, Trash2, ChevronDown, ChevronUp, MoreVertical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CommentInput from './CommentInput';
+import ConfirmationModal from './ConfirmationModal';
+
+// Reply Menu Component
+function ReplyMenu({ replyId, replyContent, replyUserId, userId, isAdmin, onEdit, onDelete }) {
+  const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const menuRef = useRef(null);
+  const canEdit = replyUserId === userId;
+  const canDelete = replyUserId === userId || isAdmin;
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showMenu]);
+
+  if (!canEdit && !canDelete) return null;
+
+  return (
+    <div className="relative flex-shrink-0" ref={menuRef}>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowMenu(!showMenu);
+        }}
+        className="p-1 hover:bg-gray-700 rounded-md transition-colors"
+        aria-label="More options"
+      >
+        <MoreVertical className="w-3 h-3 text-gray-400" />
+      </button>
+
+      {/* Dropdown Menu */}
+      {showMenu && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full mt-1 rounded-lg shadow-lg z-50"
+          style={{ 
+            minWidth: '140px',
+            backgroundColor: 'var(--bg-surface)', 
+            border: '1px solid var(--border-color)',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {canEdit && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(false);
+                onEdit(replyId, replyContent);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
+              style={{ 
+                fontSize: '12px',
+                color: 'var(--text-secondary)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              role="menuitem"
+            >
+              <Edit2 className="w-3 h-3" style={{ flexShrink: 0 }} />
+              <span>Edit</span>
+            </button>
+          )}
+          {canDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(false);
+                setShowDeleteModal(true);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
+              style={{ 
+                fontSize: '12px',
+                color: '#ef4444'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              role="menuitem"
+            >
+              <Trash2 className="w-3 h-3" style={{ flexShrink: 0 }} />
+              <span>Delete</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Delete Reply Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={() => {
+          onDelete(replyId);
+          setShowDeleteModal(false);
+        }}
+        title="Delete Reply"
+        message="Are you sure you want to delete this reply? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        icon={Trash2}
+      />
+    </div>
+  );
+}
 
 export default function CommentThread({
   comment,
@@ -21,12 +133,31 @@ export default function CommentThread({
   const [editContent, setEditContent] = useState(comment.content);
   const [liking, setLiking] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const menuRef = useRef(null);
   const navigate = useNavigate();
 
   const isOwnComment = comment.user_id === userId;
   const canModerate = isOwnComment || isAdmin;
+  const canEdit = isOwnComment; // Only owners can edit
+  const canDelete = isOwnComment || isAdmin; // Owners and admins can delete
   const hasReplies = (replies && replies.length > 0) || (comment.reply_count > 0);
   const canReply = depth === 0; // Only top-level comments can have replies
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showMenu]);
 
   const handleProfileClick = (e, userId) => {
     e.stopPropagation();
@@ -36,14 +167,17 @@ export default function CommentThread({
 
 
   const formatTime = (timestamp) => {
+    if (!timestamp) return 'Unknown';
     const date = new Date(timestamp);
     const now = new Date();
     const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
     
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)}d ago`;
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInDays < 365) return `${diffInDays}d ago`;
     return date.toLocaleDateString();
   };
 
@@ -83,12 +217,10 @@ export default function CommentThread({
   };
 
   const handleDelete = async () => {
-    if (confirm('Are you sure you want to delete this comment?')) {
-      try {
-        await onDelete(comment.id);
-      } catch (error) {
-        console.error('Error deleting comment:', error);
-      }
+    try {
+      await onDelete(comment.id);
+    } catch (error) {
+      console.error('Error deleting comment:', error);
     }
   };
 
@@ -98,7 +230,23 @@ export default function CommentThread({
         {/* Comment Header */}
         <div className="minimal-flex justify-between items-start mb-2" style={{ padding: depth !== 1 ? '0 16px' : '0' }}>
           <div className="minimal-flex gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-[#087E8B] to-[#087E8B] rounded-full minimal-flex-center flex-shrink-0">
+            {comment.profiles?.avatar_url ? (
+              <img
+                src={comment.profiles.avatar_url}
+                alt={comment.profiles?.nickname || comment.profiles?.full_name || comment.user_name || 'User'}
+                className="w-9 h-9 rounded-full object-cover flex-shrink-0 cursor-pointer"
+                onClick={(e) => handleProfileClick(e, comment.user_id)}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div 
+              className="w-9 h-9 bg-gradient-to-br from-[#087E8B] to-[#087E8B] rounded-full minimal-flex-center flex-shrink-0 cursor-pointer"
+              style={{ display: comment.profiles?.avatar_url ? 'none' : 'flex' }}
+              onClick={(e) => handleProfileClick(e, comment.user_id)}
+            >
               <span className="text-white font-semibold text-sm">
                 {(comment.profiles?.nickname || comment.profiles?.full_name || comment.user_name || 'A').charAt(0).toUpperCase()}
               </span>
@@ -106,11 +254,12 @@ export default function CommentThread({
             <div>
               <button
                 onClick={(e) => handleProfileClick(e, comment.user_id)}
-                className="mobile-text-sm font-semibold text-[#087E8B] hover:text-[#087E8B] transition-colors text-left"
+                className="mobile-text-sm font-semibold text-[#087E8B] hover:text-[#066a75] transition-colors text-left"
+                style={{ fontSize: '14px' }}
               >
                 {comment.profiles?.nickname || comment.profiles?.full_name || comment.user_name || 'Anonymous'}
               </button>
-              <p className="mobile-text-xs text-gray-400">
+              <p className="mobile-text-xs text-gray-400" style={{ fontSize: '12px' }}>
                 {formatTime(comment.created_at)}
                 {comment.updated_at && comment.updated_at !== comment.created_at && (
                   <span className="ml-1">(edited)</span>
@@ -120,19 +269,73 @@ export default function CommentThread({
           </div>
 
           {canModerate && !isEditing && (
-            <div className="minimal-flex gap-1">
+            <div className="relative flex-shrink-0" ref={menuRef}>
               <button
-                onClick={() => setIsEditing(true)}
-                className="mobile-touch-target p-1 text-gray-400 hover:text-[#087E8B]"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(!showMenu);
+                }}
+                className="p-1.5 hover:bg-gray-700 rounded-md transition-colors"
+                aria-label="More options"
               >
-                <Edit2 className="w-4 h-4" />
+                <MoreVertical className="w-4 h-4 text-gray-400" />
               </button>
-              <button
-                onClick={handleDelete}
-                className="mobile-touch-target p-1 text-gray-400 hover:text-red-400"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+
+              {/* Dropdown Menu */}
+              {showMenu && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-1 rounded-lg shadow-lg z-50"
+                  style={{ 
+                    minWidth: '160px',
+                    backgroundColor: 'var(--bg-surface)', 
+                    border: '1px solid var(--border-color)',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {canEdit && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditing(true);
+                        setShowMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
+                      style={{ 
+                        fontSize: '13px',
+                        color: 'var(--text-secondary)'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      role="menuitem"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
+                      <span>Edit Comment</span>
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                        handleDelete();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
+                      style={{ 
+                        fontSize: '13px',
+                        color: '#ef4444'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      role="menuitem"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
+                      <span>Delete Comment</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -166,7 +369,7 @@ export default function CommentThread({
             </div>
           </div>
         ) : (
-          <p className="mobile-card-content mb-3" style={{ padding: depth !== 1 ? '0 16px' : '0' }}>
+          <p className="mobile-card-content mb-3" style={{ padding: depth !== 1 ? '0 16px' : '0', fontSize: '14px', lineHeight: '1.5' }}>
             {comment.content}
           </p>
         )}
@@ -213,7 +416,7 @@ export default function CommentThread({
 
         {/* Reply Input */}
         {showReplyInput && (
-          <div className="mt-4 pt-4 border-t border-gray-700">
+          <div className="mt-4 pt-4">
             <CommentInput
               postId={postId}
               parentCommentId={comment.id}
@@ -227,7 +430,7 @@ export default function CommentThread({
 
         {/* Nested Replies - Displayed within the same card */}
         {hasReplies && showReplies && (
-          <div className="mt-4 pt-4 border-t border-gray-700">
+          <div className="mt-4 pt-4">
             <div className="space-y-3">
             {replies.map((reply) => (
               <div key={reply.id} className="ml-6 pl-4 border-l-2 border-[#087E8B]/30 relative">
@@ -238,19 +441,36 @@ export default function CommentThread({
                     {/* Reply Header */}
                     <div className="minimal-flex justify-between items-start mb-1">
                       <div className="minimal-flex gap-2">
-                        <div className="w-6 h-6 bg-gradient-to-br from-[#087E8B] to-[#087E8B] rounded-full minimal-flex-center flex-shrink-0">
-                          <span className="text-white font-semibold text-xs">
-                            {reply.user_name.charAt(0).toUpperCase()}
+                        {reply.profiles?.avatar_url ? (
+                          <img
+                            src={reply.profiles.avatar_url}
+                            alt={reply.profiles?.nickname || reply.profiles?.full_name || reply.user_name || 'User'}
+                            className="w-9 h-9 rounded-full object-cover flex-shrink-0 cursor-pointer"
+                            onClick={(e) => handleProfileClick(e, reply.user_id)}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div 
+                          className="w-9 h-9 bg-gradient-to-br from-[#087E8B] to-[#087E8B] rounded-full minimal-flex-center flex-shrink-0 cursor-pointer"
+                          style={{ display: reply.profiles?.avatar_url ? 'none' : 'flex' }}
+                          onClick={(e) => handleProfileClick(e, reply.user_id)}
+                        >
+                          <span className="text-white font-semibold text-sm">
+                            {(reply.profiles?.nickname || reply.profiles?.full_name || reply.user_name || 'A').charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <div>
                           <button
                             onClick={(e) => handleProfileClick(e, reply.user_id)}
-                            className="mobile-text-xs font-semibold text-[#087E8B] hover:text-[#087E8B] transition-colors text-left"
+                            className="mobile-text-sm font-semibold text-[#087E8B] hover:text-[#066a75] transition-colors text-left"
+                            style={{ fontSize: '14px' }}
                           >
-                            {reply.user_name}
+                            {reply.profiles?.nickname || reply.profiles?.full_name || reply.user_name || 'Anonymous'}
                           </button>
-                          <p className="mobile-text-xs text-gray-400">
+                          <p className="mobile-text-xs text-gray-400" style={{ fontSize: '12px' }}>
                             {formatTime(reply.created_at)}
                             {reply.updated_at && reply.updated_at !== reply.created_at && (
                               <span className="ml-1">(edited)</span>
@@ -259,26 +479,21 @@ export default function CommentThread({
                         </div>
                       </div>
 
-                      {reply.user_id === userId && (
-                        <div className="minimal-flex gap-1">
-                          <button
-                            onClick={() => onEdit(reply.id, reply.content)}
-                            className="mobile-touch-target p-1 text-gray-400 hover:text-[#087E8B]"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => onDelete(reply.id)}
-                            className="mobile-touch-target p-1 text-gray-400 hover:text-red-400"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
+                      {(reply.user_id === userId || isAdmin) && (
+                        <ReplyMenu 
+                          replyId={reply.id}
+                          replyContent={reply.content}
+                          replyUserId={reply.user_id}
+                          userId={userId}
+                          isAdmin={isAdmin}
+                          onEdit={onEdit}
+                          onDelete={onDelete}
+                        />
                       )}
                     </div>
 
                     {/* Reply Content */}
-                    <p className="mobile-text-xs text-gray-300 mb-2">
+                    <p className="mobile-text-xs text-gray-300 mb-2" style={{ fontSize: '14px', lineHeight: '1.5' }}>
                       {reply.content}
                     </p>
 
@@ -299,6 +514,19 @@ export default function CommentThread({
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDelete}
+        title="Delete Comment"
+        message="Are you sure you want to delete this comment? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        icon={Trash2}
+      />
     </div>
   );
 }

@@ -914,7 +914,19 @@ export default function CommunityPage() {
                       <span>Created by <span className="text-gray-300">{creator.name}</span></span>
                       {community?.created_at && (
                         <span className="text-gray-400">
-                          • {new Date(community.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          • {(() => {
+                            const date = new Date(community.created_at);
+                            const now = new Date();
+                            const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+                            const diffInHours = Math.floor(diffInMinutes / 60);
+                            const diffInDays = Math.floor(diffInHours / 24);
+                            
+                            if (diffInMinutes < 1) return 'Just now';
+                            if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+                            if (diffInHours < 24) return `${diffInHours}h ago`;
+                            if (diffInDays < 365) return `${diffInDays}d ago`;
+                            return date.toLocaleDateString();
+                          })()}
                         </span>
                       )}
                     </div>
@@ -930,14 +942,14 @@ export default function CommunityPage() {
                 <button
                   onClick={handleJoinCommunity}
                   disabled={joining}
-                  className="px-2.5 py-1 text-sm rounded-full border-2 border-[#087E8B] text-[#087E8B] hover:bg-[#087E8B] hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+                  className="px-2.5 py-1 text-sm rounded-full border-2 border-[#FF5A5F] text-[#FF5A5F] hover:bg-[#FF5A5F] hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
                 >
                   {joining ? 'Joining...' : 'Join'}
                 </button>
               ) : (
                 <button
                   onClick={handleLeaveCommunity}
-                  className="px-2.5 py-1 text-sm rounded-full bg-[#087E8B] text-white hover:bg-[#066a75] transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                  className="px-2.5 py-1 text-sm rounded-full bg-[#FF5A5F] text-white hover:bg-[#e04a4e] transition-all duration-200 whitespace-nowrap flex-shrink-0"
                 >
                   Joined
                 </button>

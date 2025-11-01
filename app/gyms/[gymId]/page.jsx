@@ -64,7 +64,7 @@ export default function GymDetail() {
       if (user) {
         checkAdminStatus(user.id);
         if (params.gymId) {
-          await checkFavoriteStatus(user.id, params.gymId);
+        await checkFavoriteStatus(user.id, params.gymId);
         }
       }
     } catch (error) {
@@ -539,6 +539,7 @@ export default function GymDetail() {
   const handleUpdateGym = async (gymData) => {
     if (!gym || !isAdmin) {
       console.error('Cannot update: missing gym or not admin', { gym: !!gym, isAdmin });
+      showToast('error', 'Error', 'Missing gym data or not authorized');
       return;
     }
 
@@ -549,23 +550,46 @@ export default function GymDetail() {
     }
 
     try {
-      // Clean up empty strings to null for optional fields
+      // Clean up opening_hours - remove empty string values, keep only non-empty ones
+      const cleanedOpeningHours = {};
+      if (gymData.opening_hours && typeof gymData.opening_hours === 'object') {
+        Object.keys(gymData.opening_hours).forEach(day => {
+          const hours = gymData.opening_hours[day];
+          if (hours && hours.trim() !== '') {
+            cleanedOpeningHours[day] = hours.trim();
+          }
+        });
+      }
+
+      // Validate required fields first
+      const name = (gymData.name || '').trim();
+      const address = (gymData.address || '').trim();
+      const city = (gymData.city || '').trim();
+      const country = (gymData.country || '').trim();
+
+      if (!name || !address || !city || !country) {
+        showToast('error', 'Error', 'Name, address, city, and country are required fields');
+        return;
+      }
+
+      // Clean up empty strings to null for optional fields only
       const cleanedData = {
-        name: gymData.name || null,
-        description: gymData.description || null,
-        address: gymData.address || null,
-        city: gymData.city || null,
-        country: gymData.country || null,
-        phone: gymData.phone || null,
-        email: gymData.email || null,
-        website: gymData.website || null,
-        image_url: gymData.image_url || null,
-        facilities: gymData.facilities && gymData.facilities.length > 0 ? gymData.facilities : [],
-        opening_hours: gymData.opening_hours || {},
+        name: name,
+        description: (gymData.description || '').trim() || null,
+        address: address,
+        city: city,
+        country: country,
+        phone: (gymData.phone || '').trim() || null,
+        email: (gymData.email || '').trim() || null,
+        website: (gymData.website || '').trim() || null,
+        image_url: (gymData.image_url || '').trim() || null,
+        facilities: Array.isArray(gymData.facilities) && gymData.facilities.length > 0 ? gymData.facilities : [],
+        opening_hours: cleanedOpeningHours,
         updated_at: new Date().toISOString()
       };
 
       console.log('Updating gym with data:', cleanedData);
+      console.log('Gym ID:', gym.id);
 
       const { data, error } = await supabase
         .from('gyms')
@@ -576,6 +600,12 @@ export default function GymDetail() {
 
       if (error) {
         console.error('Error updating gym:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         showToast('error', 'Error', `Failed to update gym: ${error.message}`);
         return;
       }
@@ -585,16 +615,19 @@ export default function GymDetail() {
       // Update local state with the returned data
       if (data) {
         setGym(data);
+        setShowEditModal(false);
+        setEditingGym(null);
+        showToast('success', 'Success', 'Gym updated successfully');
       } else {
         // Fallback: reload gym data
         await fetchGym(gym.id);
+        setShowEditModal(false);
+        setEditingGym(null);
+        showToast('success', 'Success', 'Gym updated successfully');
       }
-
-      setShowEditModal(false);
-      setEditingGym(null);
-      showToast('success', 'Success', 'Gym updated successfully');
     } catch (error) {
       console.error('Error updating gym:', error);
+      console.error('Error stack:', error.stack);
       showToast('error', 'Error', `Something went wrong: ${error.message}`);
     }
   };
@@ -640,15 +673,15 @@ export default function GymDetail() {
         <div className="mobile-container">
           <div className="mobile-section">
             <div className="minimal-flex-center py-12">
-              <div className="text-center">
-                <MapPin className="minimal-icon mx-auto mb-2 text-gray-500" />
-                <p className="mobile-text-sm">Gym not found</p>
-                <button 
-                  onClick={() => navigate(-1)}
-                  className="mobile-btn-primary mt-4"
-                >
-                  Go Back
-                </button>
+                <div className="text-center">
+                  <MapPin className="minimal-icon mx-auto mb-2 text-gray-500" />
+                  <p className="mobile-text-sm">Gym not found</p>
+                  <button 
+                    onClick={() => navigate(-1)}
+                    className="mobile-btn-primary mt-4"
+                  >
+                    Go Back
+                  </button>
               </div>
             </div>
           </div>
@@ -753,22 +786,22 @@ export default function GymDetail() {
             {/* Facilities & Hours */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="border-b border-gray-700/50 pb-6">
-                <h4 className="minimal-heading mb-4 minimal-flex">
-                  <Dumbbell className="minimal-icon mr-2 text-[#087E8B]" />
-                  Facilities
-                </h4>
+              <h4 className="minimal-heading mb-4 minimal-flex">
+                <Dumbbell className="minimal-icon mr-2 text-[#087E8B]" />
+                Facilities
+              </h4>
                 <div className="grid grid-cols-2 gap-3">
-                  {(Array.isArray(gym.facilities) ? gym.facilities : JSON.parse(gym.facilities || '[]')).map((facility, index) => {
-                    const IconComponent = getFacilityIcon(facility);
-                    return (
+                {(Array.isArray(gym.facilities) ? gym.facilities : JSON.parse(gym.facilities || '[]')).map((facility, index) => {
+                  const IconComponent = getFacilityIcon(facility);
+                  return (
                       <div key={index} className="minimal-flex mobile-text-sm bg-gray-800/50 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors">
-                        <IconComponent className="w-4 h-4 mr-2 text-[#087E8B]" />
-                        {facility}
-                      </div>
-                    );
-                  })}
-                </div>
+                      <IconComponent className="w-4 h-4 mr-2 text-[#087E8B]" />
+                      {facility}
+                    </div>
+                  );
+                })}
               </div>
+            </div>
 
               <div className="border-b border-gray-700/50 pb-6">
                 <h4 className="minimal-heading mb-4 minimal-flex">
@@ -815,13 +848,13 @@ export default function GymDetail() {
                 <Users className="minimal-icon mr-2 text-[#087E8B]" />
                 Communities at this gym
               </h2>
-              <button 
+                <button 
                 className="inline-flex items-center gap-2 px-4 py-2 bg-[#087E8B] text-white rounded-full text-sm font-medium hover:bg-[#066a75] transition-colors"
-                onClick={() => navigate(`/community/new?gym_id=${gym.id}`)}
-              >
+                  onClick={() => navigate(`/community/new?gym_id=${gym.id}`)}
+                >
                 <Plus className="w-4 h-4" />
                 Create
-              </button>
+                </button>
             </div>
             
             {communities.length === 0 ? (
@@ -830,7 +863,7 @@ export default function GymDetail() {
               <div style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
                 {communities.map((community) => (
                   <CommunityCard
-                    key={community.id}
+                    key={community.id} 
                     community={community}
                     isMember={false}
                     onOpen={() => navigate(`/community/${community.id}`)}

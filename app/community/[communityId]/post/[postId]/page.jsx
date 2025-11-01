@@ -1,11 +1,12 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Heart, MessageCircle, Edit2, Trash2, Shield, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Edit2, Trash2, Shield, X, ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react';
 import SidebarLayout from '../../../../components/SidebarLayout';
 import CommentThread from '../../../../components/CommentThread';
 import CommentInput from '../../../../components/CommentInput';
 import CreatePostModal from '../../../../components/CreatePostModal';
+import ConfirmationModal from '../../../../components/ConfirmationModal';
 import { supabase } from '../../../../../lib/supabase';
 import { EmptyComments } from '../../../../components/EmptyState';
 import PostCardSkeleton from '../../../../components/PostCardSkeleton';
@@ -25,6 +26,9 @@ export default function PostDetailPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [showPostMenu, setShowPostMenu] = useState(false);
+  const [showDeletePostModal, setShowDeletePostModal] = useState(false);
+  const menuRef = useRef(null);
   const [communityName, setCommunityName] = useState(null);
   const [authorDisplayName, setAuthorDisplayName] = useState(null);
   const [authorAvatar, setAuthorAvatar] = useState(null);
@@ -33,6 +37,20 @@ export default function PostDetailPage() {
     loadData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowPostMenu(false);
+      }
+    };
+
+    if (showPostMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showPostMenu]);
 
   // Keyboard navigation for image modal
   useEffect(() => {
@@ -519,30 +537,28 @@ export default function PostDetailPage() {
   const handleDeletePost = async () => {
     if (!user) return;
 
-    if (confirm('Are you sure you want to delete this post?')) {
-      try {
-        // For admins, don't check user_id - let RLS handle it
-        let query = supabase
-          .from('posts')
-          .delete()
-          .eq('id', postId);
+    try {
+      // For admins, don't check user_id - let RLS handle it
+      let query = supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId);
 
-        // Only add user_id check for non-admins
-        if (!isAdmin) {
-          query = query.eq('user_id', user.id);
-        }
-
-        const { error } = await query;
-
-        if (error) {
-          console.error('Error deleting post:', error);
-          return;
-        }
-
-        navigate(`/community/${communityId}`);
-      } catch (error) {
-        console.error('Error deleting post:', error);
+      // Only add user_id check for non-admins
+      if (!isAdmin) {
+        query = query.eq('user_id', user.id);
       }
+
+      const { error } = await query;
+
+      if (error) {
+        console.error('Error deleting post:', error);
+        return;
+      }
+
+      navigate(`/community/${communityId}`);
+    } catch (error) {
+      console.error('Error deleting post:', error);
     }
   };
 
@@ -686,24 +702,74 @@ export default function PostDetailPage() {
                   </p>
                 </div>
 
-                {/* Edit/Delete Buttons */}
+                {/* Three-Dot Menu */}
                 {(canEdit || canDelete) && (
-                  <div className="minimal-flex gap-2 flex-shrink-0">
-                    {canEdit && (
-                      <button
-                        onClick={() => setShowEditModal(true)}
-                        className="mobile-btn-secondary p-2"
+                  <div className="relative flex-shrink-0" ref={menuRef}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowPostMenu(!showPostMenu);
+                      }}
+                      className="p-1.5 hover:bg-gray-700 rounded-md transition-colors"
+                      aria-label="More options"
+                    >
+                      <MoreVertical className="w-4 h-4 text-gray-400" />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {showPostMenu && (
+                      <div
+                        role="menu"
+                        className="absolute right-0 top-full mt-1 rounded-lg shadow-lg z-50"
+                        style={{ 
+                          minWidth: '160px',
+                          backgroundColor: 'var(--bg-surface)', 
+                          border: '1px solid var(--border-color)',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <Edit2 className="minimal-icon" />
-                      </button>
-                    )}
-                    {canDelete && (
-                      <button
-                        onClick={handleDeletePost}
-                        className="mobile-btn-secondary p-2 text-red-400 hover:text-red-300"
-                      >
-                        <Trash2 className="minimal-icon" />
-                      </button>
+                        {canEdit && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowEditModal(true);
+                              setShowPostMenu(false);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
+                            style={{ 
+                              fontSize: '13px',
+                              color: 'var(--text-secondary)'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            role="menuitem"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
+                            <span>Edit Post</span>
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowPostMenu(false);
+                              setShowDeletePostModal(true);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
+                            style={{ 
+                              fontSize: '13px',
+                              color: '#ef4444'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            role="menuitem"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
+                            <span>Delete Post</span>
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
@@ -950,6 +1016,19 @@ export default function PostDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Delete Post Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeletePostModal}
+        onClose={() => setShowDeletePostModal(false)}
+        onConfirm={handleDeletePost}
+        title="Delete Post"
+        message={`Are you sure you want to delete "${post?.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        icon={Trash2}
+      />
     </SidebarLayout>
   );
 }
