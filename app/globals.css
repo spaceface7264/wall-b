@@ -18,6 +18,10 @@
   --border-color: #333333;     /* Default border */
   --border-hover: #4b5563;     /* Hover border */
   --divider-color: #333333;    /* Divider color */
+  --accent-primary: #087E8B;   /* Primary accent color (replaces indigo/purple) */
+  --accent-primary-hover: #066a75; /* Primary accent hover */
+  --accent-primary-light: #087E8B40; /* Primary accent with 25% opacity */
+  --accent-primary-lighter: #087E8B30; /* Primary accent with 20% opacity */
   
   /* Mobile-first spacing scale */
   --spacing-xs: 4px;

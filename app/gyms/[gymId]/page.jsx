@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
-import { MapPin, Clock, Phone, Mail, Globe, Star, Heart, Dumbbell, Users, Calendar, Info, MessageCircle, Plus, MoreVertical } from 'lucide-react';
+import { MapPin, Clock, Phone, Mail, Globe, Star, Heart, Dumbbell, Users, Calendar, Info, MessageCircle, Plus, MoreVertical, Edit2, Trash2, X, Shield } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
 import TabNavigation from '../../components/TabNavigation';
 import CalendarView from '../../components/CalendarView';
+import CommunityCard from '../../components/CommunityCard';
+import { EmptyCommunities } from '../../components/EmptyState';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import { useToast } from '../../providers/ToastProvider';
 import { enrichCommunitiesWithActualCounts } from '../../../lib/community-utils';
 import GymDetailSkeleton from '../../components/GymDetailSkeleton';
@@ -16,15 +19,19 @@ export default function GymDetail() {
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('about');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [activeTab, setActiveTab] = useState('details');
   const [showMenu, setShowMenu] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editingGym, setEditingGym] = useState(null);
   const menuRef = useRef(null);
   const navigate = useNavigate();
   const params = useParams();
   const { showToast } = useToast();
 
   const tabs = [
-    { id: 'about', label: 'About', icon: Info },
+    { id: 'details', label: 'Details', icon: Info },
     { id: 'communities', label: 'Communities', icon: Users },
     { id: 'events', label: 'Events', icon: Calendar }
   ];
@@ -54,11 +61,33 @@ export default function GymDetail() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-      if (user && params.gymId) {
-        await checkFavoriteStatus(user.id, params.gymId);
+      if (user) {
+        checkAdminStatus(user.id);
+        if (params.gymId) {
+          await checkFavoriteStatus(user.id, params.gymId);
+        }
       }
     } catch (error) {
       console.log('Error getting user:', error);
+    }
+  };
+
+  const checkAdminStatus = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error checking admin status:', error);
+        return;
+      }
+
+      setIsAdmin(data?.is_admin || false);
+    } catch (error) {
+      console.error('Error checking admin status:', error);
     }
   };
 
@@ -495,16 +524,102 @@ export default function GymDetail() {
       const isClosed = !hours[day] || hours[day] === 'Closed';
       
       return (
-        <div key={day} className={`minimal-flex-between py-2 px-2 rounded ${isToday ? 'bg-indigo-900/30' : ''}`}>
-          <span className={`minimal-text text-sm ${isToday ? 'text-indigo-400 font-medium' : ''}`}>
+        <div key={day} className={`minimal-flex-between py-2 px-2 rounded ${isToday ? 'bg-[#087E8B]/30' : ''}`}>
+          <span className={`minimal-text text-sm ${isToday ? 'text-[#087E8B] font-medium' : ''}`}>
             {dayNames[index]}:
           </span>
-          <span className={`minimal-text text-sm ${isClosed ? 'text-gray-500' : isToday ? 'text-indigo-400 font-medium' : 'text-gray-300'}`}>
+          <span className={`minimal-text text-sm ${isClosed ? 'text-gray-500' : isToday ? 'text-[#087E8B] font-medium' : 'text-gray-300'}`}>
             {hours[day] || 'Closed'}
           </span>
         </div>
       );
     });
+  };
+
+  const handleUpdateGym = async (gymData) => {
+    if (!gym || !isAdmin) {
+      console.error('Cannot update: missing gym or not admin', { gym: !!gym, isAdmin });
+      return;
+    }
+
+    // Only update if gym.id is a valid UUID (not mock data)
+    if (!isValidUUID(gym.id)) {
+      showToast('error', 'Error', 'Cannot edit mock gym data');
+      return;
+    }
+
+    try {
+      // Clean up empty strings to null for optional fields
+      const cleanedData = {
+        name: gymData.name || null,
+        description: gymData.description || null,
+        address: gymData.address || null,
+        city: gymData.city || null,
+        country: gymData.country || null,
+        phone: gymData.phone || null,
+        email: gymData.email || null,
+        website: gymData.website || null,
+        image_url: gymData.image_url || null,
+        facilities: gymData.facilities && gymData.facilities.length > 0 ? gymData.facilities : [],
+        opening_hours: gymData.opening_hours || {},
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('Updating gym with data:', cleanedData);
+
+      const { data, error } = await supabase
+        .from('gyms')
+        .update(cleanedData)
+        .eq('id', gym.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating gym:', error);
+        showToast('error', 'Error', `Failed to update gym: ${error.message}`);
+        return;
+      }
+
+      console.log('Gym updated successfully:', data);
+
+      // Update local state with the returned data
+      if (data) {
+        setGym(data);
+      } else {
+        // Fallback: reload gym data
+        await fetchGym(gym.id);
+      }
+
+      setShowEditModal(false);
+      setEditingGym(null);
+      showToast('success', 'Success', 'Gym updated successfully');
+    } catch (error) {
+      console.error('Error updating gym:', error);
+      showToast('error', 'Error', `Something went wrong: ${error.message}`);
+    }
+  };
+
+  const handleDeleteGym = async () => {
+    if (!gym || !isAdmin) return;
+
+    try {
+      const { error } = await supabase
+        .from('gyms')
+        .delete()
+        .eq('id', gym.id);
+
+      if (error) {
+        console.error('Error deleting gym:', error);
+        showToast('error', 'Error', 'Failed to delete gym');
+        return;
+      }
+
+      showToast('success', 'Success', 'Gym deleted successfully');
+      navigate('/gyms');
+    } catch (error) {
+      console.error('Error deleting gym:', error);
+      showToast('error', 'Error', 'Something went wrong');
+    }
   };
 
   if (loading) {
@@ -524,18 +639,16 @@ export default function GymDetail() {
       <SidebarLayout currentPage="gyms" pageTitle={gym?.name}>
         <div className="mobile-container">
           <div className="mobile-section">
-            <div className="mobile-card">
-              <div className="minimal-flex-center py-8">
-                <div className="text-center">
-                  <MapPin className="minimal-icon mx-auto mb-2 text-gray-500" />
-                  <p className="mobile-text-sm">Gym not found</p>
-                  <button 
-                    onClick={() => navigate(-1)}
-                    className="mobile-btn-primary mt-4"
-                  >
-                    Go Back
-                  </button>
-                </div>
+            <div className="minimal-flex-center py-12">
+              <div className="text-center">
+                <MapPin className="minimal-icon mx-auto mb-2 text-gray-500" />
+                <p className="mobile-text-sm">Gym not found</p>
+                <button 
+                  onClick={() => navigate(-1)}
+                  className="mobile-btn-primary mt-4"
+                >
+                  Go Back
+                </button>
               </div>
             </div>
           </div>
@@ -545,18 +658,22 @@ export default function GymDetail() {
   }
 
   const renderTabContent = () => {
+    // Build full address for map
+    const fullAddress = `${gym.address}, ${gym.city}, ${gym.country}`;
+    const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
+    
     switch (activeTab) {
-      case 'about':
+      case 'details':
         return (
-          <div className="space-y-6">
+          <div>
             {/* Basic Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="mobile-card-flat p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="border-b border-gray-700/50 pb-6">
                 <h4 className="minimal-heading mb-4 minimal-flex">
-                  <MapPin className="minimal-icon mr-2 text-indigo-400" />
+                  <MapPin className="minimal-icon mr-2 text-[#087E8B]" />
                   Location
                 </h4>
-                <div className="space-y-3">
+                <div className="space-y-3 mb-4">
                   <div className="minimal-flex">
                     <span className="minimal-text text-sm">{gym.address}</span>
                   </div>
@@ -564,18 +681,42 @@ export default function GymDetail() {
                     <span className="minimal-text text-sm">{gym.city}, {gym.country}</span>
                   </div>
                 </div>
+                {/* Map */}
+                <div className="mt-4 rounded-lg overflow-hidden border border-gray-700/50 bg-gray-800/30" style={{ height: '250px', position: 'relative' }}>
+                  <a
+                    href={mapLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute inset-0 flex items-center justify-center bg-gray-800/50 hover:bg-gray-800/70 transition-colors group cursor-pointer"
+                  >
+                    <div className="text-center p-4">
+                      <MapPin className="w-12 h-12 text-[#087E8B] mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                      <span className="text-white text-sm font-medium">View on Google Maps</span>
+                      <span className="text-gray-400 text-xs block mt-1">Click to open</span>
+                    </div>
+                  </a>
+                </div>
+                <a
+                  href={mapLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 mt-3 text-sm text-[#087E8B] hover:text-[#066a75] transition-colors"
+                >
+                  <MapPin className="w-4 h-4" />
+                  Open in Google Maps
+                </a>
               </div>
 
-              <div className="mobile-card-flat p-4">
+              <div className="border-b border-gray-700/50 pb-6">
                 <h4 className="minimal-heading mb-4 minimal-flex">
-                  <Phone className="minimal-icon mr-2 text-indigo-400" />
+                  <Phone className="minimal-icon mr-2 text-[#087E8B]" />
                   Contact
                 </h4>
                 <div className="space-y-3">
                   {gym.phone && (
                     <div className="minimal-flex">
                       <Phone className="minimal-icon mr-3 text-gray-400" />
-                      <a href={`tel:${gym.phone}`} className="minimal-text text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
+                      <a href={`tel:${gym.phone}`} className="minimal-text text-sm text-[#087E8B] hover:text-[#087E8B] transition-colors">
                         {gym.phone}
                       </a>
                     </div>
@@ -583,7 +724,7 @@ export default function GymDetail() {
                   {gym.email && (
                     <div className="minimal-flex">
                       <Mail className="minimal-icon mr-3 text-gray-400" />
-                      <a href={`mailto:${gym.email}`} className="minimal-text text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
+                      <a href={`mailto:${gym.email}`} className="minimal-text text-sm text-[#087E8B] hover:text-[#087E8B] transition-colors">
                         {gym.email}
                       </a>
                     </div>
@@ -591,7 +732,7 @@ export default function GymDetail() {
                   {gym.website && (
                     <div className="minimal-flex">
                       <Globe className="minimal-icon mr-3 text-gray-400" />
-                      <a href={gym.website} target="_blank" rel="noopener noreferrer" className="minimal-text text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
+                      <a href={gym.website} target="_blank" rel="noopener noreferrer" className="minimal-text text-sm text-[#087E8B] hover:text-[#087E8B] transition-colors">
                         Visit Website
                       </a>
                     </div>
@@ -601,63 +742,37 @@ export default function GymDetail() {
             </div>
 
             {/* Description */}
-            <div className="mobile-card-flat p-4">
+            <div className="border-b border-gray-700/50 pb-6 mb-6">
               <h4 className="minimal-heading mb-4 minimal-flex">
-                <Star className="minimal-icon mr-2 text-indigo-400" />
+                <Star className="minimal-icon mr-2 text-[#087E8B]" />
                 About
               </h4>
               <p className="minimal-text text-sm text-gray-300 leading-relaxed">{gym.description}</p>
             </div>
 
-            {/* Facilities */}
-            <div className="mobile-card-flat p-4">
-              <h4 className="minimal-heading mb-4 minimal-flex">
-                <Dumbbell className="minimal-icon mr-2 text-indigo-400" />
-                Facilities
-              </h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {(Array.isArray(gym.facilities) ? gym.facilities : JSON.parse(gym.facilities || '[]')).map((facility, index) => {
-                  const IconComponent = getFacilityIcon(facility);
-                  return (
-                    <div key={index} className="minimal-flex mobile-text-sm bg-gray-700 px-3 py-2 rounded-lg hover:bg-gray-600 transition-colors">
-                      <IconComponent className="w-4 h-4 mr-2 text-indigo-400" />
-                      {facility}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Gym Details & Hours */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="mobile-card-flat p-4">
+            {/* Facilities & Hours */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="border-b border-gray-700/50 pb-6">
                 <h4 className="minimal-heading mb-4 minimal-flex">
-                  <Dumbbell className="minimal-icon mr-2 text-indigo-400" />
-                  Gym Details
+                  <Dumbbell className="minimal-icon mr-2 text-[#087E8B]" />
+                  Facilities
                 </h4>
-                <div className="space-y-3">
-                  <div className="minimal-flex-between">
-                    <span className="minimal-text text-sm">Price Range:</span>
-                    <span className="minimal-text text-sm font-medium text-indigo-400">{gym.price_range}</span>
-                  </div>
-                  <div className="minimal-flex-between">
-                    <span className="minimal-text text-sm">Wall Height:</span>
-                    <span className="minimal-text text-sm">{gym.wall_height}</span>
-                  </div>
-                  <div className="minimal-flex-between">
-                    <span className="minimal-text text-sm">Boulder Problems:</span>
-                    <span className="minimal-text text-sm">{gym.boulder_count}</span>
-                  </div>
-                  <div className="minimal-flex-between">
-                    <span className="minimal-text text-sm">Difficulty Levels:</span>
-                    <span className="minimal-text text-sm">{(Array.isArray(gym.difficulty_levels) ? gym.difficulty_levels : JSON.parse(gym.difficulty_levels || '[]')).join(', ')}</span>
-                  </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {(Array.isArray(gym.facilities) ? gym.facilities : JSON.parse(gym.facilities || '[]')).map((facility, index) => {
+                    const IconComponent = getFacilityIcon(facility);
+                    return (
+                      <div key={index} className="minimal-flex mobile-text-sm bg-gray-800/50 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors">
+                        <IconComponent className="w-4 h-4 mr-2 text-[#087E8B]" />
+                        {facility}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="mobile-card-flat p-4">
+              <div className="border-b border-gray-700/50 pb-6">
                 <h4 className="minimal-heading mb-4 minimal-flex">
-                  <Clock className="minimal-icon mr-2 text-indigo-400" />
+                  <Clock className="minimal-icon mr-2 text-[#087E8B]" />
                   Opening Hours
                 </h4>
                 <div className="space-y-2">
@@ -694,54 +809,35 @@ export default function GymDetail() {
 
       case 'communities':
         return (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Communities at this gym</h3>
-              <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-400">{communities.length} communities</span>
-                <button 
-                  className="mobile-btn-primary"
-                  onClick={() => navigate(`/community/new?gym_id=${gym.id}`)}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Community
-                </button>
-              </div>
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="minimal-heading minimal-flex">
+                <Users className="minimal-icon mr-2 text-[#087E8B]" />
+                Communities at this gym
+              </h2>
+              <button 
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#087E8B] text-white rounded-full text-sm font-medium hover:bg-[#066a75] transition-colors"
+                onClick={() => navigate(`/community/new?gym_id=${gym.id}`)}
+              >
+                <Plus className="w-4 h-4" />
+                Create
+              </button>
             </div>
             
             {communities.length === 0 ? (
-              <div className="text-center py-8">
-                <Users className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                <p className="text-gray-400 mb-4">No communities yet at this gym</p>
-                <button 
-                  className="mobile-btn-primary"
-                  onClick={() => navigate(`/community/new?gym_id=${gym.id}`)}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Community
-                </button>
-              </div>
+              <EmptyCommunities onCreateClick={() => navigate(`/community/new?gym_id=${gym.id}`)} />
             ) : (
-              <div className="space-y-3">
+              <div style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
                 {communities.map((community) => (
-                  <div 
-                    key={community.id} 
-                    className="p-4 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
-                    onClick={() => navigate(`/community/${community.id}`)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-white">{community.name}</h4>
-                        <p className="text-sm text-gray-300 mt-1">{community.description}</p>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
-                          <div className="flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            {community.member_count || 0} members
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <CommunityCard
+                    key={community.id}
+                    community={community}
+                    isMember={false}
+                    onOpen={() => navigate(`/community/${community.id}`)}
+                    onJoin={() => {}}
+                    onLeave={() => {}}
+                    onReport={() => {}}
+                  />
                 ))}
               </div>
             )}
@@ -776,10 +872,10 @@ export default function GymDetail() {
     <SidebarLayout currentPage="gyms">
       <div className="mobile-container">
         <div className="mobile-section">
-          {/* Gym Header Card */}
-          <div className="mobile-card animate-slide-up" style={{ padding: 0, overflow: 'hidden' }}>
+          {/* Gym Header */}
+          <div className="animate-slide-up border-b border-gray-700/50" style={{ marginBottom: '24px', paddingBottom: '24px' }}>
             {/* Gym Image */}
-            <div className="w-full h-48 bg-gray-700 overflow-hidden">
+            <div className="w-full h-48 bg-gray-700 overflow-hidden mb-4">
               <img 
                 src={gym.image_url} 
                 alt={gym.name}
@@ -797,7 +893,7 @@ export default function GymDetail() {
             </div>
 
             {/* Gym Name, Address, and Menu */}
-            <div className="flex items-start justify-between gap-3" style={{ padding: 'var(--card-padding-mobile)' }}>
+            <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <h1 className="mobile-heading mb-2 truncate">{gym.name}</h1>
                 <div className="minimal-flex mobile-text-xs text-gray-400 items-center">
@@ -854,6 +950,48 @@ export default function GymDetail() {
                       />
                       <span>{isFavorite ? 'Remove from favorites' : 'Add to favorites'}</span>
                     </button>
+                    {isAdmin && (
+                      <>
+                        <div className="border-t border-gray-700/50 my-1" />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingGym(gym);
+                            setShowEditModal(true);
+                            setShowMenu(false);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
+                          style={{ 
+                            fontSize: '13px',
+                            color: 'var(--text-secondary)'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          role="menuitem"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
+                          <span>Edit Gym</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowDeleteModal(true);
+                            setShowMenu(false);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
+                          style={{ 
+                            fontSize: '13px',
+                            color: '#ef4444'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          role="menuitem"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
+                          <span>Delete Gym</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -869,12 +1007,218 @@ export default function GymDetail() {
             />
           </div>
 
-          {/* Tab Content - Scrollable */}
-          <div className="mobile-card animate-slide-up" style={{ maxHeight: 'calc(100vh - 400px)', overflowY: 'auto' }}>
+          {/* Tab Content */}
+          <div className="animate-slide-up">
             {renderTabContent()}
           </div>
         </div>
       </div>
+
+      {/* Edit Gym Modal */}
+      {showEditModal && editingGym && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" style={{ borderRadius: 4 }}>
+            <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
+              <h3 className="text-lg font-semibold text-white">Edit Gym</h3>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingGym(null);
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto flex-1 p-4">
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.target);
+                  const facilitiesValue = formData.get('facilities') || '';
+                  const facilities = facilitiesValue ? facilitiesValue.split(',').map(f => f.trim()).filter(f => f) : [];
+                  const openingHours = {
+                    monday: formData.get('monday') || '',
+                    tuesday: formData.get('tuesday') || '',
+                    wednesday: formData.get('wednesday') || '',
+                    thursday: formData.get('thursday') || '',
+                    friday: formData.get('friday') || '',
+                    saturday: formData.get('saturday') || '',
+                    sunday: formData.get('sunday') || ''
+                  };
+
+                  await handleUpdateGym({
+                    name: formData.get('name') || '',
+                    description: formData.get('description') || '',
+                    address: formData.get('address') || '',
+                    city: formData.get('city') || '',
+                    country: formData.get('country') || '',
+                    phone: formData.get('phone') || '',
+                    email: formData.get('email') || '',
+                    website: formData.get('website') || '',
+                    image_url: formData.get('image_url') || '',
+                    facilities: facilities,
+                    opening_hours: openingHours
+                  });
+                }}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Gym Name</label>
+                  <input
+                    type="text"
+                    name="name"
+                    defaultValue={editingGym.name}
+                    required
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                  <textarea
+                    name="description"
+                    defaultValue={editingGym.description}
+                    rows={4}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Address</label>
+                    <input
+                      type="text"
+                      name="address"
+                      defaultValue={editingGym.address}
+                      required
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">City</label>
+                    <input
+                      type="text"
+                      name="city"
+                      defaultValue={editingGym.city}
+                      required
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Country</label>
+                    <input
+                      type="text"
+                      name="country"
+                      defaultValue={editingGym.country}
+                      required
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Phone</label>
+                    <input
+                      type="text"
+                      name="phone"
+                      defaultValue={editingGym.phone || ''}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      defaultValue={editingGym.email || ''}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Website</label>
+                    <input
+                      type="url"
+                      name="website"
+                      defaultValue={editingGym.website || ''}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Image URL</label>
+                    <input
+                      type="url"
+                      name="image_url"
+                      defaultValue={editingGym.image_url || ''}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Facilities (comma-separated)</label>
+                  <input
+                    type="text"
+                    name="facilities"
+                    defaultValue={Array.isArray(editingGym.facilities) ? editingGym.facilities.join(', ') : (typeof editingGym.facilities === 'string' ? editingGym.facilities : '')}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                    placeholder="Cafe, Shop, Training Area"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Opening Hours</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
+                      <div key={day}>
+                        <label className="block text-xs text-gray-400 mb-1 capitalize">{day}</label>
+                        <input
+                          type="text"
+                          name={day}
+                          defaultValue={editingGym.opening_hours?.[day] || ''}
+                          className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                          placeholder="9:00-22:00"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-gray-700">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingGym(null);
+                    }}
+                    className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white hover:bg-gray-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-[#087E8B] text-white rounded hover:bg-[#066a75] transition-colors"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteGym}
+        title="Delete Gym"
+        message={`Are you sure you want to delete "${gym?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        icon={Trash2}
+      />
     </SidebarLayout>
   );
 }

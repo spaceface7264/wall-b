@@ -99,7 +99,7 @@ export default function ErrorRetry({
         <button
           onClick={handleRetry}
           disabled={retrying || !isOnline}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 mx-auto"
+          className="px-6 py-3 bg-[#087E8B] text-white rounded-lg hover:bg-[#066a75] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 mx-auto"
         >
           {retrying ? (
             <>

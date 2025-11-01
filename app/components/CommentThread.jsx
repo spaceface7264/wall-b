@@ -98,7 +98,7 @@ export default function CommentThread({
         {/* Comment Header */}
         <div className="minimal-flex justify-between items-start mb-2" style={{ padding: depth !== 1 ? '0 16px' : '0' }}>
           <div className="minimal-flex gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full minimal-flex-center flex-shrink-0">
+            <div className="w-8 h-8 bg-gradient-to-br from-[#087E8B] to-[#087E8B] rounded-full minimal-flex-center flex-shrink-0">
               <span className="text-white font-semibold text-sm">
                 {(comment.profiles?.nickname || comment.profiles?.full_name || comment.user_name || 'A').charAt(0).toUpperCase()}
               </span>
@@ -106,7 +106,7 @@ export default function CommentThread({
             <div>
               <button
                 onClick={(e) => handleProfileClick(e, comment.user_id)}
-                className="mobile-text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-colors text-left"
+                className="mobile-text-sm font-semibold text-[#087E8B] hover:text-[#087E8B] transition-colors text-left"
               >
                 {comment.profiles?.nickname || comment.profiles?.full_name || comment.user_name || 'Anonymous'}
               </button>
@@ -123,7 +123,7 @@ export default function CommentThread({
             <div className="minimal-flex gap-1">
               <button
                 onClick={() => setIsEditing(true)}
-                className="mobile-touch-target p-1 text-gray-400 hover:text-indigo-400"
+                className="mobile-touch-target p-1 text-gray-400 hover:text-[#087E8B]"
               >
                 <Edit2 className="w-4 h-4" />
               </button>
@@ -186,7 +186,7 @@ export default function CommentThread({
             {canReply && (
               <button
                 onClick={handleReply}
-                className="icon-button minimal-flex gap-1 text-white hover:text-indigo-400"
+                className="icon-button minimal-flex gap-1 text-white hover:text-[#087E8B]"
               >
                 <Reply className="w-4 h-4 stroke-current" />
                 <span className="mobile-text-xs">Reply</span>
@@ -196,7 +196,7 @@ export default function CommentThread({
             {hasReplies && (
               <button
                 onClick={() => setShowReplies(!showReplies)}
-                className="minimal-flex gap-1 text-gray-400 hover:text-indigo-400"
+                className="minimal-flex gap-1 text-gray-400 hover:text-[#087E8B]"
               >
                 {showReplies ? (
                   <ChevronUp className="w-4 h-4" />
@@ -230,15 +230,15 @@ export default function CommentThread({
           <div className="mt-4 pt-4 border-t border-gray-700">
             <div className="space-y-3">
             {replies.map((reply) => (
-              <div key={reply.id} className="ml-6 pl-4 border-l-2 border-indigo-500/30 relative">
-                <div className="absolute -left-1 top-0 w-2 h-2 bg-indigo-500 rounded-full"></div>
+              <div key={reply.id} className="ml-6 pl-4 border-l-2 border-[#087E8B]/30 relative">
+                <div className="absolute -left-1 top-0 w-2 h-2 bg-[#087E8B] rounded-full"></div>
                 
                 {/* Reply Content - No card styling */}
                 <div className="ml-2 py-2">
                     {/* Reply Header */}
                     <div className="minimal-flex justify-between items-start mb-1">
                       <div className="minimal-flex gap-2">
-                        <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full minimal-flex-center flex-shrink-0">
+                        <div className="w-6 h-6 bg-gradient-to-br from-[#087E8B] to-[#087E8B] rounded-full minimal-flex-center flex-shrink-0">
                           <span className="text-white font-semibold text-xs">
                             {reply.user_name.charAt(0).toUpperCase()}
                           </span>
@@ -246,7 +246,7 @@ export default function CommentThread({
                         <div>
                           <button
                             onClick={(e) => handleProfileClick(e, reply.user_id)}
-                            className="mobile-text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors text-left"
+                            className="mobile-text-xs font-semibold text-[#087E8B] hover:text-[#087E8B] transition-colors text-left"
                           >
                             {reply.user_name}
                           </button>
@@ -263,7 +263,7 @@ export default function CommentThread({
                         <div className="minimal-flex gap-1">
                           <button
                             onClick={() => onEdit(reply.id, reply.content)}
-                            className="mobile-touch-target p-1 text-gray-400 hover:text-indigo-400"
+                            className="mobile-touch-target p-1 text-gray-400 hover:text-[#087E8B]"
                           >
                             <Edit2 className="w-3 h-3" />
                           </button>

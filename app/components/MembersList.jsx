@@ -133,7 +133,7 @@ export default function MembersList({ communityId, isAdmin = false }) {
           placeholder="Search members..."
           value={searchTerm}
           onChange={handleSearchChange}
-          className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-indigo-500"
+          className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-[#087E8B]"
         />
       </div>
 
@@ -180,7 +180,7 @@ export default function MembersList({ communityId, isAdmin = false }) {
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                    <div className="w-10 h-10 bg-[#087E8B] rounded-full flex items-center justify-center text-white font-medium text-sm">
                       {getInitials(profile?.full_name || 'M')}
                     </div>
                   )}
@@ -194,7 +194,7 @@ export default function MembersList({ communityId, isAdmin = false }) {
                   <div className="flex items-center gap-2 mb-1">
                     <button
                       onClick={() => handleProfileClick(member.user_id)}
-                      className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors truncate text-left"
+                      className="font-medium text-[#087E8B] hover:text-[#087E8B] transition-colors truncate text-left"
                     >
                       {profile?.nickname || profile?.full_name || 'Unknown User'}
                     </button>
@@ -254,7 +254,7 @@ export default function MembersList({ communityId, isAdmin = false }) {
                 onClick={() => handlePageChange(page)}
                 className={`px-3 py-1 text-sm rounded transition-colors ${
                   currentPage === page
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-[#087E8B] text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >

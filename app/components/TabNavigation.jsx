@@ -59,7 +59,7 @@ export default function TabNavigation({
                 ${index === 0 ? 'pl-4' : ''}
                 ${index === tabs.length - 1 ? 'pr-4' : ''}
                 ${activeTab === tab.id
-                  ? 'text-indigo-400 bg-indigo-500/10'
+                  ? 'text-[#087E8B] bg-[#087E8B]/10'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
                 }
               `}
@@ -69,7 +69,7 @@ export default function TabNavigation({
               )}
               <span>{tab.label}</span>
               {tab.badge && (
-                <span className="ml-2 px-2 py-0.5 text-xs bg-indigo-500/20 text-indigo-300 rounded-full">
+                <span className="ml-2 px-2 py-0.5 text-xs bg-[#087E8B]/20 text-[#087E8B] rounded-full">
                   {tab.badge}
                 </span>
               )}

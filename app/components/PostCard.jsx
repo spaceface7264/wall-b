@@ -51,7 +51,7 @@ export default function PostCard({
       parts.push(
         <span
           key={match.index}
-          className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-900/30 text-indigo-300 rounded text-sm font-medium hover:bg-indigo-800/40 transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1 px-2 py-1 bg-[#087E8B]30 text-[#087E8B] rounded text-sm font-medium hover:bg-[#087E8B]40 transition-colors cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             console.log('Event mentioned:', eventTitle);
@@ -237,9 +237,9 @@ export default function PostCard({
             <div className="flex items-center gap-2 mb-1">
               <button
                 onClick={handleProfileClick}
-                className="post-author-name"
+              className="post-author-name"
               >
-                {authorName}
+              {authorName}
               </button>
               <span className="text-xs text-gray-400">
                 {formatTime(post.created_at)}
@@ -248,15 +248,15 @@ export default function PostCard({
           </div>
         </div>
         
-        {canShowActions && (
+          {canShowActions && (
           <div className="post-menu-container relative">
-            <button 
-              onClick={toggleMenu}
+              <button 
+                onClick={toggleMenu}
               className="post-menu-btn"
-            >
+              >
               <MoreHorizontal className="w-4 h-4" />
-            </button>
-            {showMenu && (
+              </button>
+              {showMenu && (
               <>
                 <div 
                   className="post-menu-overlay"
@@ -283,10 +283,10 @@ export default function PostCard({
                   )}
                 </div>
               </>
-            )}
-          </div>
-        )}
-      </div>
+              )}
+            </div>
+          )}
+        </div>
 
       {/* Content */}
       <div className="post-content" style={{ padding: '0 16px' }}>

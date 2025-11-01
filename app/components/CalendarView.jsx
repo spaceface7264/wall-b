@@ -227,7 +227,7 @@ export default function CalendarView({ communityId, userId, searchTerm = '', isM
             onClick={() => setViewMode('month')}
             className={`px-3 py-1 text-sm rounded transition-colors ${
               viewMode === 'month'
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-[#087E8B] text-white'
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
@@ -237,7 +237,7 @@ export default function CalendarView({ communityId, userId, searchTerm = '', isM
             onClick={() => setViewMode('list')}
             className={`px-3 py-1 text-sm rounded transition-colors ${
               viewMode === 'list'
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-[#087E8B] text-white'
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
@@ -295,9 +295,9 @@ export default function CalendarView({ communityId, userId, searchTerm = '', isM
                       ${date
                         ? `hover:bg-gray-700 ${
                             isToday(date)
-                              ? 'bg-indigo-500/20 text-indigo-300'
+                              ? 'bg-[#087E8B]/20 text-[#087E8B]'
                               : isSelected(date)
-                              ? 'bg-indigo-600 text-white'
+                              ? 'bg-[#087E8B] text-white'
                               : 'text-gray-300'
                           }`
                         : 'cursor-default'
@@ -309,7 +309,7 @@ export default function CalendarView({ communityId, userId, searchTerm = '', isM
                         <span className="block">{date.getDate()}</span>
                         {hasEvents && (
                           <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
-                            <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full"></div>
+                            <div className="w-1.5 h-1.5 bg-[#087E8B] rounded-full"></div>
                           </div>
                         )}
                       </>
@@ -357,7 +357,7 @@ export default function CalendarView({ communityId, userId, searchTerm = '', isM
                           )}
                           <button 
                             onClick={() => handleViewRSVPs(event.id)}
-                            className="p-1 text-gray-400 hover:text-indigo-400 transition-colors"
+                            className="p-1 text-gray-400 hover:text-[#087E8B] transition-colors"
                             title="View RSVPs"
                           >
                             <Users className="w-4 h-4" />
@@ -431,7 +431,7 @@ export default function CalendarView({ communityId, userId, searchTerm = '', isM
                     )}
                     <button 
                       onClick={() => handleViewRSVPs(event.id)}
-                      className="p-1 text-gray-400 hover:text-indigo-400 transition-colors"
+                      className="p-1 text-gray-400 hover:text-[#087E8B] transition-colors"
                       title="View RSVPs"
                     >
                       <Users className="w-4 h-4" />

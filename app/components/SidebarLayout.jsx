@@ -476,7 +476,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     return (
       <div className="mobile-app mobile-safe-area flex items-center justify-center animate-fade-in" style={{ backgroundColor: '#252526' }}>
         <div className="text-center animate-bounce-in">
-          <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-8 h-8 border-4 border-[#087E8B] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="minimal-text">Loading Wall-B...</p>
         </div>
       </div>
@@ -547,7 +547,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               onChange={handleSearchChange}
               onKeyPress={handleKeyPress}
               placeholder="Search communities..."
-              className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm placeholder-gray-400 focus:outline-none focus:border-indigo-500"
+              className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm placeholder-gray-400 focus:outline-none focus:border-[#087E8B]"
             />
             {searchQuery && (
               <button
@@ -563,7 +563,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           {isSearchActive && (
             <button
               onClick={handleSearchAllCommunities}
-              className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition-colors"
+              className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-[#087E8B] hover:bg-[#066a75] text-white rounded transition-colors"
             >
               <Search className="w-4 h-4" />
               <span className="font-medium">Search all communities</span>
@@ -618,11 +618,11 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                       onMouseDown={createRipple}
                       className={`w-full flex items-center justify-between p-3 rounded-none transition-all duration-200 ripple-effect ${
                         currentPage === 'community' 
-                          ? 'bg-indigo-500/20 text-indigo-300' 
+                          ? 'bg-[#087E8B]/20 text-[#087E8B]' 
                           : 'hover:bg-gray-700/50 text-gray-300'
                       } ${
                         community.hasNewPosts
-                          ? 'ring-1 ring-indigo-400/50 bg-indigo-500/10'
+                          ? 'ring-1 ring-[#087E8B]/50 bg-[#087E8B]/10'
                           : ''
                       }`}
                     >
@@ -630,7 +630,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                         <div className="flex items-center gap-2">
                           <Users className="w-4 h-4 flex-shrink-0" />
                           <span className={`font-medium text-sm truncate ${
-                            community.hasNewPosts && currentPage !== 'community' ? 'text-indigo-300' : ''
+                            community.hasNewPosts && currentPage !== 'community' ? 'text-[#087E8B]' : ''
                           }`}>
                             {community.name}
                           </span>

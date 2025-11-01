@@ -401,7 +401,7 @@ export default function Gyms() {
                     {locationLoading ? (
                       <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" style={{ flexShrink: 0 }}></div>
                     ) : (
-                      <Navigation className="w-3.5 h-3.5" style={{ flexShrink: 0, color: geolocationEnabled ? '#3b82f6' : 'var(--text-muted)' }} />
+                      <Navigation className="w-3.5 h-3.5" style={{ flexShrink: 0, color: geolocationEnabled ? '#087E8B' : 'var(--text-muted)' }} />
                     )}
                     <span>{geolocationEnabled ? 'Turn off location' : 'Turn on location'}</span>
                   </button>
@@ -431,12 +431,12 @@ export default function Gyms() {
         </div>
 
         {/* Gyms List */}
-        <div className="space-y-2">
+        <div style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
             {loading ? (
-              <div className="space-y-2">
+              <div>
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="mobile-card animate-fade-in">
-                    <div style={{ display: 'flex', gap: '20px' }}>
+                  <div key={i} className="animate-fade-in w-full border-b border-gray-700/50 last:border-b-0" style={{ padding: '16px 0' }}>
+                    <div style={{ display: 'flex', gap: '16px', padding: '0 16px' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div className="mobile-skeleton h-4 w-3/4 mb-3"></div>
                         <div className="mobile-skeleton h-3 w-1/2 mb-3"></div>
@@ -449,7 +449,6 @@ export default function Gyms() {
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end', flexShrink: 0 }}>
                         <div className="mobile-skeleton h-3 w-20 mb-2"></div>
-                        <div className="mobile-skeleton h-3 w-16 mb-2"></div>
                         <div className="mobile-skeleton h-4 w-4 rounded"></div>
                       </div>
                     </div>

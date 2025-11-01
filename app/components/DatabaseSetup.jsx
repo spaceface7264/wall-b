@@ -236,7 +236,7 @@ CREATE TRIGGER update_conversation_on_new_message
           </div>
           <button
             onClick={() => setShowSql(!showSql)}
-            className="px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition-colors"
+            className="px-3 py-1 bg-[#087E8B] text-white text-sm rounded hover:bg-[#066a75] transition-colors"
           >
             {showSql ? 'Hide' : 'Show'} SQL
           </button>
@@ -271,7 +271,7 @@ CREATE TRIGGER update_conversation_on_new_message
                 </button>
                 <button
                   onClick={openSupabaseDashboard}
-                  className="flex items-center gap-1 px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition-colors"
+                  className="flex items-center gap-1 px-3 py-1 bg-[#087E8B] text-white text-sm rounded hover:bg-[#066a75] transition-colors"
                 >
                   <ExternalLink className="w-3 h-3" />
                   Open Supabase

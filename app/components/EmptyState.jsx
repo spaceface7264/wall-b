@@ -35,7 +35,7 @@ export default function EmptyState({
 
   const iconColorClass = {
     default: 'text-gray-400',
-    primary: 'text-indigo-400',
+    primary: 'text-[#087E8B]',
     success: 'text-green-400',
     warning: 'text-amber-400',
     muted: 'text-gray-500'
@@ -43,7 +43,7 @@ export default function EmptyState({
 
   const iconBgClass = {
     default: 'bg-gray-800/50',
-    primary: 'bg-indigo-500/10',
+    primary: 'bg-[#087E8B]/10',
     success: 'bg-green-500/10',
     warning: 'bg-amber-500/10',
     muted: 'bg-gray-800/30'
@@ -87,31 +87,56 @@ export default function EmptyState({
 // Pre-configured empty states for common scenarios
 export function EmptyCommunities({ onCreateClick, onExploreClick }) {
   return (
-    <EmptyState
-      icon={Globe}
-      title="No Communities Yet"
-      description="Communities are where climbers connect, share beta, and plan sessions together. Start your journey by joining or creating a community!"
-      actionLabel="Create Community"
-      onAction={onCreateClick}
-      variant="primary"
-    />
+    <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+      <div className="text-center max-w-sm mx-auto">
+        {/* Icon */}
+        <div className="bg-gray-800/50 w-16 h-16 rounded-full minimal-flex-center mx-auto mb-4">
+          <Globe className="text-[#087E8B]" size={32} />
+        </div>
+
+        {/* Title */}
+        <h3 className="mobile-subheading mb-2">No Communities Yet</h3>
+
+        {/* Description */}
+        <p className="mobile-text-sm text-gray-400 mb-4 leading-relaxed">
+          Communities are where climbers connect, share beta, and plan sessions together. Start your journey by joining or creating a community!
+        </p>
+
+        {/* Action Button */}
+        {onCreateClick && (
+          <button
+            onClick={onCreateClick}
+            className="mobile-btn-primary minimal-flex gap-2 mx-auto"
+          >
+            <Plus className="minimal-icon" />
+            Create Community
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
 export function EmptyPosts({ onCreateClick, isMember = false }) {
   return (
-    <EmptyState
-      icon={MessageCircle}
-      title="No posts yet"
-      description={
-        isMember
-          ? "Be the first to share something! Post about your latest climb, ask a question, or share some beta."
-          : "Join this community to see posts and engage with members!"
-      }
-      actionLabel={isMember ? "Create First Post" : undefined}
-      onAction={isMember ? onCreateClick : undefined}
-      variant={isMember ? "primary" : "default"}
-    />
+    <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+      <div className="text-center max-w-sm mx-auto">
+        {/* Icon */}
+        <div className="bg-gray-800/50 w-16 h-16 rounded-full minimal-flex-center mx-auto mb-4">
+          <MessageCircle className="text-gray-400" size={32} />
+        </div>
+
+        {/* Title */}
+        <h3 className="mobile-subheading mb-2">No posts yet</h3>
+
+        {/* Description */}
+        <p className="mobile-text-sm text-gray-400 mb-4 leading-relaxed">
+          {isMember
+            ? "Be the first to share something! Post about your latest climb, ask a question, or share some beta."
+            : "Join this community to see posts and engage with members!"}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -145,14 +170,22 @@ export function EmptyEvents({ onCreateClick, isMember = false }) {
 
 export function EmptyGyms({ onRequestClick }) {
   return (
-    <EmptyState
-      icon={MapPin}
-      title="No gyms found"
-      description="We couldn't find any gyms matching your search. Try adjusting your filters or request to add a gym if it's missing."
-      actionLabel="Request a Gym"
-      onAction={onRequestClick}
-      variant="primary"
-    />
+    <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+      <div className="text-center max-w-sm mx-auto">
+        {/* Icon */}
+        <div className="bg-gray-800/50 w-16 h-16 rounded-full minimal-flex-center mx-auto mb-4">
+          <MapPin className="text-gray-400" size={32} />
+        </div>
+
+        {/* Title */}
+        <h3 className="mobile-subheading mb-2">No gyms found</h3>
+
+        {/* Description */}
+        <p className="mobile-text-sm text-gray-400 mb-4 leading-relaxed">
+          We couldn't find any gyms matching your search. Try adjusting your filters or request to add a gym if it's missing.
+        </p>
+      </div>
+    </div>
   );
 }
 

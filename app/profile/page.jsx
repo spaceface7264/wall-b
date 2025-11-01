@@ -544,7 +544,7 @@ export default function Profile() {
                         href={profileData.instagram_url.startsWith('http') ? profileData.instagram_url : `https://instagram.com/${profileData.instagram_url.replace('@', '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-indigo-400 hover:text-indigo-300"
+                        className="text-[#087E8B] hover:text-[#087E8B]"
                       >
                         {profileData.instagram_url}
                       </a>
@@ -571,7 +571,7 @@ export default function Profile() {
                         href={profileData.twitter_url.startsWith('http') ? profileData.twitter_url : `https://twitter.com/${profileData.twitter_url.replace('@', '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-indigo-400 hover:text-indigo-300"
+                        className="text-[#087E8B] hover:text-[#087E8B]"
                       >
                         {profileData.twitter_url}
                       </a>
@@ -598,7 +598,7 @@ export default function Profile() {
                         href={profileData.website_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-indigo-400 hover:text-indigo-300"
+                        className="text-[#087E8B] hover:text-[#087E8B]"
                       >
                         {profileData.website_url}
                       </a>
@@ -624,7 +624,7 @@ export default function Profile() {
           {communities.length > 0 && (
             <div className="mobile-card animate-slide-up">
               <h2 className="profile-section-header minimal-flex gap-2">
-                <Users className="minimal-icon text-indigo-400" />
+                <Users className="minimal-icon text-[#087E8B]" />
                 Communities ({communities.length})
               </h2>
               <div className="space-y-2">

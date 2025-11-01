@@ -55,11 +55,11 @@ export default function NotificationBell({ userId }) {
       comment_like: 'text-yellow-400',
       event_invite: 'text-green-400',
       event_reminder: 'text-orange-400',
-      mention: 'text-purple-400',
+      mention: 'text-[#087E8B]',
       direct_message: 'text-pink-400',
       community_join: 'text-cyan-400',
       event_rsvp: 'text-emerald-400',
-      post_comment: 'text-indigo-400',
+      post_comment: 'text-[#087E8B]',
       system: 'text-gray-400'
     };
     return colors[type] || 'text-gray-400';
@@ -217,7 +217,7 @@ export default function NotificationBell({ userId }) {
                           {(['event_rsvp', 'event_invite', 'event_reminder'].includes(notification.type)) && notification.event ? (
                             <>
                               <div className="mt-1">
-                                <span className="text-sm font-medium text-indigo-400">
+                                <span className="text-sm font-medium text-[#087E8B]">
                                   {getActorName(notification)}
                                 </span>
                                 <span className="text-sm text-gray-400 ml-1">
@@ -248,7 +248,7 @@ export default function NotificationBell({ userId }) {
                           
                           {/* Show actor name for other notification types */}
                           {!['event_rsvp', 'event_invite', 'event_reminder'].includes(notification.type) && notification.actor_profile && (
-                            <p className="text-xs text-indigo-400 mt-1">
+                            <p className="text-xs text-[#087E8B] mt-1">
                               {getActorName(notification)}
                             </p>
                           )}

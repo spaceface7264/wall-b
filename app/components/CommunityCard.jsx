@@ -63,7 +63,7 @@ const CommunityCard = React.memo(function CommunityCard({
     if (community.tag_colors && community.tag_colors[tag]) {
       return community.tag_colors[tag];
     }
-    return '#3b82f6'; // Default blue
+    return '#087E8B'; // Default accent color
   };
   
   const handleCardClick = (e) => {
@@ -227,7 +227,7 @@ const CommunityCard = React.memo(function CommunityCard({
             <div className="flex items-center gap-1.5">
               <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <span className="text-sm text-gray-300 font-medium">{postCount || 0}</span>
-            </div>
+              </div>
           </div>
 
           {/* Tags */}

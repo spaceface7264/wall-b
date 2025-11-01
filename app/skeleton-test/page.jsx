@@ -49,7 +49,7 @@ export default function SkeletonTestPage() {
             <div className="flex gap-4">
               <button
                 onClick={() => setShowLoading(true)}
-                className="px-4 py-2 bg-indigo-600 rounded hover:bg-indigo-700"
+                className="px-4 py-2 bg-[#087E8B] rounded hover:bg-[#066a75]"
               >
                 Start Loading
               </button>

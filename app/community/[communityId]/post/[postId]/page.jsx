@@ -651,7 +651,7 @@ export default function PostDetailPage() {
                     />
                   ) : null}
                   <div 
-                    className={`w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full minimal-flex-center ${authorAvatar ? 'hidden' : ''}`}
+                    className={`w-10 h-10 bg-gradient-to-br from-[#087E8B] to-[#087E8B] rounded-full minimal-flex-center ${authorAvatar ? 'hidden' : ''}`}
                   >
                     <span className="text-white font-semibold text-sm">
                       {authorDisplayName ? authorDisplayName.charAt(0).toUpperCase() : 'A'}

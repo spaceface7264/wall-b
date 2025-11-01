@@ -164,7 +164,7 @@ export default function CreatePostModal({
         {/* Header - Who is posting where */}
         <div className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+            <div className="w-8 h-8 bg-[#087E8B] rounded-full flex items-center justify-center text-white font-medium text-sm">
               {userName.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -221,7 +221,7 @@ export default function CreatePostModal({
                       onClick={() => handleEventSelect(event)}
                       className={`w-full text-left p-2 rounded text-sm transition-colors ${
                         index === selectedEventIndex
-                          ? 'bg-indigo-600 text-white'
+                          ? 'bg-[#087E8B] text-white'
                           : 'text-gray-300 hover:bg-gray-700'
                       }`}
                     >
@@ -341,7 +341,7 @@ export default function CreatePostModal({
                 content.trim().length < 10 ||
                 submitting
               }
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+              className="bg-[#087E8B] hover:bg-[#066a75] disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
             >
               {submitting ? (
                 <>

@@ -753,7 +753,7 @@ export default function AdminPage() {
               <p className="text-sm text-gray-400 mb-6">You need admin access to view this page.</p>
               <button
                 onClick={() => navigate('/communities')}
-                className="px-4 py-2 bg-indigo-600 text-white text-sm hover:bg-indigo-700 transition-colors"
+                className="px-4 py-2 bg-[#087E8B] text-white text-sm hover:bg-[#066a75] transition-colors"
               >
                 Go to Dashboard
               </button>
@@ -794,7 +794,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('users')}
               className={`flex-1 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'users'
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-[#087E8B] text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -805,7 +805,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('communities')}
               className={`flex-1 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'communities'
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-[#087E8B] text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -816,7 +816,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('requests')}
               className={`flex-1 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'requests'
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-[#087E8B] text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -827,7 +827,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('reports')}
               className={`flex-1 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'reports'
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-[#087E8B] text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -838,7 +838,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('moderation')}
               className={`flex-1 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'moderation'
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-[#087E8B] text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -861,7 +861,7 @@ export default function AdminPage() {
                     placeholder="Search users by name or email..."
                     value={userSearchQuery}
                     onChange={(e) => setUserSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500/50"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#087E8B]/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -875,8 +875,8 @@ export default function AdminPage() {
                   filteredUsers.map((user) => (
                     <div key={user.id} className="p-4 flex items-center justify-between relative">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-8 h-8 bg-indigo-500/20 rounded-full flex items-center justify-center border border-gray-700/50">
-                          <span className="text-xs font-semibold text-indigo-300">
+                        <div className="w-8 h-8 bg-[#087E8B]/20 rounded-full flex items-center justify-center border border-gray-700/50">
+                          <span className="text-xs font-semibold text-[#087E8B]">
                             {user.full_name?.charAt(0) || '?'}
                           </span>
                         </div>
@@ -995,7 +995,7 @@ export default function AdminPage() {
                                     makeAdmin(user.id);
                                     setOpenMenuId(null);
                                   }}
-                                  className="w-full px-4 py-2 text-left text-xs text-indigo-400 hover:bg-gray-800 transition-colors flex items-center gap-2"
+                                  className="w-full px-4 py-2 text-left text-xs text-[#087E8B] hover:bg-gray-800 transition-colors flex items-center gap-2"
                                 >
                                   <ShieldCheck className="w-3.5 h-3.5" />
                                   Make Admin
@@ -1188,7 +1188,7 @@ export default function AdminPage() {
                     placeholder="Search posts and comments by keywords..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500/50"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#087E8B]/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -1199,7 +1199,7 @@ export default function AdminPage() {
                     onClick={() => setModerationView('reports')}
                     className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                       moderationView === 'reports'
-                        ? 'bg-indigo-600 text-white'
+                        ? 'bg-[#087E8B] text-white'
                         : 'bg-gray-700/50 text-gray-400 hover:text-white'
                     }`}
                     style={{ borderRadius: 2 }}
@@ -1211,7 +1211,7 @@ export default function AdminPage() {
                     onClick={() => setModerationView('posts')}
                     className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                       moderationView === 'posts'
-                        ? 'bg-indigo-600 text-white'
+                        ? 'bg-[#087E8B] text-white'
                         : 'bg-gray-700/50 text-gray-400 hover:text-white'
                     }`}
                     style={{ borderRadius: 2 }}
@@ -1223,7 +1223,7 @@ export default function AdminPage() {
                     onClick={() => setModerationView('comments')}
                     className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                       moderationView === 'comments'
-                        ? 'bg-indigo-600 text-white'
+                        ? 'bg-[#087E8B] text-white'
                         : 'bg-gray-700/50 text-gray-400 hover:text-white'
                     }`}
                     style={{ borderRadius: 2 }}
@@ -1456,7 +1456,7 @@ export default function AdminPage() {
                   type="text"
                   name="name"
                   defaultValue={editingCommunity.name}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-[#087E8B]"
                   style={{ borderRadius: 2 }}
                   required
                 />
@@ -1468,7 +1468,7 @@ export default function AdminPage() {
                   name="description"
                   defaultValue={editingCommunity.description || ''}
                   rows={3}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-indigo-500 resize-none"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-[#087E8B] resize-none"
                   style={{ borderRadius: 2 }}
                 />
               </div>
@@ -1479,7 +1479,7 @@ export default function AdminPage() {
                   name="rules"
                   defaultValue={editingCommunity.rules || ''}
                   rows={4}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-indigo-500 resize-none"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-[#087E8B] resize-none"
                   style={{ borderRadius: 2 }}
                   placeholder="Community guidelines and rules..."
                 />
@@ -1496,7 +1496,7 @@ export default function AdminPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                  className="flex-1 px-4 py-2 text-sm bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
                   style={{ borderRadius: 2 }}
                 >
                   Save Changes
@@ -1600,7 +1600,7 @@ export default function AdminPage() {
                           setAssigningModerator(viewingCommunity);
                           setViewingCommunity(null);
                         }}
-                        className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                        className="text-xs text-[#087E8B] hover:text-[#087E8B] flex items-center gap-1"
                       >
                         <Shield className="w-3 h-3" />
                         Assign Moderator
@@ -1620,7 +1620,7 @@ export default function AdminPage() {
                           <div key={member.id} className="flex items-center justify-between p-2 bg-gray-900/30 rounded hover:bg-gray-900/50 transition-colors" style={{ borderRadius: 2 }}>
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               {isModerator ? (
-                                <Shield className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+                                <Shield className="w-3.5 h-3.5 text-[#087E8B] flex-shrink-0" />
                               ) : (
                                 <Users className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
                               )}
@@ -1664,7 +1664,7 @@ export default function AdminPage() {
                     navigate(`/community/${viewingCommunity.id}`);
                     setViewingCommunity(null);
                   }}
-                  className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                  className="flex-1 px-4 py-2 text-sm bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
                   style={{ borderRadius: 2 }}
                 >
                   View Community

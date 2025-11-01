@@ -663,14 +663,15 @@ export default function CommunityPage() {
             <div className="post-feed" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
               {/* Create Post Button */}
               {(isMember || isAdmin) && (
-                <button
-                  onClick={() => setShowNewPostModal(true)}
-                  className="w-full flex items-center gap-2 px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-full text-gray-300 hover:bg-gray-800 hover:border-gray-600 hover:text-white transition-all duration-200 mb-2"
-                  style={{ marginLeft: 'var(--container-padding-mobile)', marginRight: 'var(--container-padding-mobile)', marginBottom: '16px' }}
-                >
-                  <Plus className="w-4 h-4 flex-shrink-0" />
-                  <span className="text-sm font-medium">Create post</span>
-                </button>
+                <div style={{ marginLeft: 'var(--container-padding-mobile)', marginRight: 'var(--container-padding-mobile)', marginBottom: '16px' }}>
+                  <button
+                    onClick={() => setShowNewPostModal(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-full text-gray-300 hover:bg-gray-800 hover:border-gray-600 hover:text-white transition-all duration-200"
+                  >
+                    <Plus className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">Create post</span>
+                  </button>
+                </div>
               )}
               {posts.length === 0 ? (
                 <EmptyPosts
@@ -722,7 +723,7 @@ export default function CommunityPage() {
                   placeholder="Search events..."
                   value={eventSearchTerm}
                   onChange={(e) => setEventSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-indigo-500"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-[#087E8B]"
                 />
                 <div className="absolute left-3 top-1/2 -translate-y-1/2">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
@@ -760,7 +761,7 @@ export default function CommunityPage() {
             {/* Description */}
             <div className="animate-slide-up">
               <h4 className="minimal-heading mb-3 minimal-flex">
-                <Info className="minimal-icon mr-2 text-indigo-400" />
+                <Info className="minimal-icon mr-2 text-[#087E8B]" />
                 About This Community
               </h4>
               <p className="mobile-text-sm text-gray-300 leading-relaxed mb-4">
@@ -781,7 +782,7 @@ export default function CommunityPage() {
             {community?.gyms && (
               <div className="animate-slide-up">
                 <h4 className="minimal-heading mb-3 minimal-flex">
-                  <MapPin className="minimal-icon mr-2 text-indigo-400" />
+                  <MapPin className="minimal-icon mr-2 text-[#087E8B]" />
                   Location
                 </h4>
                 <div className="space-y-2">
@@ -800,7 +801,7 @@ export default function CommunityPage() {
             {/* Moderators List */}
             <div className="animate-slide-up">
               <h4 className="minimal-heading mb-4 minimal-flex">
-                <Shield className="minimal-icon mr-2 text-indigo-400" />
+                <Shield className="minimal-icon mr-2 text-[#087E8B]" />
                 Moderators
               </h4>
               {moderators.length === 0 ? (
@@ -822,7 +823,7 @@ export default function CommunityPage() {
                             className="w-10 h-10 rounded-full object-cover"
                           />
                         ) : (
-                          <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                          <div className="w-10 h-10 bg-[#087E8B] rounded-full flex items-center justify-center text-white font-medium text-sm">
                             {displayName.charAt(0).toUpperCase()}
                           </div>
                         )}
@@ -924,6 +925,24 @@ export default function CommunityPage() {
 
             {/* Tab Buttons, Join/Joined Button and Menu */}
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1">
+              {/* Join/Leave Button */}
+              {!isMember ? (
+                <button
+                  onClick={handleJoinCommunity}
+                  disabled={joining}
+                  className="px-2.5 py-1 text-sm rounded-full border-2 border-[#087E8B] text-[#087E8B] hover:bg-[#087E8B] hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+                >
+                  {joining ? 'Joining...' : 'Join'}
+                </button>
+              ) : (
+                <button
+                  onClick={handleLeaveCommunity}
+                  className="px-2.5 py-1 text-sm rounded-full bg-[#087E8B] text-white hover:bg-[#066a75] transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                >
+                  Joined
+                </button>
+              )}
+
               {/* Scrollable Tab Buttons */}
               <div className="flex items-center gap-1 min-w-max">
                 {tabs.map((tab) => {
@@ -935,7 +954,7 @@ export default function CommunityPage() {
                       className={`
                         flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-all duration-200
                         ${activeTab === tab.id
-                          ? 'bg-indigo-600 text-white'
+                          ? 'bg-[#087E8B] text-white'
                           : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'
                         }
                       `}
@@ -946,24 +965,6 @@ export default function CommunityPage() {
                   );
                 })}
               </div>
-
-              {/* Join/Leave Button */}
-              {!isMember ? (
-                <button
-                  onClick={handleJoinCommunity}
-                  disabled={joining}
-                  className="px-2.5 py-1 text-sm rounded-full border-2 border-indigo-600 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
-                >
-                  {joining ? 'Joining...' : 'Join'}
-                </button>
-              ) : (
-                <button
-                  onClick={handleLeaveCommunity}
-                  className="px-2.5 py-1 text-sm rounded-full bg-indigo-600 text-white hover:bg-indigo-700 transition-all duration-200 whitespace-nowrap flex-shrink-0"
-                >
-                  Joined
-                </button>
-              )}
 
               {/* Three-dot menu */}
               <div className="relative flex-shrink-0" ref={menuRef}>
@@ -1077,7 +1078,7 @@ export default function CommunityPage() {
             <div className="p-6">
               {/* Welcome Header */}
               <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-[#087E8B] rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="w-8 h-8 text-white" />
                 </div>
                 <h2 className="text-1xl font-bold text-white mb-2">
@@ -1099,7 +1100,7 @@ export default function CommunityPage() {
                     setShowWelcomeModal(false);
                     setShowNewPostModal(true);
                   }}
-                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-colors font-medium"
+                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#087E8B] hover:bg-[#066a75] text-white rounded-xl transition-colors font-medium"
                 >
                   <MessageSquare className="w-5 h-5" />
                   Create post
@@ -1145,7 +1146,7 @@ export default function CommunityPage() {
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-[#087E8B] rounded-lg flex items-center justify-center">
                     <Shield className="w-5 h-5 text-white" />
                   </div>
                   <h2 className="text-xl font-bold text-white">
@@ -1181,7 +1182,7 @@ export default function CommunityPage() {
               <div className="mt-6 pt-4 border-t border-slate-700">
                 <button
                   onClick={() => setShowRulesModal(false)}
-                  className="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-medium"
+                  className="w-full px-4 py-2 bg-[#087E8B] hover:bg-[#066a75] text-white rounded-lg transition-colors font-medium"
                 >
                   Got it
                 </button>

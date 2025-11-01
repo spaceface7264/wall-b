@@ -322,7 +322,7 @@ export default function PublicProfile() {
           {communities.length > 0 && (
             <div className="mobile-card animate-slide-up">
               <h2 className="profile-section-header minimal-flex gap-2">
-                <Users className="minimal-icon text-indigo-400" />
+                <Users className="minimal-icon text-[#087E8B]" />
                 Communities ({communities.length})
               </h2>
               <div className="space-y-2">
@@ -343,7 +343,7 @@ export default function PublicProfile() {
           {(profile.instagram_url || profile.twitter_url || profile.website_url) && (
             <div className="mobile-card animate-slide-up">
               <h2 className="profile-section-header minimal-flex gap-2">
-                <Globe className="minimal-icon text-indigo-400" />
+                <Globe className="minimal-icon text-[#087E8B]" />
                 Social Links
               </h2>
               <div className="space-y-2">

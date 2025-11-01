@@ -429,7 +429,7 @@ export default function CommunitiesPage() {
           {myCommunities.length > 0 && (
             <div className="animate-slide-up">
               <h2 className="minimal-heading mb-4 minimal-flex">
-                <Users className="minimal-icon mr-2 text-indigo-400" />
+                <Users className="minimal-icon mr-2 text-[#087E8B]" />
                 My Communities
               </h2>
               <div className="-mx-4 md:-mx-6" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
@@ -452,7 +452,7 @@ export default function CommunitiesPage() {
           {/* All Communities */}
           <div className="animate-slide-up">
             <h2 className="minimal-heading mb-4 minimal-flex">
-              <Globe className="minimal-icon mr-2 text-indigo-400" />
+              <Globe className="minimal-icon mr-2 text-[#087E8B]" />
               All Communities
             </h2>
             

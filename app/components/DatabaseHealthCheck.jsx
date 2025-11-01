@@ -107,7 +107,7 @@ export default function DatabaseHealthCheck() {
             </p>
             <button
               onClick={checkDatabaseHealth}
-              className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+              className="text-xs text-[#087E8B] hover:text-[#087E8B] transition-colors"
             >
               Retry Check
             </button>

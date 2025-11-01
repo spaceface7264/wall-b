@@ -266,7 +266,7 @@ export default function CreateCommunityPage() {
                   Community Type
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <label className={`relative cursor-pointer ${formData.community_type === 'gym' ? 'border-2 border-indigo-500' : ''}`}>
+                  <label className={`relative cursor-pointer ${formData.community_type === 'gym' ? 'border-2 border-[#087E8B]' : ''}`}>
                     <input
                       type="radio"
                       name="community_type"
@@ -277,7 +277,7 @@ export default function CreateCommunityPage() {
                     />
                     <div className={`p-4 rounded border transition-colors ${
                       formData.community_type === 'gym' 
-                        ? 'bg-indigo-500/10 border-indigo-500 text-indigo-300' 
+                        ? 'bg-[#087E8B]/10 border-[#087E8B] text-[#087E8B]' 
                         : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
                     }`}>
                       <div className="flex items-center gap-3">
@@ -290,7 +290,7 @@ export default function CreateCommunityPage() {
                     </div>
                   </label>
 
-                  <label className={`relative cursor-pointer ${formData.community_type === 'general' ? 'border-2 border-indigo-500' : ''}`}>
+                  <label className={`relative cursor-pointer ${formData.community_type === 'general' ? 'border-2 border-[#087E8B]' : ''}`}>
                     <input
                       type="radio"
                       name="community_type"
@@ -301,7 +301,7 @@ export default function CreateCommunityPage() {
                     />
                     <div className={`p-4 rounded border transition-colors ${
                       formData.community_type === 'general' 
-                        ? 'bg-indigo-500/10 border-indigo-500 text-indigo-300' 
+                        ? 'bg-[#087E8B]/10 border-[#087E8B] text-[#087E8B]' 
                         : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
                     }`}>
                       <div className="flex items-center gap-3">

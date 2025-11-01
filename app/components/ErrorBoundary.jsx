@@ -44,7 +44,7 @@ class ErrorBoundary extends React.Component {
             <div className="space-y-3">
               <button
                 onClick={this.handleRetry}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#087E8B] hover:bg-[#066a75] text-white rounded-lg transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
                 Try Again

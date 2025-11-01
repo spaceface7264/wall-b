@@ -177,7 +177,7 @@ export default function GroupChatModal({ isOpen, onClose, onCreateGroup, current
             placeholder="Enter group name..."
             value={groupName}
             onChange={(e) => setGroupName(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
             maxLength={50}
           />
         </div>
@@ -191,7 +191,7 @@ export default function GroupChatModal({ isOpen, onClose, onCreateGroup, current
               placeholder="Search users..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
             />
           </div>
         </div>
@@ -209,13 +209,13 @@ export default function GroupChatModal({ isOpen, onClose, onCreateGroup, current
               {selectedUsers.map(user => (
                 <div
                   key={user.id}
-                  className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-1 rounded-full text-sm"
+                  className="flex items-center gap-2 bg-[#087E8B] text-white px-3 py-1 rounded-full text-sm"
                 >
                   <Avatar url={user.avatar_url} size={20} />
                   <span>{user.full_name || 'Unknown User'}</span>
                   <button
                     onClick={() => toggleUserSelection(user)}
-                    className="text-indigo-200 hover:text-white"
+                    className="text-[#087E8B] hover:text-white"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -229,7 +229,7 @@ export default function GroupChatModal({ isOpen, onClose, onCreateGroup, current
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {loading ? (
             <div className="minimal-flex-center py-8">
-              <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mr-2"></div>
+              <div className="w-6 h-6 border-2 border-[#087E8B] border-t-transparent rounded-full animate-spin mr-2"></div>
               <p className="text-gray-400">Loading users...</p>
             </div>
           ) : filteredUsers.length === 0 ? (
@@ -246,7 +246,7 @@ export default function GroupChatModal({ isOpen, onClose, onCreateGroup, current
                   onClick={() => toggleUserSelection(user)}
                   className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
                     isSelected 
-                      ? 'bg-indigo-600 text-white' 
+                      ? 'bg-[#087E8B] text-white' 
                       : 'bg-gray-800 hover:bg-gray-700 text-white'
                   }`}
                 >
@@ -284,7 +284,7 @@ export default function GroupChatModal({ isOpen, onClose, onCreateGroup, current
           <button
             onClick={handleCreateGroup}
             disabled={!groupName.trim() || selectedUsers.length === 0 || loading}
-            className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2 bg-[#087E8B] text-white rounded-lg hover:bg-[#066a75] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
             {loading ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
