@@ -1,10 +1,11 @@
 import React from 'react';
-import { MapPin, ChevronRight } from 'lucide-react';
+import { MapPin, ChevronRight, EyeOff } from 'lucide-react';
 import { formatDistance } from '../../lib/geolocation';
 
 const GymCard = React.memo(function GymCard({
   gym,
-  onOpen
+  onOpen,
+  isAdmin = false
 }) {
   const facilities = Array.isArray(gym.facilities) ? gym.facilities : JSON.parse(gym.facilities || '[]');
 
@@ -65,6 +66,12 @@ const GymCard = React.memo(function GymCard({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="flex items-center gap-2" style={{ marginBottom: '8px', flexWrap: 'wrap' }}>
             <h3 className="mobile-subheading truncate" style={{ margin: 0, flex: '1 1 auto', minWidth: 0 }}>{gym.name}</h3>
+            {gym.is_hidden && isAdmin && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 flex-shrink-0 rounded">
+                <EyeOff className="w-3 h-3" />
+                Hidden
+              </span>
+            )}
             {typeof gym.distance_km === 'number' && (
               <div className="flex items-center gap-1 px-2 py-0.5 rounded-md whitespace-nowrap flex-shrink-0" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}>
                 <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{formatDistance(gym.distance_km)}</span>

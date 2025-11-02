@@ -40,6 +40,7 @@ export default function GymDetail() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userLoaded, setUserLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -69,9 +70,6 @@ export default function GymDetail() {
 
   useEffect(() => {
     getUser();
-    if (params.gymId) {
-      fetchGym(params.gymId);
-    }
     
     // Check for tab query parameter
     const tabParam = searchParams.get('tab');
@@ -79,6 +77,13 @@ export default function GymDetail() {
       setActiveTab(tabParam);
     }
   }, [params.gymId, searchParams]);
+
+  // Fetch gym when user check is complete (to ensure admin status is available)
+  useEffect(() => {
+    if (params.gymId && userLoaded) {
+      fetchGym(params.gymId);
+    }
+  }, [params.gymId, userLoaded]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -99,13 +104,15 @@ export default function GymDetail() {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
       if (user) {
-        checkAdminStatus(user.id);
+        await checkAdminStatus(user.id);
         if (params.gymId) {
-        await checkFavoriteStatus(user.id, params.gymId);
+          await checkFavoriteStatus(user.id, params.gymId);
         }
       }
+      setUserLoaded(true);
     } catch (error) {
       console.log('Error getting user:', error);
+      setUserLoaded(true);
     }
   };
 
@@ -166,6 +173,37 @@ export default function GymDetail() {
       setLoading(true);
       }
       console.log('Fetching gym with ID:', gymId);
+      
+      // Check admin status before fetching (needed for access control)
+      // Always check if user exists to get the most current admin status
+      let currentAdminStatus = isAdmin;
+      if (user) {
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', user.id)
+            .single();
+          
+          if (profileError) {
+            console.error('Error fetching admin status:', profileError);
+            currentAdminStatus = false;
+          } else {
+            currentAdminStatus = profile?.is_admin || false;
+            // Update state if it changed
+            if (currentAdminStatus !== isAdmin) {
+              setIsAdmin(currentAdminStatus);
+            }
+          }
+        } catch (error) {
+          console.error('Error checking admin status:', error);
+          // If check fails, assume not admin for safety
+          currentAdminStatus = false;
+        }
+      } else {
+        // No user = definitely not admin
+        currentAdminStatus = false;
+      }
       
       // If gymId is numeric (mock data), use mock data directly
       if (!isValidUUID(gymId)) {
@@ -358,6 +396,16 @@ export default function GymDetail() {
           setGym(null);
         }
       } else {
+        // Check if gym is hidden and block non-admins
+        // Also check isAdmin state in case it was updated
+        const hasAdminAccess = currentAdminStatus || isAdmin;
+        const isGymHidden = data.is_hidden === true; // Explicitly check for true
+        
+        if (isGymHidden && !hasAdminAccess) {
+          showToast('error', 'Access Denied', 'This gym is hidden from public view.');
+          navigate('/gyms');
+          return;
+        }
         setGym(data);
         await loadCommunities(data.id);
         await loadEvents(data.id);
@@ -1006,14 +1054,41 @@ export default function GymDetail() {
               </div>
             </div>
 
+            {/* Google Rating */}
+            {(gym.google_rating || gym.google_ratings_count) && (
+              <div className="border-b border-gray-700/50 pb-6 mb-6">
+                <h4 className="minimal-heading mb-4 minimal-flex">
+                  <Star className="minimal-icon mr-2 text-[#087E8B]" />
+                  Google Rating
+                </h4>
+                <div className="flex items-center gap-4">
+                  {gym.google_rating && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center">
+                        <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                        <span className="minimal-heading ml-2">{gym.google_rating.toFixed(1)}</span>
+                      </div>
+                      {gym.google_ratings_count && (
+                        <span className="minimal-text text-sm text-gray-400">
+                          ({gym.google_ratings_count} {gym.google_ratings_count === 1 ? 'review' : 'reviews'})
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Description */}
-            <div className="border-b border-gray-700/50 pb-6 mb-6">
-              <h4 className="minimal-heading mb-4 minimal-flex">
-                <Star className="minimal-icon mr-2 text-[#087E8B]" />
-                About
-              </h4>
-              <p className="minimal-text text-sm text-gray-300 leading-relaxed">{gym.description}</p>
-            </div>
+            {gym.description && (
+              <div className="border-b border-gray-700/50 pb-6 mb-6">
+                <h4 className="minimal-heading mb-4 minimal-flex">
+                  <Info className="minimal-icon mr-2 text-[#087E8B]" />
+                  About
+                </h4>
+                <p className="minimal-text text-sm text-gray-300 leading-relaxed">{gym.description}</p>
+              </div>
+            )}
 
             {/* Facilities & Hours */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -1282,6 +1357,16 @@ export default function GymDetail() {
               </div>
             </div>
           </div>
+
+          {/* Hidden Gym Warning (Admin Only) */}
+          {gym.is_hidden && isAdmin && (
+            <div className="animate-slide-up mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center gap-2">
+              <Shield className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <span className="text-sm text-amber-300">
+                This gym is hidden from public view. Only admins can see this page.
+              </span>
+            </div>
+          )}
 
           {/* Tab Navigation */}
           <div className="animate-slide-up">

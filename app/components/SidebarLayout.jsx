@@ -56,6 +56,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       }
       
       // If community_members exists, proceed with the original query
+      // Filter out suspended communities (is_active = true or null for backward compatibility)
       const { data, error } = await supabase
         .from('community_members')
         .select(`
@@ -63,7 +64,8 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
             id,
             name,
             description,
-            member_count
+            member_count,
+            is_active
           )
         `)
         .eq('user_id', userId)
@@ -76,8 +78,10 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       }
 
       const communitiesList = data?.map(item => item.communities).filter(Boolean) || [];
+      // Filter out suspended communities
+      const activeCommunities = communitiesList.filter(c => c.is_active !== false);
       // Enrich with actual member counts
-      const enrichedCommunities = await enrichCommunitiesWithActualCounts(communitiesList);
+      const enrichedCommunities = await enrichCommunitiesWithActualCounts(activeCommunities);
       
       // Check for new posts in each community
       const communitiesWithNewPosts = await Promise.all(

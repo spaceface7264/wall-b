@@ -51,6 +51,7 @@ export default function CommunitiesPage() {
       setLoading(true);
       
       // First try with gyms relation
+      // Filter out suspended communities (is_active = false)
       let { data, error } = await supabase
         .from('communities')
         .select(`
@@ -63,6 +64,7 @@ export default function CommunitiesPage() {
             image_url
           )
         `)
+        .eq('is_active', true)
         .order('created_at', { ascending: false });
 
       // If that fails (e.g., RLS issue with gyms), try without gyms relation
@@ -73,6 +75,7 @@ export default function CommunitiesPage() {
         const fallbackResult = await supabase
           .from('communities')
           .select('*')
+          .eq('is_active', true)
           .order('created_at', { ascending: false });
         
         if (fallbackResult.error) {
@@ -433,9 +436,25 @@ export default function CommunitiesPage() {
                 My Communities
               </h2>
               <div className="-mx-4 md:-mx-6" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
+                <div className="flex flex-col gap-3 px-3">
                 {myCommunities.map((community) => (
+                    <div
+                      key={community.id}
+                      className="rounded-lg transition-all duration-200 cursor-pointer"
+                      style={{
+                        backgroundColor: 'var(--bg-surface)',
+                        border: '1px solid var(--border-color)',
+                        padding: 'var(--card-padding-mobile)'
+                      }}
+                      onClick={() => navigate(`/community/${community.id}`)}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+                      }}
+                    >
                   <CommunityCard
-                    key={community.id}
                     community={community}
                     isMember={true}
                     onJoin={handleJoinCommunity}
@@ -444,7 +463,9 @@ export default function CommunitiesPage() {
                     onOpen={() => navigate(`/community/${community.id}`)}
                     leaving={leavingCommunity === community.id}
                   />
+                    </div>
                 ))}
+                </div>
               </div>
             </div>
           )}
@@ -460,9 +481,25 @@ export default function CommunitiesPage() {
               <EmptyCommunities onCreateClick={() => navigate('/community/new')} />
             ) : (
               <div className="-mx-4 md:-mx-6" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
+                <div className="flex flex-col gap-3 px-3">
                 {filteredCommunities.map((community) => (
+                    <div
+                      key={community.id}
+                      className="rounded-lg transition-all duration-200 cursor-pointer"
+                      style={{
+                        backgroundColor: 'var(--bg-surface)',
+                        border: '1px solid var(--border-color)',
+                        padding: 'var(--card-padding-mobile)'
+                      }}
+                      onClick={() => navigate(`/community/${community.id}`)}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+                      }}
+                    >
                   <CommunityCard
-                    key={community.id}
                     community={community}
                     isMember={false}
                     onJoin={handleJoinCommunity}
@@ -472,7 +509,9 @@ export default function CommunitiesPage() {
                     joining={joiningCommunity === community.id}
                     leaving={leavingCommunity === community.id}
                   />
+                    </div>
                 ))}
+                </div>
               </div>
             )}
           </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Search, MapPin, Navigation, Check } from 'lucide-react';
+import { X, Search, MapPin, Navigation, Check, EyeOff } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { calculateDistance, formatDistance } from '../../lib/geolocation';
@@ -14,6 +14,7 @@ export default function GymSelectorModal({
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name'); // 'name' or 'distance'
+  const [isAdmin, setIsAdmin] = useState(false);
   
   const {
     location,
@@ -32,7 +33,26 @@ export default function GymSelectorModal({
   const loadGyms = async () => {
     try {
       setLoading(true);
+      
+      // Check admin status first
+      let adminStatus = false;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', user.id)
+            .single();
+          adminStatus = profile?.is_admin || false;
+          setIsAdmin(adminStatus);
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+      }
+      
       // Use select('*') to get all columns, more forgiving if schema has optional fields
+      // We'll filter hidden gyms in code to ensure it works correctly
       const { data, error } = await supabase
         .from('gyms')
         .select('*')
@@ -47,8 +67,13 @@ export default function GymSelectorModal({
         return;
       }
 
+      // Filter out hidden gyms for non-admins (additional check)
+      const visibleGyms = adminStatus 
+        ? (data || []) 
+        : (data || []).filter(gym => !gym.is_hidden);
+
       // Calculate distances if location is available
-      let gymsWithDistance = data || [];
+      let gymsWithDistance = visibleGyms;
       
       console.log('Fetched gyms from database:', gymsWithDistance.length);
       
@@ -157,7 +182,7 @@ export default function GymSelectorModal({
         {/* Header */}
         <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
           <div>
-            <h3 className="text-lg font-semibold text-white">Select Gym</h3>
+            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Select Gym</h3>
             <p className="text-sm text-gray-400 mt-1">
               Choose a gym for your community
             </p>
@@ -174,13 +199,13 @@ export default function GymSelectorModal({
         <div className="p-4 border-b border-gray-700 space-y-3 flex-shrink-0">
           {/* Search Input */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
             <input
               type="text"
               placeholder="Search gyms by name, city, or address..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+              className="minimal-input w-full pl-10 pr-3"
             />
           </div>
 
@@ -303,7 +328,15 @@ export default function GymSelectorModal({
                       {/* Gym Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <h4 className="font-medium text-white truncate">{gym.name}</h4>
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <h4 className="font-medium text-white truncate">{gym.name}</h4>
+                            {gym.is_hidden && isAdmin && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 flex-shrink-0 rounded">
+                                <EyeOff className="w-2.5 h-2.5" />
+                                Hidden
+                              </span>
+                            )}
+                          </div>
                           {isSelected && (
                             <Check className="w-5 h-5 text-[#087E8B] flex-shrink-0" />
                           )}
