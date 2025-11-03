@@ -150,6 +150,11 @@ export default function PostCard({
   const handleDelete = (e) => {
     e.stopPropagation();
     setShowMenu(false);
+    // Debug: Check if post.title is corrupted
+    if (post.title && (post.title.includes('TIMEOUT') || post.title.includes('installHook'))) {
+      console.error('⚠️ Post title appears corrupted:', post.title);
+      console.error('Full post object:', post);
+    }
     setShowDeleteModal(true);
   };
 
@@ -453,7 +458,7 @@ export default function PostCard({
         onClose={() => setShowDeleteModal(false)}
         onConfirm={confirmDelete}
         title="Delete Post"
-        message={`Are you sure you want to delete "${post.title}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete "${post?.title && typeof post.title === 'string' && !post.title.includes('TIMEOUT') && !post.title.includes('installHook') ? post.title : 'this post'}? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="danger"

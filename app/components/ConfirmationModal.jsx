@@ -73,7 +73,7 @@ export default function ConfirmationModal({
         
         {/* Message */}
         <div className="confirmation-modal-message">
-          {message}
+          {typeof message === 'string' ? message : String(message)}
         </div>
         
         {/* Buttons */}
