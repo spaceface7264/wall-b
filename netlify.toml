@@ -1,10 +1,10 @@
 [build]
-  command = "npm install && npm run build"
+  command = "npm ci --include=dev && npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
-  NPM_CONFIG_PRODUCTION = "false"
+  NPM_FLAGS = "--include=dev"
 
 # Environment Variables (set these in Netlify dashboard)
 # Required:
