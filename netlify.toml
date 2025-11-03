@@ -1,9 +1,10 @@
 [build]
-  command = "NPM_CONFIG_PRODUCTION=false npm install && npm run build"
+  command = "npm install --production=false && npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
+  NPM_CONFIG_PRODUCTION = "false"
 
 # Environment Variables (set these in Netlify dashboard)
 # Required:
