@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 export default function ConfirmationModal({
@@ -53,12 +54,12 @@ export default function ConfirmationModal({
 
   const styles = getVariantStyles();
 
-  return (
+  const modalContent = (
     <div
       className="confirmation-modal-overlay"
       onClick={handleBackdropClick}
     >
-      <div className="confirmation-modal">
+      <div className="confirmation-modal" onClick={(e) => e.stopPropagation()}>
         {/* Icon */}
         {Icon && (
           <div className={`confirmation-modal-icon ${styles.iconBg} ${styles.iconColor}`}>
@@ -94,5 +95,14 @@ export default function ConfirmationModal({
       </div>
     </div>
   );
+
+  // Render modal to document.body using portal to ensure it's at the top level
+  // This prevents parent container constraints from affecting positioning
+  if (typeof document !== 'undefined' && document.body) {
+    return createPortal(modalContent, document.body);
+  }
+  
+  // Fallback if document.body is not available (SSR)
+  return modalContent;
 }
 
