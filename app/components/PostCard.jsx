@@ -89,24 +89,26 @@ export default function PostCard({
     return date.toLocaleDateString();
   };
 
-  const getTagClass = (tag) => {
-    const classes = {
-      beta: 'post-tag post-tag-beta',
-      event: 'post-tag post-tag-event',
-      question: 'post-tag post-tag-question',
-      gear: 'post-tag post-tag-gear',
-      training: 'post-tag post-tag-training',
-      social: 'post-tag post-tag-social',
-      news: 'post-tag post-tag-news'
+  const getTagColor = (tag) => {
+    const colors = {
+      general: '#6b7280',
+      beta: '#ef4444',
+      event: '#3b82f6',
+      question: '#10b981',
+      gear: '#f59e0b',
+      training: '#8b5cf6',
+      social: '#ec4899',
+      news: '#6b7280'
     };
-    return classes[tag] || 'post-tag post-tag-news';
+    return colors[tag] || '#6b7280';
   };
 
   const getTagLabel = (tag) => {
     const labels = {
+      general: 'General',
       beta: 'Beta',
-      event: 'Event',
-      question: 'Question',
+      event: 'Events',
+      question: 'Questions',
       gear: 'Gear',
       training: 'Training',
       social: 'Social',
@@ -192,6 +194,21 @@ export default function PostCard({
                 <span className="post-meta-separator">•</span>
                 <Clock className="post-meta-icon" />
               <span>{formatTime(post.created_at)}</span>
+              {post.tag && (
+                <>
+                  <span className="post-meta-separator">•</span>
+                  <span
+                    className="px-2 py-0.5 rounded-full text-xs font-medium"
+                    style={{
+                      backgroundColor: `${getTagColor(post.tag)}20`,
+                      border: `1px solid ${getTagColor(post.tag)}40`,
+                      color: getTagColor(post.tag)
+                    }}
+                  >
+                    {getTagLabel(post.tag)}
+                  </span>
+                </>
+              )}
               </div>
             </div>
           </div>
@@ -216,9 +233,19 @@ export default function PostCard({
 
   return (
     <div 
-      className="animate-fade-in w-full border-b border-gray-700/50 last:border-b-0 hover:bg-gray-800/30 transition-all duration-200"
+      className="animate-fade-in w-full border-b last:border-b-0 transition-all duration-200"
       onClick={handleOpen}
-      style={{ padding: '16px 0', cursor: 'pointer' }}
+      style={{ 
+        padding: '16px 0', 
+        cursor: 'pointer',
+        borderColor: 'var(--divider-color)'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'transparent';
+      }}
     >
       {/* Header */}
       <div className="post-header" style={{ padding: '0 16px', marginBottom: '12px' }}>
@@ -239,16 +266,28 @@ export default function PostCard({
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <button
                 onClick={handleProfileClick}
               className="post-author-name"
               >
               {authorName}
               </button>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 {formatTime(post.created_at)}
               </span>
+              {post.tag && (
+                <span
+                  className="px-3 py-1 rounded-full text-xs font-medium"
+                  style={{
+                    backgroundColor: `${getTagColor(post.tag)}20`,
+                    border: `1px solid ${getTagColor(post.tag)}40`,
+                    color: getTagColor(post.tag)
+                  }}
+                >
+                  {getTagLabel(post.tag)}
+                </span>
+              )}
             </div>
           </div>
         </div>

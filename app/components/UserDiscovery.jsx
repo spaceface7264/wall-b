@@ -100,7 +100,7 @@ export default function UserDiscovery({ isOpen, onClose, onStartConversation, cu
         style={{ animation: 'slideUpModal 0.3s ease-out' }}
       >
         <div className="flex justify-between items-center p-4 border-b border-gray-700">
-          <h2 className="text-xl font-bold text-white">Start New Chat</h2>
+          <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Start New Chat</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="w-6 h-6" />
           </button>

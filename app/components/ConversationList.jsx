@@ -234,7 +234,7 @@ export default function ConversationList({ onSelectConversation, currentUserId }
       <div className="fixed top-14 left-0 right-0 md:static md:flex-shrink-0 p-3 border-b border-slate-700 bg-slate-800 z-20">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-lg font-semibold text-white">Messages</h2>
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Messages</h2>
             <p className="text-sm text-slate-400">Connect with your community</p>
           </div>
           <div className="flex gap-1">

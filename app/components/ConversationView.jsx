@@ -600,7 +600,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
                 {getConversationName()}
               </button>
             ) : (
-              <h2 className="text-base font-semibold text-white truncate">
+              <h2 className="text-base font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
                 {getConversationName()}
               </h2>
             )}

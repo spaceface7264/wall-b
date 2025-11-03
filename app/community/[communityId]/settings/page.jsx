@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../../../lib/supabase';
-import { ArrowLeft, Save, Users, UserPlus, X, Settings as SettingsIcon, Trash2, Shield } from 'lucide-react';
+import { ArrowLeft, Save, Users, UserPlus, X, Settings as SettingsIcon, Trash2, Shield, MapPin, ChevronDown, Building } from 'lucide-react';
 import SidebarLayout from '../../../components/SidebarLayout';
 import { useToast } from '../../../providers/ToastProvider';
 import ConfirmationModal from '../../../components/ConfirmationModal';
+import GymSelectorModal from '../../../components/GymSelectorModal';
 
 export default function CommunitySettingsPage() {
   const { communityId } = useParams();
@@ -25,6 +26,9 @@ export default function CommunitySettingsPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [rules, setRules] = useState('');
+  const [gymId, setGymId] = useState(null);
+  const [selectedGym, setSelectedGym] = useState(null);
+  const [showGymSelector, setShowGymSelector] = useState(false);
   
   // Moderator management
   const [showAddModeratorModal, setShowAddModeratorModal] = useState(false);
@@ -92,10 +96,32 @@ export default function CommunitySettingsPage() {
       setName(communityData.name || '');
       setDescription(communityData.description || '');
       setRules(communityData.rules || '');
+      setGymId(communityData.gym_id || null);
+      
+      // Set selected gym if available
+      let currentGym = null;
+      if (communityData.gyms) {
+        currentGym = communityData.gyms;
+        setSelectedGym(communityData.gyms);
+      } else if (communityData.gym_id) {
+        // Fetch gym details if not included in the query
+        const { data: gymData } = await supabase
+          .from('gyms')
+          .select('id, name, city, country')
+          .eq('id', communityData.gym_id)
+          .single();
+        if (gymData) {
+          currentGym = gymData;
+          setSelectedGym(gymData);
+        }
+      }
+      
       setOriginalData({
         name: communityData.name || '',
         description: communityData.description || '',
-        rules: communityData.rules || ''
+        rules: communityData.rules || '',
+        gym_id: communityData.gym_id || null,
+        gym: currentGym ? { name: currentGym.name, city: currentGym.city, country: currentGym.country } : null
       });
       
       // Check user's role in community
@@ -228,6 +254,28 @@ export default function CommunitySettingsPage() {
     }
   };
 
+  const handleGymSelect = async (gymIdSelected) => {
+    setGymId(gymIdSelected);
+    
+    // Load gym details for display
+    const { data: gymData } = await supabase
+      .from('gyms')
+      .select('id, name, city, country')
+      .eq('id', gymIdSelected)
+      .single();
+    
+    if (gymData) {
+      setSelectedGym(gymData);
+    }
+    
+    setShowGymSelector(false);
+  };
+
+  const handleClearGym = () => {
+    setGymId(null);
+    setSelectedGym(null);
+  };
+
   const calculateChanges = () => {
     if (!originalData) return [];
     
@@ -251,6 +299,21 @@ export default function CommunitySettingsPage() {
         field: 'Rules',
         old: originalData.rules || '(empty)',
         new: rules || '(empty)'
+      });
+    }
+    if (gymId !== originalData.gym_id) {
+      const oldGymName = originalData.gym
+        ? `${originalData.gym.name} - ${originalData.gym.city}, ${originalData.gym.country}`
+        : '(None)';
+      
+      const newGymName = selectedGym 
+        ? `${selectedGym.name} - ${selectedGym.city}, ${selectedGym.country}`
+        : '(None)';
+      
+      changes.push({
+        field: 'Gym',
+        old: oldGymName,
+        new: newGymName
       });
     }
     
@@ -278,16 +341,44 @@ export default function CommunitySettingsPage() {
           name,
           description,
           rules,
+          gym_id: gymId,
           updated_at: new Date().toISOString()
         })
         .eq('id', communityId);
       
       if (error) throw error;
       
-      setOriginalData({ name, description, rules });
+      setOriginalData({ 
+        name, 
+        description, 
+        rules, 
+        gym_id: gymId,
+        gym: selectedGym ? { name: selectedGym.name, city: selectedGym.city, country: selectedGym.country } : null
+      });
       setShowChangesConfirm(false);
       setPendingChanges(null);
       showToast('success', 'Success', 'Community settings updated successfully');
+      
+      // Reload community to get updated gym data
+      const { data: updatedCommunity } = await supabase
+        .from('communities')
+        .select(`
+          *,
+          gyms (
+            name,
+            city,
+            country
+          )
+        `)
+        .eq('id', communityId)
+        .single();
+      
+      if (updatedCommunity) {
+        setCommunity(updatedCommunity);
+        if (updatedCommunity.gyms) {
+          setSelectedGym(updatedCommunity.gyms);
+        }
+      }
     } catch (error) {
       console.error('Error updating community:', error);
       showToast('error', 'Error', 'Failed to update community settings');
@@ -370,7 +461,7 @@ export default function CommunitySettingsPage() {
               <ArrowLeft className="w-5 h-5 text-gray-300" />
             </button>
             <div className="flex-1">
-              <h1 className="text-xl font-semibold text-white">Community Settings</h1>
+              <h1 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>Community Settings</h1>
               <p className="text-sm text-gray-400 mt-1">{community.name}</p>
             </div>
           </div>
@@ -378,46 +469,136 @@ export default function CommunitySettingsPage() {
           {/* Basic Information */}
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
                 <SettingsIcon className="w-5 h-5" />
                 Basic Information
               </h2>
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Name</label>
+                  <label className="block text-sm font-medium mb-2 flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+                    <Building className="w-4 h-4" />
+                    Community Name
+                  </label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     disabled={!canEdit}
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-[#087E8B] disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ borderRadius: 4 }}
+                    className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded text-sm focus:outline-none focus:border-[#087E8B] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    style={{ 
+                      borderRadius: 2,
+                      color: 'var(--text-primary)',
+                      backgroundColor: 'var(--bg-surface)',
+                      borderColor: 'var(--border-color)'
+                    }}
+                    placeholder="Enter community name..."
                   />
                 </div>
                 
+                {/* Gym Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                  <label className="block text-sm font-medium mb-2 flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+                    <MapPin className="w-4 h-4" />
+                    Associated Gym
+                  </label>
+                  {canEdit ? (
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowGymSelector(true)}
+                        disabled={!canEdit}
+                        className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded text-sm focus:outline-none focus:border-[#087E8B] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-between text-left"
+                        style={{ 
+                          borderRadius: 2,
+                          color: selectedGym ? 'var(--text-primary)' : 'var(--text-muted)',
+                          backgroundColor: 'var(--bg-surface)',
+                          borderColor: 'var(--border-color)'
+                        }}
+                      >
+                        <span className="flex items-center gap-2 flex-1 min-w-0">
+                          {selectedGym ? (
+                            <>
+                              <Building className="w-4 h-4 flex-shrink-0 text-[#087E8B]" />
+                              <span className="truncate">{selectedGym.name}</span>
+                              <span className="text-xs text-gray-400 truncate ml-2">
+                                - {selectedGym.city}, {selectedGym.country}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <MapPin className="w-4 h-4 flex-shrink-0 text-gray-400" />
+                              <span>No gym selected</span>
+                            </>
+                          )}
+                        </span>
+                        <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" />
+                      </button>
+                      {selectedGym && (
+                        <button
+                          type="button"
+                          onClick={handleClearGym}
+                          className="text-xs text-gray-400 hover:text-gray-300 transition-colors"
+                        >
+                          Clear selection
+                        </button>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        Select a gym to associate this community with a specific climbing gym
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="px-4 py-2 bg-gray-800/30 border border-gray-700/30 rounded" style={{ borderRadius: 2 }}>
+                      {selectedGym ? (
+                        <div className="flex items-center gap-2">
+                          <Building className="w-4 h-4 text-[#087E8B]" />
+                          <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                            {selectedGym.name} - {selectedGym.city}, {selectedGym.country}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">No gym associated</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    Description
+                  </label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     disabled={!canEdit}
                     rows={4}
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-[#087E8B] resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ borderRadius: 4 }}
+                    className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded text-sm focus:outline-none focus:border-[#087E8B] resize-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    style={{ 
+                      borderRadius: 2,
+                      color: 'var(--text-primary)',
+                      backgroundColor: 'var(--bg-surface)',
+                      borderColor: 'var(--border-color)'
+                    }}
                     placeholder="Describe your community..."
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Rules</label>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    Community Rules
+                  </label>
                   <textarea
                     value={rules}
                     onChange={(e) => setRules(e.target.value)}
                     disabled={!canEdit}
                     rows={6}
-                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-[#087E8B] resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ borderRadius: 4 }}
+                    className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded text-sm focus:outline-none focus:border-[#087E8B] resize-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    style={{ 
+                      borderRadius: 2,
+                      color: 'var(--text-primary)',
+                      backgroundColor: 'var(--bg-surface)',
+                      borderColor: 'var(--border-color)'
+                    }}
                     placeholder="Community rules and guidelines..."
                   />
                 </div>
@@ -427,8 +608,8 @@ export default function CommunitySettingsPage() {
                 <button
                   onClick={handleSave}
                   disabled={saving || calculateChanges().length === 0}
-                  className="mt-4 w-full px-4 py-2 bg-[#087E8B] text-white rounded hover:bg-[#066a75] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  style={{ borderRadius: 4 }}
+                  className="mt-4 w-full px-4 py-2 bg-[#087E8B] text-white rounded hover:bg-[#066a75] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+                  style={{ borderRadius: 2 }}
                 >
                   {saving ? (
                     <>
@@ -449,7 +630,7 @@ export default function CommunitySettingsPage() {
             {(userCommunityRole === 'admin' || isAdmin) && (
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
                     <Shield className="w-5 h-5" />
                     Moderators
                   </h2>
@@ -573,6 +754,14 @@ export default function CommunitySettingsPage() {
         </div>
       )}
 
+      {/* Gym Selector Modal */}
+      <GymSelectorModal
+        isOpen={showGymSelector}
+        onClose={() => setShowGymSelector(false)}
+        selectedGymId={gymId}
+        onSelectGym={handleGymSelect}
+      />
+
       {/* Changes Confirmation Modal */}
       <ConfirmationModal
         isOpen={showChangesConfirm}
@@ -584,13 +773,15 @@ export default function CommunitySettingsPage() {
         title="Confirm Changes"
         message={
           <div>
-            <p className="mb-3 text-sm text-gray-300">Are you sure you want to save these changes?</p>
+            <p className="mb-3 text-sm" style={{ color: 'var(--text-secondary)' }}>Are you sure you want to save these changes?</p>
             <div className="space-y-2">
               {pendingChanges?.map((change, idx) => (
-                <div key={idx} className="p-2 bg-gray-800/50 rounded border border-gray-700" style={{ borderRadius: 4 }}>
-                  <p className="text-xs font-medium text-gray-400 mb-1">{change.field}</p>
-                  <p className="text-xs text-gray-300 line-through mb-1">{change.old}</p>
-                  <p className="text-xs text-[#087E8B]">{change.new}</p>
+                <div key={idx} className="p-3 bg-gray-800/50 rounded border border-gray-700/50" style={{ borderRadius: 2 }}>
+                  <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>{change.field}</p>
+                  <div className="space-y-1">
+                    <p className="text-xs line-through" style={{ color: 'var(--text-muted)' }}>{change.old}</p>
+                    <p className="text-xs font-medium" style={{ color: 'var(--accent-primary)' }}>{change.new}</p>
+                  </div>
                 </div>
               ))}
             </div>

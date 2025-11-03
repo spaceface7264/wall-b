@@ -32,16 +32,12 @@ export function useGeolocation(options = {}) {
   useEffect(() => {
     setIsSupported(isGeolocationAvailable());
     if (isGeolocationAvailable()) {
-      checkPermissionStatus();
+      checkPermissionStatus().catch(() => {
+        // Silently fail - permission check is optional
+      });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Auto-request location if enabled
-  useEffect(() => {
-    if (autoRequest && isSupported && !location && !loading && permissionStatus !== 'denied') {
-      requestLocation();
-    }
-  }, [autoRequest, isSupported, location, loading, permissionStatus]);
 
   const checkPermissionStatus = async () => {
     try {
@@ -127,6 +123,16 @@ export function useGeolocation(options = {}) {
     },
     [location, defaultRadius, getDistanceTo]
   );
+
+  // Auto-request location if enabled (with guard to prevent infinite loops)
+  // This must come after requestLocation is defined
+  useEffect(() => {
+    if (autoRequest && isSupported && !location && !loading && permissionStatus !== 'denied' && !error) {
+      requestLocation().catch(() => {
+        // Silently handle errors - error state is already set by requestLocation
+      });
+    }
+  }, [autoRequest, isSupported, location, loading, permissionStatus, error, requestLocation]);
 
   return {
     location,

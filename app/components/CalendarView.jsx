@@ -257,7 +257,7 @@ export default function CalendarView({ communityId, userId, searchTerm = '', isM
               <ChevronLeft className="w-5 h-5" />
             </button>
             
-            <h2 className="text-xl font-semibold text-white">
+            <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
               {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h2>
             

@@ -64,11 +64,12 @@ const CommunityCard = React.memo(function CommunityCard({
   };
   
   const handleCardClick = (e) => {
-    // Don't navigate if clicking on buttons or menu
+    // Don't navigate if clicking on buttons or menu - stop propagation so wrapper doesn't handle it
     if (e.target.closest('button') || e.target.closest('[role="menu"]')) {
+      e.stopPropagation();
       return;
     }
-    onOpen(community.id);
+    // For normal clicks, let the event bubble to the wrapper which handles navigation
   };
 
   const handleJoin = (e) => {
@@ -94,9 +95,8 @@ const CommunityCard = React.memo(function CommunityCard({
 
   return (
     <div 
-      className="touch-feedback transition-all duration-200 relative w-full border-b border-gray-700/50 last:border-b-0 hover:bg-gray-800/30"
+      className="touch-feedback transition-all duration-200 relative w-full cursor-pointer"
       onClick={handleCardClick}
-      style={{ padding: '16px' }}
     >
       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
         <div className="flex-1 min-w-0">
@@ -105,8 +105,8 @@ const CommunityCard = React.memo(function CommunityCard({
               <h3 className="mobile-subheading truncate">{community.name}</h3>
               {gym && gym.name && (
                 <>
-                  <span className="text-gray-500 flex-shrink-0">│</span>
-                  <div className="flex items-center gap-1.5 flex-shrink-0" style={{ fontSize: '12px', color: '#9ca3af' }}>
+                  <span className="flex-shrink-0" style={{ color: 'var(--text-subtle)' }}>│</span>
+                  <div className="flex items-center gap-1.5 flex-shrink-0" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                     {gym.city && (
                       <div className="flex items-center gap-1 px-2 py-0.5 rounded-md" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}>
                         <MapPin className="w-3 h-3 flex-shrink-0" style={{ width: '12px', height: '12px', color: 'var(--text-muted)' }} />
@@ -128,10 +128,17 @@ const CommunityCard = React.memo(function CommunityCard({
                   e.stopPropagation();
                   setShowMenu(!showMenu);
                 }}
-                className="p-1.5 hover:bg-gray-700 rounded-md transition-colors"
+                className="p-1.5 rounded-md transition-colors"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
                 aria-label="More options"
               >
-                <MoreVertical className="w-4 h-4 text-gray-400" />
+                <MoreVertical className="w-4 h-4" />
               </button>
 
               {/* Dropdown Menu */}
@@ -183,18 +190,18 @@ const CommunityCard = React.memo(function CommunityCard({
               </div>
             </div>
           </div>
-          <p className="mobile-text-xs text-gray-300 line-clamp-2 mb-3 leading-relaxed">
+          <p className="mobile-text-xs line-clamp-2 mb-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
             {community.description}
           </p>
           
           <div className="flex items-center gap-4 mb-2">
             <div className="flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-300 font-medium">{community.member_count || 0}</span>
+              <Users className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
+              <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{community.member_count || 0}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-300 font-medium">{postCount || 0}</span>
+              <MessageSquare className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
+              <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{postCount || 0}</span>
               </div>
           </div>
 
@@ -204,7 +211,7 @@ const CommunityCard = React.memo(function CommunityCard({
               {tags.slice(0, 3).map((tag, index) => (
                 <span 
                   key={index} 
-                  className="mobile-text-xs px-2 py-1 rounded text-gray-300"
+                  className="mobile-text-xs px-2 py-1 rounded"
                   style={{ 
                     fontSize: '10px',
                     backgroundColor: `${getTagColor(tag)}20`,
@@ -217,8 +224,12 @@ const CommunityCard = React.memo(function CommunityCard({
               ))}
               {tags.length > 3 && (
                 <span 
-                  className="mobile-text-xs px-2 py-1 rounded text-gray-400"
-                  style={{ fontSize: '10px', backgroundColor: '#1e1e1e' }}
+                  className="mobile-text-xs px-2 py-1 rounded"
+                  style={{ 
+                    fontSize: '10px', 
+                    backgroundColor: 'var(--hover-bg)',
+                    color: 'var(--text-muted)'
+                  }}
                 >
                   +{tags.length - 3} more
                 </span>

@@ -291,33 +291,6 @@ export default function PublicProfile() {
             </div>
           )}
 
-          {/* Climbing Info */}
-          {(profile.climbing_grade || profile.years_climbing || profile.favorite_style) && (
-            <div className="mobile-card animate-slide-up">
-              <h2 className="profile-section-header">Climbing Info</h2>
-              <div className="mobile-grid-3">
-                {profile.climbing_grade && (
-                  <div className="profile-field">
-                    <div className="profile-info-label">Current Grade</div>
-                    <div className="profile-info-value">{profile.climbing_grade}</div>
-                  </div>
-                )}
-                {profile.years_climbing && (
-                  <div className="profile-field">
-                    <div className="profile-info-label">Years Climbing</div>
-                    <div className="profile-info-value">{profile.years_climbing} years</div>
-                  </div>
-                )}
-                {profile.favorite_style && (
-                  <div className="profile-field">
-                    <div className="profile-info-label">Favorite Style</div>
-                    <div className="profile-info-value capitalize">{profile.favorite_style}</div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Communities */}
           {communities.length > 0 && (
             <div className="mobile-card animate-slide-up">

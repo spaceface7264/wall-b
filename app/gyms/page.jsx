@@ -370,16 +370,20 @@ export default function Gyms() {
     }
   }, [showMenu]);
 
-  // Handle location errors
+  // Handle location errors (only show important ones, suppress common dev environment errors)
   useEffect(() => {
     if (locationError && geolocationEnabled) {
+      // Only show errors that are actionable - suppress "unavailable" errors
+      // which are common in dev/simulators and don't need user attention
       if (locationError.message.includes('denied')) {
         showToast('error', 'Location Access Denied', 'Please enable location permissions to sort by distance');
       } else if (locationError.message.includes('not supported')) {
         showToast('error', 'Geolocation Not Supported', 'Your browser does not support geolocation');
-      } else {
+      } else if (!locationError.message.includes('unavailable')) {
+        // Only show other errors (not "unavailable" which is common in dev)
         showToast('error', 'Location Error', locationError.message || 'Unable to get your location');
       }
+      // Silently handle "unavailable" errors - they're common in dev/simulators
     }
   }, [locationError, geolocationEnabled, showToast]);
 

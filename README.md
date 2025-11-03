@@ -27,11 +27,14 @@ A modern community platform for climbers built with Vite, React, and Supabase.
    ```
 
 2. **Set up environment variables**:
-   Create `.env` or `.env.local` with your Supabase credentials:
+   Create `.env` or `.env.local` with your Supabase credentials and Google Places API key:
    ```
    VITE_SUPABASE_URL=your_supabase_url
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   VITE_GOOGLE_PLACES_API_KEY=your_google_places_api_key
    ```
+   
+   See `.env.example` for all available environment variables.
 
 3. **Set up database**:
    Run the SQL scripts in `sql-scripts/` folder in your Supabase SQL Editor:
@@ -105,6 +108,53 @@ The app uses a comprehensive PostgreSQL schema with:
 - Direct messaging
 - Notifications system
 - File storage for media
+
+## Gym Population System
+
+The app includes a scraping system to populate gyms using Google Places API.
+
+### Setup
+
+1. **Get Google Places API Key**:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/google/maps-apis)
+   - Create a new project or select existing one
+   - Enable the following APIs:
+     - Places API
+     - Places API (New)
+     - Geocoding API (optional, for address geocoding)
+   - Create credentials (API Key)
+   - Add the key to your `.env` file as `VITE_GOOGLE_PLACES_API_KEY`
+
+2. **Run the Scraper**:
+   ```bash
+   node lib/scrape-danish-gyms.js
+   ```
+   
+   This will:
+   - Search for climbing gyms in Denmark using Google Places API
+   - Create gym requests with status 'pending'
+   - Skip duplicates (checks existing gyms and requests)
+
+3. **Review and Approve**:
+   - Go to Admin Panel → Requests tab
+   - Review scraped gym requests
+   - Use bulk approve to approve multiple requests at once
+   - Or approve/reject individually
+
+### Scraping Configuration
+
+Edit `lib/config-scraper.js` to:
+- Change cities to search
+- Modify search queries
+- Adjust rate limiting settings
+
+### Rate Limits
+
+Google Places API limits:
+- 10 requests per second
+- 40,000 requests per day (on free tier)
+
+The scraper automatically implements rate limiting with delays between requests.
 
 ## Contributing
 

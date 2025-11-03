@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe, Sun, Moon } from 'lucide-react';
+import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe, Sun, Moon, MessageSquare } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import BottomNav from './BottomNav';
+import FeedbackModal from './FeedbackModal';
 import { enrichCommunitiesWithActualCounts, checkForNewPosts, updateLastViewedAt } from '../../lib/community-utils';
 import Skeleton from './Skeleton';
 import ListSkeleton from './ListSkeleton';
@@ -12,6 +13,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [communities, setCommunities] = useState([]);
   const [communitiesLoading, setCommunitiesLoading] = useState(false);
@@ -653,6 +655,17 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           )}
           <button
             onClick={() => {
+              setFeedbackModalOpen(true);
+              closeDrawer();
+            }}
+            onMouseDown={createRipple}
+            className="mobile-drawer-item ripple-effect"
+          >
+            <MessageSquare className="mobile-drawer-icon" />
+            <span className="mobile-drawer-text">Send Feedback</span>
+          </button>
+          <button
+            onClick={() => {
               toggleTheme();
               closeDrawer();
             }}
@@ -687,6 +700,12 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
 
       {/* Bottom Navigation */}
       <BottomNav />
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
+      />
     </div>
   );
 }

@@ -35,7 +35,7 @@ class ErrorBoundary extends React.Component {
         <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4">
           <div className="text-center max-w-md">
             <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-white mb-2">
+            <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
               Something went wrong
             </h2>
             <p className="text-gray-400 mb-6">

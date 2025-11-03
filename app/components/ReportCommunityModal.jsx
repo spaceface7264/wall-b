@@ -102,7 +102,7 @@ export default function ReportCommunityModal({ isOpen, onClose, communityId, com
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <div className="flex items-center gap-2">
             <Flag className="w-5 h-5 text-red-400" />
-            <h2 className="text-xl font-semibold text-white">Report Community</h2>
+            <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>Report Community</h2>
           </div>
           <button 
             onClick={handleClose} 

@@ -15,7 +15,10 @@
     "validate-uuids": "node lib/validate-uuids.js",
     "check-ids": "node lib/validate-uuids.js",
     "test:local": "npm run dev",
-    "test:preview": "npm run build && npm run preview"
+    "test:preview": "npm run build && npm run preview",
+    "check:build": "npm run lint && npm run build",
+    "predeploy": "npm run lint && npm run build",
+    "test:production": "npm run check:build && npm run preview"
   },
   "dependencies": {
     "@supabase/auth-ui-react": "^0.4.7",

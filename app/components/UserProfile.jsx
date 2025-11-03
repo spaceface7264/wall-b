@@ -240,33 +240,6 @@ export default function UserProfile({ userId, showBackButton = true }) {
             </div>
           )}
 
-          {/* Climbing Info */}
-          {(profile.climbing_grade || profile.years_climbing || profile.favorite_style) && (
-            <div className="mobile-card animate-stagger-3">
-              <h2 className="profile-section-header">Climbing Info</h2>
-              <div className="mobile-grid-3">
-                {profile.climbing_grade && (
-                  <div className="profile-info-item">
-                    <div className="profile-info-label">Current Grade</div>
-                    <div className="profile-info-value">{profile.climbing_grade}</div>
-                  </div>
-                )}
-                {profile.years_climbing && (
-                  <div className="profile-info-item">
-                    <div className="profile-info-label">Years Climbing</div>
-                    <div className="profile-info-value">{profile.years_climbing} years</div>
-                  </div>
-                )}
-                {profile.favorite_style && (
-                  <div className="profile-info-item">
-                    <div className="profile-info-label">Favorite Style</div>
-                    <div className="profile-info-value capitalize">{profile.favorite_style}</div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Followed Communities */}
           <div className="mobile-card animate-stagger-4">
             <h2 className="profile-section-header">Communities</h2>
@@ -280,7 +253,7 @@ export default function UserProfile({ userId, showBackButton = true }) {
                   >
                     <div className="minimal-flex-between">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-white truncate">{community.name}</h3>
+                        <h3 className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>{community.name}</h3>
                         {community.gyms && (
                           <p className="mobile-text-xs text-gray-400 truncate">
                             {community.gyms.name} • {community.gyms.city}

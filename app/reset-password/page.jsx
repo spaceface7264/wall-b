@@ -67,7 +67,7 @@ export default function ResetPasswordPage() {
     }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">Reset Password</h1>
+          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Reset Password</h1>
           <p className="mobile-text-sm text-gray-400">
             Set a new password for your account
           </p>

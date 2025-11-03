@@ -16,6 +16,7 @@ import AdminPage from './admin/page.jsx'
 import ResetPasswordPage from './reset-password/page.jsx'
 import TermsPage from './terms/page.jsx'
 import OnboardingPage from './onboarding/page.jsx'
+import HomePage from './home/page.jsx'
 import SidebarLayout from './components/SidebarLayout.jsx'
 import { ToastProvider } from './providers/ToastProvider.jsx'
 
@@ -29,6 +30,7 @@ function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/home" element={<SidebarLayout currentPage="home" pageTitle="Home"><HomePage /></SidebarLayout>} />
           {/* Redirect deprecated /community to /communities for consistency */}
           <Route path="/community" element={<Navigate to="/communities" replace />} />
           <Route path="/communities" element={<SidebarLayout currentPage="communities" pageTitle="Communities"><CommunitiesPage /></SidebarLayout>} />

@@ -258,7 +258,7 @@ export default function GroupMembersModal({ isOpen, onClose, conversation, curre
               <Users className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Group Members</h2>
+              <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Group Members</h2>
               <p className="text-sm text-slate-400">{conversation?.name || 'Group Chat'}</p>
             </div>
           </div>

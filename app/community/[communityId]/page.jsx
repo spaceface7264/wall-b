@@ -668,18 +668,18 @@ export default function CommunityPage() {
     switch (activeTab) {
       case 'posts':
         return (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Posts Feed */}
             <div className="post-feed" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
               {/* Create Post Button */}
               {(isMember || isAdmin) && (
-                <div style={{ marginLeft: 'var(--container-padding-mobile)', marginRight: 'var(--container-padding-mobile)', marginBottom: '16px' }}>
+                <div style={{ marginLeft: 'var(--container-padding-mobile)', marginRight: 'var(--container-padding-mobile)', marginBottom: '12px' }}>
                   <button
                     onClick={() => setShowNewPostModal(true)}
                     className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-full text-gray-300 hover:bg-gray-800 hover:border-gray-600 hover:text-white transition-all duration-200"
                   >
                     <Plus className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm font-medium">Create post</span>
+                    <span className="text-xs font-medium">Create post</span>
                   </button>
                 </div>
               )}
@@ -907,7 +907,7 @@ export default function CommunityPage() {
           <div className="mb-1 animate-fade-in pt-4">
             <div className="flex items-start justify-between gap-4 mb-3">
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold text-white mb-2">{community?.name}</h1>
+                <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>{community?.name}</h1>
                 <div className="flex flex-col gap-1 text-sm text-gray-400 mb-3">
                   {community?.gyms && (
                     <div className="flex items-center gap-2">
@@ -1196,7 +1196,7 @@ export default function CommunityPage() {
                 <div className="w-16 h-16 bg-[#087E8B] rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="w-8 h-8 text-white" />
                 </div>
-                <h2 className="text-1xl font-bold text-white mb-2">
+                <h2 className="text-1xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                   Welcome {(() => {
                     const displayName = userProfile?.nickname || userProfile?.full_name || user?.user_metadata?.full_name;
                     return displayName || 'to the Community';
@@ -1264,7 +1264,7 @@ export default function CommunityPage() {
                   <div className="w-10 h-10 bg-[#087E8B] rounded-lg flex items-center justify-center">
                     <Shield className="w-5 h-5 text-white" />
                   </div>
-                  <h2 className="text-xl font-bold text-white">
+                  <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
                     Community Rules
                   </h2>
                 </div>

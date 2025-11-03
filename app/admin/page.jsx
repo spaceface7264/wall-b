@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Shield, Settings, MapPin, Flag, CheckCircle, XCircle, Clock, Trash2, MessageSquare, FileText, Search, AlertCircle, MoreVertical, User, MessageCircle, Ban, ShieldCheck, ShieldOff, AlertTriangle, Edit, BarChart3, X, Download, Filter, Calendar, Activity, Star, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Users, Shield, Settings, MapPin, Flag, CheckCircle, XCircle, Clock, Trash2, MessageSquare, FileText, Search, AlertCircle, MoreVertical, User, MessageCircle, Ban, ShieldCheck, ShieldOff, AlertTriangle, Edit, BarChart3, X, Download, Filter, Calendar, Activity, Star, Eye, EyeOff, ExternalLink, Sparkles, Lightbulb, Bug } from 'lucide-react';
 import SidebarLayout from '../components/SidebarLayout';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { useToast } from '../providers/ToastProvider';
@@ -69,6 +69,15 @@ export default function AdminPage() {
   const [openGymMenuId, setOpenGymMenuId] = useState(null);
   const [gymMenuPosition, setGymMenuPosition] = useState({ top: 0, right: 0, flipUp: false });
   
+  // Feedback Management State
+  const [feedback, setFeedback] = useState([]);
+  const [feedbackSearchQuery, setFeedbackSearchQuery] = useState('');
+  const [feedbackFilters, setFeedbackFilters] = useState({ type: '', status: '', priority: '' });
+  const [showFeedbackFilters, setShowFeedbackFilters] = useState(false);
+  const [selectedFeedback, setSelectedFeedback] = useState(new Set());
+  const [viewingFeedback, setViewingFeedback] = useState(null);
+  const [editingFeedback, setEditingFeedback] = useState(null);
+  
   const navigate = useNavigate();
   const { showToast } = useToast();
 
@@ -116,7 +125,8 @@ export default function AdminPage() {
         commentsRes,
         postReportsRes,
         commentReportsRes,
-        gymsRes
+        gymsRes,
+        feedbackRes
       ] = await Promise.all([
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
         supabase.from('communities').select('*, gyms(name, city, country)').order('created_at', { ascending: false }),
@@ -126,7 +136,8 @@ export default function AdminPage() {
         supabase.from('comments').select('*, posts(id, title)').order('created_at', { ascending: false }).limit(100),
         supabase.from('post_reports').select('*, posts(id, title, content), profiles!reported_by(id, full_name)').order('created_at', { ascending: false }),
         supabase.from('comment_reports').select('*, comments(id, content), posts(id, title), profiles!reported_by(id, full_name)').order('created_at', { ascending: false }),
-        supabase.from('gyms').select('*').order('created_at', { ascending: false })
+        supabase.from('gyms').select('*').order('created_at', { ascending: false }),
+        supabase.from('feedback').select('*').order('created_at', { ascending: false })
       ]);
 
       // Check for errors in each response
@@ -142,6 +153,7 @@ export default function AdminPage() {
       if (postReportsRes.error) console.error('Error loading post reports:', postReportsRes.error);
       if (commentReportsRes.error) console.error('Error loading comment reports:', commentReportsRes.error);
       if (gymsRes.error) console.error('Error loading gyms:', gymsRes.error);
+      if (feedbackRes.error) console.error('Error loading feedback:', feedbackRes.error);
 
       const communitiesData = communitiesRes.data || [];
       const usersData = usersRes.data || [];
@@ -192,6 +204,7 @@ export default function AdminPage() {
       setPostReports(postReportsRes.data || []);
       setCommentReports(commentReportsRes.data || []);
       setGyms(gymsRes.data || []);
+      setFeedback(feedbackRes.data || []);
 
       // Load moderators and metrics for each community
       await loadCommunityData(communitiesData, postsRes.data || [], commentsRes.data || []);
@@ -1032,6 +1045,99 @@ export default function AdminPage() {
 
   const filteredCommunities = getFilteredCommunities();
 
+  // Feedback Management Functions
+  const getFilteredFeedback = () => {
+    let filtered = [...feedback];
+
+    // Search filter
+    if (feedbackSearchQuery) {
+      const query = feedbackSearchQuery.toLowerCase();
+      filtered = filtered.filter(item =>
+        item.title?.toLowerCase().includes(query) ||
+        item.description?.toLowerCase().includes(query) ||
+        item.user_name?.toLowerCase().includes(query) ||
+        item.user_email?.toLowerCase().includes(query)
+      );
+    }
+
+    // Type filter
+    if (feedbackFilters.type) {
+      filtered = filtered.filter(item => item.type === feedbackFilters.type);
+    }
+
+    // Status filter
+    if (feedbackFilters.status) {
+      filtered = filtered.filter(item => item.status === feedbackFilters.status);
+    }
+
+    // Priority filter
+    if (feedbackFilters.priority) {
+      filtered = filtered.filter(item => item.priority === feedbackFilters.priority);
+    }
+
+    return filtered;
+  };
+
+  const filteredFeedback = getFilteredFeedback();
+
+  const handleUpdateFeedbackStatus = async (feedbackId, status, priority = null, adminResponse = null) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const updateData = {
+        status,
+        updated_at: new Date().toISOString()
+      };
+
+      if (priority !== null) {
+        updateData.priority = priority;
+      }
+
+      if (adminResponse !== null) {
+        updateData.admin_response = adminResponse;
+        updateData.admin_user_id = user?.id;
+      }
+
+      if (status === 'resolved') {
+        updateData.resolved_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from('feedback')
+        .update(updateData)
+        .eq('id', feedbackId);
+
+      if (error) throw error;
+
+      showToast('success', 'Feedback Updated', `Feedback status updated to ${status}`);
+      loadData();
+      setEditingFeedback(null);
+    } catch (error) {
+      console.error('Error updating feedback:', error);
+      showToast('error', 'Error', 'Failed to update feedback');
+    }
+  };
+
+  const handleSelectFeedback = (feedbackId) => {
+    setSelectedFeedback(prev => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(feedbackId)) {
+        newSelected.delete(feedbackId);
+      } else {
+        newSelected.add(feedbackId);
+      }
+      return newSelected;
+    });
+  };
+
+  const handleSelectAllFeedback = () => {
+    const filtered = getFilteredFeedback();
+    if (selectedFeedback.size === filtered.length && filtered.length > 0) {
+      setSelectedFeedback(new Set());
+    } else {
+      setSelectedFeedback(new Set(filtered.map(f => f.id)));
+    }
+  };
+
   const handleSelectCommunity = (communityId) => {
     setSelectedCommunities(prev => {
       const newSelected = new Set(prev);
@@ -1069,19 +1175,62 @@ export default function AdminPage() {
 
   const executeDeleteCommunityFromList = async (communityId) => {
     try {
-      const { error } = await supabase
+      // First verify admin status
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        showToast('error', 'Error', 'You must be logged in');
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error checking admin status:', profileError);
+        showToast('error', 'Error', 'Failed to verify admin status');
+        return;
+      }
+
+      if (!profile?.is_admin) {
+        showToast('error', 'Permission Denied', 'You must be an admin to delete communities');
+        return;
+      }
+
+      const { data, error } = await supabase
         .from('communities')
         .delete()
-        .eq('id', communityId);
+        .eq('id', communityId)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting community:', error);
+        let errorMessage = 'Failed to delete community';
+        if (error.code === '42501' || error.message?.includes('permission denied') || error.message?.includes('policy')) {
+          errorMessage = 'Permission denied. Please ensure the RLS policy allows admins to delete communities. Run the SQL script: fix-community-suspend-policy.sql';
+        } else if (error.message) {
+          errorMessage += `: ${error.message}`;
+        }
+        showToast('error', 'Error', errorMessage);
+        return;
+      }
+
+      // Check if the community was actually deleted
+      if (!data || data.length === 0) {
+        showToast('warning', 'Not Found', 'Community not found or already deleted');
+        setOpenCommunityMenuId(null);
+        loadData();
+        return;
+      }
 
       showToast('success', 'Deleted', 'Community deleted successfully');
       setOpenCommunityMenuId(null);
       loadData();
     } catch (error) {
       console.error('Error deleting community:', error);
-      showToast('error', 'Error', 'Failed to delete community');
+      showToast('error', 'Error', `Failed to delete community: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -1102,19 +1251,62 @@ export default function AdminPage() {
 
   const executeBulkDeleteCommunities = async (communityIds) => {
     try {
-      const { error } = await supabase
+      // First verify admin status
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        showToast('error', 'Error', 'You must be logged in');
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error checking admin status:', profileError);
+        showToast('error', 'Error', 'Failed to verify admin status');
+        return;
+      }
+
+      if (!profile?.is_admin) {
+        showToast('error', 'Permission Denied', 'You must be an admin to delete communities');
+        return;
+      }
+
+      const { data, error } = await supabase
         .from('communities')
         .delete()
-        .in('id', communityIds);
+        .in('id', communityIds)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error bulk deleting communities:', error);
+        let errorMessage = 'Failed to delete communities';
+        if (error.code === '42501' || error.message?.includes('permission denied') || error.message?.includes('policy')) {
+          errorMessage = 'Permission denied. Please ensure the RLS policy allows admins to delete communities. Run the SQL script: fix-community-suspend-policy.sql';
+        } else if (error.message) {
+          errorMessage += `: ${error.message}`;
+        }
+        showToast('error', 'Error', errorMessage);
+        return;
+      }
 
-      showToast('success', 'Deleted', `Successfully deleted ${communityIds.length} community/communities`);
+      const deletedCount = data ? data.length : 0;
+      if (deletedCount === 0) {
+        showToast('warning', 'Not Found', 'No communities were deleted. They may not exist or you may not have permission.');
+        setSelectedCommunities(new Set());
+        loadData();
+        return;
+      }
+
+      showToast('success', 'Deleted', `Successfully deleted ${deletedCount} community/communities`);
       setSelectedCommunities(new Set());
       loadData();
     } catch (error) {
       console.error('Error bulk deleting communities:', error);
-      showToast('error', 'Error', 'Failed to bulk delete communities');
+      showToast('error', 'Error', `Failed to bulk delete communities: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -1262,19 +1454,101 @@ export default function AdminPage() {
 
   const executeBulkToggleCommunityStatus = async (communityIds, suspend) => {
     try {
-      const { error } = await supabase
+      // First verify admin status
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        showToast('error', 'Error', 'You must be logged in');
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error checking admin status:', profileError);
+        showToast('error', 'Error', 'Failed to verify admin status');
+        return;
+      }
+
+      if (!profile?.is_admin) {
+        showToast('error', 'Permission Denied', 'You must be an admin to suspend/unsuspend communities');
+        return;
+      }
+
+      // Check current status of communities before updating
+      const { data: currentCommunities, error: fetchError } = await supabase
         .from('communities')
-        .update({ is_active: !suspend })
+        .select('id, is_active')
         .in('id', communityIds);
 
-      if (error) throw error;
+      if (fetchError) {
+        console.error('Error fetching community status:', fetchError);
+        showToast('error', 'Error', 'Failed to check community status');
+        return;
+      }
 
-      showToast('success', suspend ? 'Suspended' : 'Unsuspended', `Successfully ${suspend ? 'suspended' : 'unsuspended'} ${communityIds.length} community/communities`);
+      // Filter communities based on what actually needs to change
+      const targetStatus = !suspend; // true if unsuspending, false if suspending
+      const communitiesToUpdate = currentCommunities.filter(
+        community => community.is_active !== targetStatus
+      );
+
+      if (communitiesToUpdate.length === 0) {
+        const message = suspend 
+          ? 'Selected communities are already suspended'
+          : 'Selected communities are already active';
+        showToast('warning', 'No Changes Needed', message);
+        setSelectedCommunities(new Set());
+        return;
+      }
+
+      const idsToUpdate = communitiesToUpdate.map(c => c.id);
+
+      console.log(`Attempting to ${suspend ? 'suspend' : 'unsuspend'} ${idsToUpdate.length} communities:`, idsToUpdate);
+      const { error } = await supabase
+        .from('communities')
+        .update({ 
+          is_active: targetStatus,
+          updated_at: new Date().toISOString()
+        })
+        .in('id', idsToUpdate)
+        .select();
+
+      if (error) {
+        console.error('Supabase error:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
+        console.error('Error hint:', error.hint);
+        
+        let errorMessage = `Failed to ${suspend ? 'suspend' : 'unsuspend'} communities`;
+        if (error.code === '42501' || error.message?.includes('permission denied') || error.message?.includes('policy')) {
+          errorMessage = 'Permission denied. Please ensure the RLS policy allows admins to update communities. Run the SQL script: fix-community-suspend-policy.sql';
+        } else if (error.message) {
+          errorMessage += `: ${error.message}`;
+        }
+        
+        showToast('error', 'Error', errorMessage);
+        return;
+      }
+
+      // At this point, update was successful, so all idsToUpdate were updated
+      const updatedCount = idsToUpdate.length;
+      const skippedCount = communityIds.length - idsToUpdate.length;
+      let successMessage = `Successfully ${suspend ? 'suspended' : 'unsuspended'} ${updatedCount} community/communities`;
+      if (skippedCount > 0) {
+        successMessage += ` (${skippedCount} already ${suspend ? 'suspended' : 'active'}, skipped)`;
+      }
+
+      showToast('success', suspend ? 'Suspended' : 'Unsuspended', successMessage);
       setSelectedCommunities(new Set());
       loadData();
     } catch (error) {
       console.error('Error bulk toggling community status:', error);
-      showToast('error', 'Error', `Failed to ${suspend ? 'suspend' : 'unsuspend'} communities`);
+      showToast('error', 'Error', `Failed to ${suspend ? 'suspend' : 'unsuspend'} communities: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -1394,18 +1668,86 @@ export default function AdminPage() {
 
   const executeDeleteCommunity = async (communityId, reportId) => {
     try {
+      // First verify admin status
       const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from('communities').delete().eq('id', communityId);
-      await supabase.from('community_reports').update({
-        status: 'action_taken',
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: user.id,
-        action_taken: 'community_deleted'
-      }).eq('id', reportId);
+      if (!user) {
+        showToast('error', 'Error', 'You must be logged in');
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error checking admin status:', profileError);
+        showToast('error', 'Error', 'Failed to verify admin status');
+        return;
+      }
+
+      if (!profile?.is_admin) {
+        showToast('error', 'Permission Denied', 'You must be an admin to delete communities');
+        return;
+      }
+
+      const { data, error: deleteError } = await supabase
+        .from('communities')
+        .delete()
+        .eq('id', communityId)
+        .select();
+
+      if (deleteError) {
+        console.error('Error deleting community:', deleteError);
+        let errorMessage = 'Failed to delete community';
+        if (deleteError.code === '42501' || deleteError.message?.includes('permission denied') || deleteError.message?.includes('policy')) {
+          errorMessage = 'Permission denied. Please ensure the RLS policy allows admins to delete communities. Run the SQL script: fix-community-suspend-policy.sql';
+        } else if (deleteError.message) {
+          errorMessage += `: ${deleteError.message}`;
+        }
+        showToast('error', 'Error', errorMessage);
+        return;
+      }
+
+      // Check if the community was actually deleted
+      if (!data || data.length === 0) {
+        showToast('warning', 'Not Found', 'Community not found or already deleted');
+        if (reportId) {
+          // Still try to update the report
+          await supabase.from('community_reports').update({
+            status: 'action_taken',
+            reviewed_at: new Date().toISOString(),
+            reviewed_by: user.id,
+            action_taken: 'community_deleted'
+          }).eq('id', reportId);
+        }
+        loadData();
+        return;
+      }
+
+      if (reportId) {
+        const { error: reportError } = await supabase
+          .from('community_reports')
+          .update({
+            status: 'action_taken',
+            reviewed_at: new Date().toISOString(),
+            reviewed_by: user.id,
+            action_taken: 'community_deleted'
+          })
+          .eq('id', reportId);
+
+        if (reportError) {
+          console.error('Error updating report:', reportError);
+          // Don't fail the whole operation if report update fails
+        }
+      }
+
+      showToast('success', 'Deleted', 'Community deleted successfully');
       loadData();
     } catch (error) {
       console.error('Error deleting community:', error);
-      alert('Failed to delete community');
+      showToast('error', 'Error', `Failed to delete community: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -2130,6 +2472,22 @@ export default function AdminPage() {
             >
               Moderation
             </button>
+            <button
+              onClick={() => setActiveTab('feedback')}
+              className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors ${
+                activeTab === 'feedback'
+                  ? 'bg-[#087E8B] text-white'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
+              }`}
+              style={{ borderRadius: 0 }}
+            >
+              Feedback
+              {feedback.filter(f => f.status === 'open').length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-[10px] rounded-full">
+                  {feedback.filter(f => f.status === 'open').length}
+                </span>
+              )}
+            </button>
           </div>
 
           {/* Overview Tab */}
@@ -2204,6 +2562,17 @@ export default function AdminPage() {
                     <p className="text-xs text-gray-400 mb-1">Content Reports</p>
                     <p className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
                       {postReports.filter(r => r.status === 'pending').length + commentReports.filter(r => r.status === 'pending').length}
+                    </p>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('feedback')}
+                    className="bg-gray-900/50 p-4 border border-gray-700/50 hover:bg-gray-900/70 transition-colors text-left"
+                    style={{ borderRadius: 2 }}
+                  >
+                    <MessageSquare className="w-5 h-5 text-[#087E8B] mb-2" />
+                    <p className="text-xs text-gray-400 mb-1">Open Feedback</p>
+                    <p className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+                      {feedback.filter(f => f.status === 'open').length}
                     </p>
                   </button>
                 </div>
@@ -3876,9 +4245,410 @@ export default function AdminPage() {
               )}
             </div>
           )}
+
+          {/* Feedback Tab */}
+          {activeTab === 'feedback' && (
+            <div className="bg-gray-800/50 border border-gray-700/50" style={{ borderRadius: 0 }}>
+              <div className="p-4 border-b border-gray-700/50 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    Feedback Management
+                  </h2>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => setShowFeedbackFilters(!showFeedbackFilters)}
+                      className="px-3 py-1.5 text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center gap-1"
+                      style={{ borderRadius: 2 }}
+                    >
+                      <Filter className="w-3 h-3" />
+                      Filters
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={feedbackSearchQuery}
+                    onChange={(e) => setFeedbackSearchQuery(e.target.value)}
+                    placeholder="Search feedback..."
+                    className="w-full pl-8 pr-3 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+                    style={{ borderRadius: 2 }}
+                  />
+                </div>
+
+                {/* Filters */}
+                {showFeedbackFilters && (
+                  <div className="grid grid-cols-3 gap-3 p-3 bg-gray-900/30 border border-gray-700/50" style={{ borderRadius: 2 }}>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Type</label>
+                      <select
+                        value={feedbackFilters.type}
+                        onChange={(e) => setFeedbackFilters({ ...feedbackFilters, type: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none focus:border-[#087E8B]"
+                        style={{ borderRadius: 2 }}
+                      >
+                        <option value="">All Types</option>
+                        <option value="bug">Bug Report</option>
+                        <option value="feature">Feature Request</option>
+                        <option value="improvement">Improvement</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Status</label>
+                      <select
+                        value={feedbackFilters.status}
+                        onChange={(e) => setFeedbackFilters({ ...feedbackFilters, status: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none focus:border-[#087E8B]"
+                        style={{ borderRadius: 2 }}
+                      >
+                        <option value="">All Status</option>
+                        <option value="open">Open</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="closed">Closed</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Priority</label>
+                      <select
+                        value={feedbackFilters.priority}
+                        onChange={(e) => setFeedbackFilters({ ...feedbackFilters, priority: e.target.value })}
+                        className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none focus:border-[#087E8B]"
+                        style={{ borderRadius: 2 }}
+                      >
+                        <option value="">All Priorities</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                      </select>
+                    </div>
+                    <div className="col-span-3 flex justify-end">
+                      <button
+                        onClick={() => {
+                          setFeedbackFilters({ type: '', status: '', priority: '' });
+                          setFeedbackSearchQuery('');
+                        }}
+                        className="px-3 py-1 text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+                        style={{ borderRadius: 2 }}
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Stats */}
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="bg-gray-900/50 p-2 border border-gray-700/50" style={{ borderRadius: 2 }}>
+                    <p className="text-xs text-gray-400">Total</p>
+                    <p className="text-lg font-semibold text-white">{feedback.length}</p>
+                  </div>
+                  <div className="bg-gray-900/50 p-2 border border-gray-700/50" style={{ borderRadius: 2 }}>
+                    <p className="text-xs text-gray-400">Open</p>
+                    <p className="text-lg font-semibold text-yellow-400">{feedback.filter(f => f.status === 'open').length}</p>
+                  </div>
+                  <div className="bg-gray-900/50 p-2 border border-gray-700/50" style={{ borderRadius: 2 }}>
+                    <p className="text-xs text-gray-400">In Progress</p>
+                    <p className="text-lg font-semibold text-blue-400">{feedback.filter(f => f.status === 'in_progress').length}</p>
+                  </div>
+                  <div className="bg-gray-900/50 p-2 border border-gray-700/50" style={{ borderRadius: 2 }}>
+                    <p className="text-xs text-gray-400">Resolved</p>
+                    <p className="text-lg font-semibold text-green-400">{feedback.filter(f => f.status === 'resolved').length}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Feedback List */}
+              <div className="divide-y divide-gray-700/50">
+                {filteredFeedback.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <MessageSquare className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                    <p className="text-sm text-gray-400">No feedback found</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Select All */}
+                    <div className="p-3 border-b border-gray-700/50">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedFeedback.size === filteredFeedback.length && filteredFeedback.length > 0}
+                          onChange={handleSelectAllFeedback}
+                          className="w-4 h-4 rounded border-gray-600 cursor-pointer"
+                          style={{ accentColor: '#087E8B' }}
+                        />
+                        <span className="text-xs text-gray-400">Select All ({filteredFeedback.length})</span>
+                      </label>
+                    </div>
+
+                    {filteredFeedback.map((item) => {
+                      const statusColors = {
+                        open: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+                        in_progress: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+                        resolved: 'bg-green-500/20 text-green-300 border-green-500/30',
+                        closed: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
+                      };
+
+                      const priorityColors = {
+                        low: 'bg-gray-500/20 text-gray-300',
+                        medium: 'bg-blue-500/20 text-blue-300',
+                        high: 'bg-orange-500/20 text-orange-300',
+                        urgent: 'bg-red-500/20 text-red-300',
+                      };
+
+                      const typeIcons = {
+                        bug: AlertCircle,
+                        feature: Sparkles,
+                        improvement: Lightbulb,
+                        other: MessageSquare,
+                      };
+
+                      const TypeIcon = typeIcons[item.type] || MessageSquare;
+
+                      return (
+                        <div key={item.id} className="p-4 hover:bg-gray-800/30 transition-colors">
+                          <div className="flex items-start gap-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedFeedback.has(item.id)}
+                              onChange={() => handleSelectFeedback(item.id)}
+                              className="mt-1 w-4 h-4 rounded border-gray-600 cursor-pointer flex-shrink-0"
+                              style={{ accentColor: '#087E8B' }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <TypeIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                  <h3 className="text-sm font-medium text-white truncate">{item.title}</h3>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <span className={`px-2 py-0.5 text-xs border ${statusColors[item.status] || statusColors.open}`} style={{ borderRadius: 2 }}>
+                                    {item.status.replace('_', ' ')}
+                                  </span>
+                                  <span className={`px-2 py-0.5 text-xs ${priorityColors[item.priority] || priorityColors.medium}`} style={{ borderRadius: 2 }}>
+                                    {item.priority}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <p className="text-xs text-gray-400 mb-2 line-clamp-2">{item.description}</p>
+
+                              <div className="flex items-center justify-between flex-wrap gap-2 text-xs text-gray-500">
+                                <div className="flex items-center gap-3">
+                                  <span>{item.user_name || 'Anonymous'}</span>
+                                  {item.user_email && <span>• {item.user_email}</span>}
+                                  <span>• {new Date(item.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => setViewingFeedback(item)}
+                                    className="px-2 py-1 text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+                                    style={{ borderRadius: 2 }}
+                                  >
+                                    View
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingFeedback(item)}
+                                    className="px-2 py-1 text-xs bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
+                                    style={{ borderRadius: 2 }}
+                                  >
+                                    Edit
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       
+      {/* View Feedback Modal */}
+      {viewingFeedback && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" style={{ borderRadius: 4 }}>
+            <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{viewingFeedback.title}</h3>
+                <p className="text-xs text-gray-400 mt-1">{viewingFeedback.user_name || 'Anonymous'} • {new Date(viewingFeedback.created_at).toLocaleDateString()}</p>
+              </div>
+              <button
+                onClick={() => setViewingFeedback(null)}
+                className="text-gray-400 hover:text-white ml-4"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto flex-1 p-4 space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Type</label>
+                  <p className="text-sm text-white capitalize">{viewingFeedback.type}</p>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Status</label>
+                  <p className="text-sm text-white capitalize">{viewingFeedback.status.replace('_', ' ')}</p>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Priority</label>
+                  <p className="text-sm text-white capitalize">{viewingFeedback.priority}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Description</label>
+                <p className="text-sm text-white whitespace-pre-wrap">{viewingFeedback.description}</p>
+              </div>
+
+              {viewingFeedback.page_url && (
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Page URL</label>
+                  <a href={viewingFeedback.page_url} target="_blank" rel="noopener noreferrer" className="text-sm text-[#087E8B] hover:underline flex items-center gap-1">
+                    {viewingFeedback.page_url} <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
+
+              {viewingFeedback.admin_response && (
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Admin Response</label>
+                  <p className="text-sm text-white whitespace-pre-wrap">{viewingFeedback.admin_response}</p>
+                </div>
+              )}
+
+              {viewingFeedback.resolved_at && (
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Resolved At</label>
+                  <p className="text-sm text-white">{new Date(viewingFeedback.resolved_at).toLocaleString()}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 p-4 border-t border-gray-700 flex-shrink-0">
+              <button
+                onClick={() => {
+                  setEditingFeedback(viewingFeedback);
+                  setViewingFeedback(null);
+                }}
+                className="flex-1 px-4 py-2 bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
+                style={{ borderRadius: 2 }}
+              >
+                Edit Feedback
+              </button>
+              <button
+                onClick={() => setViewingFeedback(null)}
+                className="flex-1 px-4 py-2 bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+                style={{ borderRadius: 2 }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Feedback Modal */}
+      {editingFeedback && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" style={{ borderRadius: 4 }}>
+            <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Edit Feedback</h3>
+              <button
+                onClick={() => setEditingFeedback(null)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto flex-1 p-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Status *</label>
+                  <select
+                    value={editingFeedback.status}
+                    onChange={(e) => setEditingFeedback({ ...editingFeedback, status: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+                    style={{ borderRadius: 2 }}
+                  >
+                    <option value="open">Open</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Priority *</label>
+                  <select
+                    value={editingFeedback.priority}
+                    onChange={(e) => setEditingFeedback({ ...editingFeedback, priority: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+                    style={{ borderRadius: 2 }}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Admin Response</label>
+                <textarea
+                  value={editingFeedback.admin_response || ''}
+                  onChange={(e) => setEditingFeedback({ ...editingFeedback, admin_response: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+                  style={{ borderRadius: 2 }}
+                  rows={4}
+                  placeholder="Add a response to the user..."
+                />
+              </div>
+
+              <div className="bg-gray-800/50 p-3 border border-gray-700 rounded" style={{ borderRadius: 2 }}>
+                <p className="text-xs text-gray-400 mb-1">Original Feedback</p>
+                <p className="text-sm text-white mb-2">{editingFeedback.title}</p>
+                <p className="text-xs text-gray-300 whitespace-pre-wrap">{editingFeedback.description}</p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 p-4 border-t border-gray-700 flex-shrink-0">
+              <button
+                onClick={() => setEditingFeedback(null)}
+                className="flex-1 px-4 py-2 bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+                style={{ borderRadius: 2 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleUpdateFeedbackStatus(
+                  editingFeedback.id,
+                  editingFeedback.status,
+                  editingFeedback.priority,
+                  editingFeedback.admin_response || null
+                )}
+                className="flex-1 px-4 py-2 bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
+                style={{ borderRadius: 2 }}
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={confirmationModal.isOpen}

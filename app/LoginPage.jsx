@@ -103,8 +103,12 @@ export default function LoginPage() {
         // If profile doesn't exist or missing required fields, go to onboarding
         if (profileError || !profile || !profile.nickname || !profile.handle) {
           navigate('/onboarding');
+        } else if (!profile.user_intent || profile.user_intent.length === 0) {
+          // If user_intent is missing, redirect to onboarding to complete it
+          navigate('/onboarding');
         } else {
-          navigate('/communities');
+          // User has completed onboarding, go to home
+          navigate('/home');
         }
       } catch (err) {
         console.error('Error checking profile:', err);
@@ -126,12 +130,12 @@ export default function LoginPage() {
         
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">Wall-B</h1>
-          <p className="mobile-text-sm text-gray-300 italic mb-2">
-            Communities are meant to be experienced
+          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Rocha</h1>
+          <p className="mobile-text-sm font-bold mb-6 " style={{ color: 'var(--text-secondary)' }}>
+            Bouldering Community
           </p>
-          <p className="mobile-text-sm text-gray-400">
-            {isSignUp ? 'Create your account' : 'Welcome back'}
+          <p className="mobile-text-sm" style={{ color: 'var(--text-muted)' }}>
+            {isSignUp ? 'Welcome, new friend' : 'Welcome back, friend'}
           </p>
         </div>
 

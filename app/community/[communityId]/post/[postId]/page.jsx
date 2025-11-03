@@ -574,24 +574,26 @@ export default function PostDetailPage() {
     return date.toLocaleDateString();
   };
 
-  const getTagClass = (tag) => {
-    const classes = {
-      beta: 'tag-chip tag-beta',
-      event: 'tag-chip tag-event',
-      question: 'tag-chip tag-question',
-      gear: 'tag-chip tag-gear',
-      training: 'tag-chip tag-training',
-      social: 'tag-chip tag-social',
-      news: 'tag-chip tag-news'
+  const getTagColor = (tag) => {
+    const colors = {
+      general: '#6b7280',
+      beta: '#ef4444',
+      event: '#3b82f6',
+      question: '#10b981',
+      gear: '#f59e0b',
+      training: '#8b5cf6',
+      social: '#ec4899',
+      news: '#6b7280'
     };
-    return classes[tag] || 'tag-chip tag-news';
+    return colors[tag] || '#6b7280';
   };
 
   const getTagLabel = (tag) => {
     const labels = {
+      general: 'General',
       beta: 'Beta',
-      event: 'Event',
-      question: 'Question',
+      event: 'Events',
+      question: 'Questions',
       gear: 'Gear',
       training: 'Training',
       social: 'Social',
@@ -777,9 +779,25 @@ export default function PostDetailPage() {
             </div>
 
             {/* Post Title */}
-            <h1 className="text-2xl font-bold text-white mb-4" style={{ lineHeight: '1.3' }}>
-              {post.title}
-            </h1>
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <h1 className="text-2xl font-bold" style={{ lineHeight: '1.3', color: 'var(--text-primary)' }}>
+                  {post.title}
+                </h1>
+                {post.tag && (
+                  <span
+                    className="px-3 py-1 rounded-full text-xs font-medium"
+                    style={{
+                      backgroundColor: `${getTagColor(post.tag)}20`,
+                      border: `1px solid ${getTagColor(post.tag)}40`,
+                      color: getTagColor(post.tag)
+                    }}
+                  >
+                    {getTagLabel(post.tag)}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Post Body */}

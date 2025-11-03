@@ -160,16 +160,16 @@ export default function GroupChatModal({ isOpen, onClose, onCreateGroup, current
         style={{ animation: 'slideUpModal 0.3s ease-out' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
-          <h2 className="text-xl font-semibold text-white">Create Group Chat</h2>
+        <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--divider-color)' }}>
+          <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>Create Group Chat</h2>
           <button onClick={handleClose} className="p-2 text-gray-400 hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Group Name Input */}
-        <div className="p-4 border-b border-gray-700">
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+        <div className="p-4 border-b" style={{ borderColor: 'var(--divider-color)' }}>
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
             Group Name
           </label>
           <input
@@ -177,31 +177,31 @@ export default function GroupChatModal({ isOpen, onClose, onCreateGroup, current
             placeholder="Enter group name..."
             value={groupName}
             onChange={(e) => setGroupName(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
+            className="minimal-input w-full"
             maxLength={50}
           />
         </div>
 
         {/* Search Users */}
-        <div className="p-4 border-b border-gray-700">
+        <div className="p-4 border-b" style={{ borderColor: 'var(--divider-color)' }}>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
             <input
               type="text"
               placeholder="Search users..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
+              className="minimal-input w-full pl-10 pr-4"
             />
           </div>
         </div>
 
         {/* Selected Users */}
         {selectedUsers.length > 0 && (
-          <div className="p-4 border-b border-gray-700">
+          <div className="p-4 border-b" style={{ borderColor: 'var(--divider-color)' }}>
             <div className="flex items-center gap-2 mb-2">
-              <Users className="w-4 h-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-300">
+              <Users className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+              <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
                 Selected ({selectedUsers.length})
               </span>
             </div>
@@ -274,7 +274,7 @@ export default function GroupChatModal({ isOpen, onClose, onCreateGroup, current
         )}
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-700 flex gap-3">
+        <div className="p-4 border-t flex gap-3" style={{ borderColor: 'var(--divider-color)' }}>
           <button
             onClick={handleClose}
             className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"

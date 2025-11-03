@@ -50,6 +50,11 @@ CREATE INDEX IF NOT EXISTS profiles_last_active_at_idx ON profiles(last_active_a
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for profiles
+-- Drop existing policies if they exist to avoid conflicts
+DROP POLICY IF EXISTS "Users can view all profiles" ON profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
+
 CREATE POLICY "Users can view all profiles" ON profiles
   FOR SELECT USING (auth.role() = 'authenticated');
 
@@ -59,22 +64,55 @@ CREATE POLICY "Users can update their own profile" ON profiles
 CREATE POLICY "Users can insert their own profile" ON profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
 
+-- Ensure nickname and handle columns exist
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS nickname TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS handle TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS user_intent TEXT[] DEFAULT '{}'::TEXT[];
+
+-- Create index on user_intent for query performance
+CREATE INDEX IF NOT EXISTS profiles_user_intent_idx ON profiles USING GIN (user_intent);
+
 -- Function to handle new user profile creation
+-- Uses SECURITY DEFINER to bypass RLS policies when creating profiles
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name, avatar_url, company, role)
+  INSERT INTO public.profiles (
+    id, 
+    email, 
+    full_name, 
+    avatar_url, 
+    company, 
+    role,
+    nickname,
+    handle,
+    user_intent
+  )
   VALUES (
     NEW.id,
-    NEW.email,
+    COALESCE(NEW.email, ''),
     COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
     COALESCE(NEW.raw_user_meta_data->>'avatar_url', ''),
     COALESCE(NEW.raw_user_meta_data->>'company', ''),
-    COALESCE(NEW.raw_user_meta_data->>'role', '')
-  );
+    COALESCE(NEW.raw_user_meta_data->>'role', ''),
+    COALESCE(NEW.raw_user_meta_data->>'full_name', ''), -- Use full_name as initial nickname
+    NULL, -- Handle will be set during onboarding
+    '{}'::TEXT[] -- User intent will be set during onboarding
+  )
+  ON CONFLICT (id) DO NOTHING; -- Prevent errors if profile already exists
+  
   RETURN NEW;
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Log the error but don't fail the user creation
+    RAISE WARNING 'Error creating profile for user %: %', NEW.id, SQLERRM;
+    RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Trigger to automatically create profile when user signs up
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
