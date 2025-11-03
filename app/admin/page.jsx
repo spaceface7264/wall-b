@@ -88,26 +88,52 @@ export default function AdminPage() {
 
   const checkAdmin = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error('❌ Error getting user:', userError);
+        navigate('/');
+        return;
+      }
+      
       if (!user) {
+        console.log('❌ No user found, redirecting to login');
         navigate('/');
         return;
       }
 
-      const { data: profile } = await supabase
+      console.log('🔍 Checking admin status for user:', user.id);
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('is_admin')
+        .select('is_admin, email')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
-      if (!profile?.is_admin) {
+      console.log('📋 Profile query result:', { profile, profileError });
+      
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('❌ Profile query error:', profileError);
         navigate('/communities');
         return;
       }
 
+      if (!profile) {
+        console.log('ℹ️ Profile does not exist yet - user needs to complete onboarding');
+        navigate('/onboarding');
+        return;
+      }
+
+      console.log('✅ Profile found, is_admin:', profile.is_admin);
+      
+      if (!profile.is_admin) {
+        console.log('❌ User is not an admin');
+        navigate('/communities');
+        return;
+      }
+
+      console.log('✅ Admin access granted');
       setIsAdmin(true);
     } catch (error) {
-      console.error('Error checking admin status:', error);
+      console.error('❌ Error checking admin status:', error);
       navigate('/communities');
     } finally {
       setIsLoading(false);
