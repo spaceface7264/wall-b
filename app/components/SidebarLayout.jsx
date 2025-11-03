@@ -170,45 +170,49 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
 
         if (mounted) {
           setUser(user);
-          
-          // Check if user is admin and load communities
-          if (user) {
-            try {
-              const { data: profile, error: profileError } = await supabase
-                .from('profiles')
-                .select('is_admin, is_banned')
-                .eq('id', user.id)
-                .maybeSingle();
-              
-              if (profileError && profileError.code !== 'PGRST116') {
-                console.error('❌ Profile error:', profileError);
-              }
-              
-              // Check if user is banned
-              if (profile && profile.is_banned) {
-                console.log('⚠️ User is banned, signing out...');
-                await supabase.auth.signOut();
-                if (mounted) {
-                  setUser(null);
-                  setLoading(false);
-                  // Redirect to login page
-                  if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
-                    window.location.href = '/login';
-                  }
-                }
-                return;
-              }
-              
-              setIsAdmin(profile?.is_admin || false);
-              loadUserCommunities(user.id);
-            } catch (error) {
-              console.error('❌ Profile check failed:', error);
-              setIsAdmin(false);
-            }
-          }
-          
           clearTimeout(timeoutId);
           setLoading(false);
+          
+          // Check if user is admin and load communities (non-blocking)
+          if (user) {
+            // Don't await - let this run in background to avoid blocking
+            supabase
+              .from('profiles')
+              .select('is_admin, is_banned')
+              .eq('id', user.id)
+              .maybeSingle()
+              .then(({ data: profile, error: profileError }) => {
+                if (!mounted) return;
+                
+                if (profileError && profileError.code !== 'PGRST116') {
+                  console.error('❌ Profile error:', profileError);
+                }
+                
+                // Check if user is banned
+                if (profile && profile.is_banned) {
+                  console.log('⚠️ User is banned, signing out...');
+                  supabase.auth.signOut().then(() => {
+                    if (mounted) {
+                      setUser(null);
+                      // Redirect to login page
+                      if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+                        window.location.href = '/login';
+                      }
+                    }
+                  });
+                  return;
+                }
+                
+                setIsAdmin(profile?.is_admin || false);
+                loadUserCommunities(user.id);
+              })
+              .catch(error => {
+                console.error('❌ Profile check failed:', error);
+                if (mounted) {
+                  setIsAdmin(false);
+                }
+              });
+          }
         }
       } catch (error) {
         console.error('❌ getUser() failed:', error);
@@ -231,37 +235,43 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
             setUser(session?.user ?? null);
             
             if (session?.user) {
-              try {
-                const { data: profile, error: profileError } = await supabase
-                  .from('profiles')
-                  .select('is_admin, is_banned')
-                  .eq('id', session.user.id)
-                  .maybeSingle();
-                
-                if (profileError && profileError.code !== 'PGRST116') {
-                  console.error('Error checking admin status:', profileError);
-                }
-                
-                // Check if user is banned
-                if (profile && profile.is_banned) {
-                  console.log('⚠️ User is banned, signing out...');
-                  await supabase.auth.signOut();
-                  if (mounted) {
-                    setUser(null);
-                    // Redirect to login page
-                    if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
-                      window.location.href = '/login';
-                    }
+              // Non-blocking profile check
+              supabase
+                .from('profiles')
+                .select('is_admin, is_banned')
+                .eq('id', session.user.id)
+                .maybeSingle()
+                .then(({ data: profile, error: profileError }) => {
+                  if (!mounted) return;
+                  
+                  if (profileError && profileError.code !== 'PGRST116') {
+                    console.error('Error checking admin status:', profileError);
                   }
-                  return;
-                }
-                
-                setIsAdmin(profile?.is_admin || false);
-                loadUserCommunities(session.user.id);
-              } catch (error) {
-                console.error('Error checking admin status:', error);
-                setIsAdmin(false);
-              }
+                  
+                  // Check if user is banned
+                  if (profile && profile.is_banned) {
+                    console.log('⚠️ User is banned, signing out...');
+                    supabase.auth.signOut().then(() => {
+                      if (mounted) {
+                        setUser(null);
+                        // Redirect to login page
+                        if (window.location.pathname !== '/' && window.location.pathname !== '/login') {
+                          window.location.href = '/login';
+                        }
+                      }
+                    });
+                    return;
+                  }
+                  
+                  setIsAdmin(profile?.is_admin || false);
+                  loadUserCommunities(session.user.id);
+                })
+                .catch(error => {
+                  console.error('Error checking admin status:', error);
+                  if (mounted) {
+                    setIsAdmin(false);
+                  }
+                });
             } else {
               setIsAdmin(false);
               setCommunities([]);
