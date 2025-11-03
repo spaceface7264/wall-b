@@ -79,11 +79,19 @@ export default function LoginPage() {
         }
 
         // Try to fetch profile - use maybeSingle() to avoid errors if profile doesn't exist
+        console.log('🔍 Fetching profile for user:', user.id);
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
           .maybeSingle();
+        
+        console.log('📋 Profile query result:', { profile, profileError });
+        
+        // If profile query fails, log the error but continue to onboarding
+        if (profileError) {
+          console.warn('⚠️ Profile query error (continuing to onboarding):', profileError);
+        }
 
         // Check if user is banned
         if (profile && profile.is_banned) {
