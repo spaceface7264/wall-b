@@ -64,3 +64,4 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 The `netlify.toml` file is already configured correctly. After changing the branch and setting environment variables, deployment should work automatically.
 
+

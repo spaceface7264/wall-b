@@ -17,7 +17,7 @@ const GymCard = React.memo(function GymCard({
       style={{ padding: '16px 0', position: 'relative' }}
     >
       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', padding: '0 16px' }}>
-        {/* Gym Image */}
+        {/* Gym Logo */}
           <div style={{ 
             flexShrink: 0, 
           width: '100px', 
@@ -28,34 +28,35 @@ const GymCard = React.memo(function GymCard({
             borderRadius: '4px',
             border: '1px solid #333333',
           overflow: 'hidden',
-          position: 'relative'
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '12px'
           }}>
-          {(gym.image_url || gym.image) ? (
+          {(gym.logo_url || gym.logo) ? (
             <img
-              src={gym.image_url || gym.image}
-              alt={gym.name}
+              src={gym.logo_url || gym.logo}
+              alt={`${gym.name} logo`}
               style={{ 
                 width: '100%', 
                 height: '100%', 
-                objectFit: 'cover',
-                objectPosition: gym.image_focal_x !== undefined && gym.image_focal_y !== undefined
-                  ? `${gym.image_focal_x * 100}% ${gym.image_focal_y * 100}%`
-                  : 'center',
+                objectFit: 'contain',
                 display: 'block'
               }}
               onError={(e) => {
-                console.error('❌ Failed to load gym image for:', gym.name, 'URL:', gym.image_url || gym.image);
+                console.error('❌ Failed to load gym logo for:', gym.name, 'URL:', gym.logo_url || gym.logo);
                 e.target.style.display = 'none';
                 e.target.nextSibling.style.display = 'flex';
               }}
               onLoad={() => {
-                console.log('✅ Gym image loaded successfully:', gym.name);
+                console.log('✅ Gym logo loaded successfully:', gym.name);
               }}
             />
           ) : null}
           <div 
             className="w-full h-full bg-gradient-to-br from-[#087E8B] to-[#087E8B] minimal-flex-center"
-            style={{ display: (gym.image_url || gym.image) ? 'none' : 'flex' }}
+            style={{ display: (gym.logo_url || gym.logo) ? 'none' : 'flex' }}
           >
             <span className="text-white font-semibold text-2xl">
               {gym.name ? gym.name.charAt(0).toUpperCase() : 'G'}

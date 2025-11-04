@@ -73,3 +73,4 @@ LIMIT 5;
 
 SELECT 'Diagnostic complete! Check the results above.' as status;
 
+

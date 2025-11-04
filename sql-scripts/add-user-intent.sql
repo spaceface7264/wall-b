@@ -56,3 +56,4 @@ COMMENT ON COLUMN profiles.user_intent IS 'Array of user purposes: find_partners
 -- Success message
 SELECT 'User intent support added successfully! Column and index created.' as status;
 
+

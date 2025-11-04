@@ -292,21 +292,22 @@ export default function GymSelectorModal({
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      {/* Gym Image */}
+                      {/* Gym Logo */}
                       <div 
                         className="flex-shrink-0 w-16 h-16 bg-gray-800 rounded border border-gray-700 overflow-hidden"
-                        style={{ borderRadius: 4 }}
+                        style={{ 
+                          borderRadius: 4,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '8px'
+                        }}
                       >
-                        {gym.image_url ? (
+                        {(gym.logo_url || gym.logo) ? (
                           <img
-                            src={gym.image_url}
-                            alt={gym.name}
-                            className="w-full h-full object-cover"
-                            style={{
-                              objectPosition: gym.image_focal_x !== undefined && gym.image_focal_y !== undefined
-                                ? `${gym.image_focal_x * 100}% ${gym.image_focal_y * 100}%`
-                                : 'center'
-                            }}
+                            src={gym.logo_url || gym.logo}
+                            alt={`${gym.name} logo`}
+                            className="w-full h-full object-contain"
                             onError={(e) => {
                               e.target.style.display = 'none';
                               if (e.target.nextSibling) {
@@ -317,7 +318,7 @@ export default function GymSelectorModal({
                         ) : null}
                         <div 
                           className="w-full h-full bg-gradient-to-br from-[#087E8B] to-[#087E8B] flex items-center justify-center"
-                          style={{ display: gym.image_url ? 'none' : 'flex' }}
+                          style={{ display: (gym.logo_url || gym.logo) ? 'none' : 'flex' }}
                         >
                           <span className="text-white font-semibold text-lg">
                             {gym.name ? gym.name.charAt(0).toUpperCase() : 'G'}

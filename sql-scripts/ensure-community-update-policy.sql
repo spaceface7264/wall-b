@@ -86,3 +86,4 @@ CREATE POLICY "Allow admins to update all community fields" ON communities
 SELECT 'Community update policies added successfully!' as status;
 SELECT 'Admins can now update communities including suspend/unsuspend (is_active field)' as info;
 
+

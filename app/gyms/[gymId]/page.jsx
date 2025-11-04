@@ -49,7 +49,12 @@ export default function GymDetail() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [uploadedLogoUrl, setUploadedLogoUrl] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
   const [selectedFacilities, setSelectedFacilities] = useState([]);
+  const [useSameHoursForAll, setUseSameHoursForAll] = useState(false);
+  const [universalHours, setUniversalHours] = useState('');
   const [originalGymData, setOriginalGymData] = useState(null);
   const [showChangesConfirmation, setShowChangesConfirmation] = useState(false);
   const [pendingChanges, setPendingChanges] = useState(null);
@@ -643,6 +648,7 @@ export default function GymDetail() {
       { key: 'email', label: 'Email' },
       { key: 'website', label: 'Website' },
       { key: 'image_url', label: 'Image URL' },
+      { key: 'logo_url', label: 'Logo URL' },
     ];
     
     fields.forEach(field => {
@@ -758,9 +764,10 @@ export default function GymDetail() {
         phone: (gymData.phone || '').trim() || null,
         email: (gymData.email || '').trim() || null,
         website: (gymData.website || '').trim() || null,
-        image_url: uploadedImageUrl || (gymData.image_url || '').trim() || null,
-        image_focal_x: imageFocalX,
-        image_focal_y: imageFocalY,
+                      image_url: uploadedImageUrl || (gymData.image_url || '').trim() || null,
+                      image_focal_x: imageFocalX,
+                      image_focal_y: imageFocalY,
+                      logo_url: uploadedLogoUrl || (gymData.logo_url || '').trim() || null,
         facilities: facilities,
         opening_hours: Object.keys(cleanedOpeningHours).length > 0 ? cleanedOpeningHours : {},
         updated_at: new Date().toISOString()
@@ -805,6 +812,8 @@ export default function GymDetail() {
         setEditingGym(null);
       setUploadedImageUrl(null);
       setImagePreview(null);
+      setUploadedLogoUrl(null);
+      setLogoPreview(null);
       setSelectedFacilities([]);
       setOriginalGymData(null);
       setShowChangesConfirmation(false);
@@ -812,6 +821,8 @@ export default function GymDetail() {
       setImageFocalX(0.5);
       setImageFocalY(0.5);
       setShowFocalPointSelector(false);
+      setUseSameHoursForAll(false);
+      setUniversalHours('');
 
       // Always reload gym data to ensure we have the latest state from database
       // This handles cases where RLS policies might filter returned data
@@ -829,6 +840,8 @@ export default function GymDetail() {
       setEditingGym(null);
       setUploadedImageUrl(null);
       setImagePreview(null);
+      setUploadedLogoUrl(null);
+      setLogoPreview(null);
       setSelectedFacilities([]);
       setOriginalGymData(null);
       setShowChangesConfirmation(false);
@@ -907,6 +920,72 @@ export default function GymDetail() {
     setImageFocalY(0.5);
     // Reset the file input
     const fileInput = document.getElementById('gym-image-upload');
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
+  const handleLogoUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('error', 'Invalid File', 'Please select a valid image file.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('error', 'File Too Large', 'Logo size must be less than 5MB.');
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    
+    try {
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `gyms/${gym?.id || 'temp'}/logo_${Date.now()}.${fileExt}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('post-media')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        showToast('error', 'Upload Failed', `Failed to upload: ${uploadError.message}`);
+        setIsUploadingLogo(false);
+        setLogoPreview(null);
+        return;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('post-media')
+        .getPublicUrl(fileName);
+
+      setUploadedLogoUrl(publicUrl);
+      showToast('success', 'Uploaded!', 'Logo uploaded successfully!');
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      showToast('error', 'Upload Failed', 'Failed to upload logo.');
+      setLogoPreview(null);
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveUploadedLogo = () => {
+    setUploadedLogoUrl(null);
+    setLogoPreview(null);
+    // Reset the file input
+    const fileInput = document.getElementById('gym-logo-upload');
     if (fileInput) {
       fileInput.value = '';
     }
@@ -1214,8 +1293,8 @@ export default function GymDetail() {
         <div className="mobile-section">
           {/* Gym Header */}
           <div className="animate-slide-up border-b border-gray-700/50" style={{ marginBottom: '24px', paddingBottom: '24px' }}>
-            {/* Gym Image */}
-            <div className="w-full h-48 bg-gray-700 overflow-hidden mb-4">
+            {/* Gym Image with Logo Watermark */}
+            <div className="w-full h-48 bg-gray-700 overflow-hidden mb-4 relative">
               <img 
                 src={gym.image_url} 
                 alt={gym.name}
@@ -1235,6 +1314,37 @@ export default function GymDetail() {
               <div className="w-full h-full minimal-flex-center bg-gray-700" style={{display: 'none'}}>
                 <MapPin className="minimal-icon text-gray-400 text-5xl" />
               </div>
+              
+              {/* Logo Watermark - Top Right */}
+              {gym.logo_url && (
+                <div 
+                  className="absolute top-3 right-3"
+                  style={{
+                    width: '80px',
+                    height: '80px',
+                    padding: '8px',
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    borderRadius: '8px',
+                    backdropFilter: 'blur(4px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <img 
+                    src={gym.logo_url} 
+                    alt={`${gym.name} logo`}
+                    className="w-full h-full object-contain"
+                    style={{
+                      opacity: 0.9,
+                      filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))'
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Gym Name, Address, and Menu */}
@@ -1304,6 +1414,8 @@ export default function GymDetail() {
                             setEditingGym(gym);
                             setUploadedImageUrl(null);
                             setImagePreview(null);
+                            setUploadedLogoUrl(null);
+                            setLogoPreview(null);
                             // Initialize selected facilities from gym data
                             const gymFacilities = Array.isArray(gym.facilities) 
                               ? gym.facilities 
@@ -1317,6 +1429,12 @@ export default function GymDetail() {
                             // Initialize focal point from gym data or default to center
                             setImageFocalX(gym.image_focal_x ?? 0.5);
                             setImageFocalY(gym.image_focal_y ?? 0.5);
+                            // Check if all days have the same hours
+                            const hours = gym.opening_hours || {};
+                            const hoursArray = Object.values(hours).filter(Boolean);
+                            const allSame = hoursArray.length > 0 && hoursArray.every(h => h === hoursArray[0]);
+                            setUseSameHoursForAll(allSame);
+                            setUniversalHours(allSame ? hoursArray[0] || '' : '');
                             setShowEditModal(true);
                             setShowMenu(false);
                           }}
@@ -1414,15 +1532,32 @@ export default function GymDetail() {
                   e.preventDefault();
                   try {
                     const formData = new FormData(e.target);
-                    const openingHours = {
-                      monday: formData.get('monday') || '',
-                      tuesday: formData.get('tuesday') || '',
-                      wednesday: formData.get('wednesday') || '',
-                      thursday: formData.get('thursday') || '',
-                      friday: formData.get('friday') || '',
-                      saturday: formData.get('saturday') || '',
-                      sunday: formData.get('sunday') || ''
-                    };
+                    let openingHours;
+                    
+                    if (useSameHoursForAll) {
+                      // Apply universal hours to all days
+                      const universalValue = universalHours || '';
+                      openingHours = {
+                        monday: universalValue,
+                        tuesday: universalValue,
+                        wednesday: universalValue,
+                        thursday: universalValue,
+                        friday: universalValue,
+                        saturday: universalValue,
+                        sunday: universalValue
+                      };
+                    } else {
+                      // Use individual day values
+                      openingHours = {
+                        monday: formData.get('monday') || '',
+                        tuesday: formData.get('tuesday') || '',
+                        wednesday: formData.get('wednesday') || '',
+                        thursday: formData.get('thursday') || '',
+                        friday: formData.get('friday') || '',
+                        saturday: formData.get('saturday') || '',
+                        sunday: formData.get('sunday') || ''
+                      };
+                    }
 
                     const newData = {
                       name: formData.get('name') || '',
@@ -1436,6 +1571,7 @@ export default function GymDetail() {
                       image_url: uploadedImageUrl || formData.get('image_url') || '',
                       image_focal_x: imageFocalX,
                       image_focal_y: imageFocalY,
+                      logo_url: uploadedLogoUrl || formData.get('logo_url') || '',
                       facilities: selectedFacilities,
                       opening_hours: openingHours
                     };
@@ -1629,6 +1765,95 @@ export default function GymDetail() {
                       </p>
                     </div>
                   </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Gym Logo</label>
+                    
+                    {/* Logo Preview */}
+                    {(logoPreview || uploadedLogoUrl || editingGym?.logo_url) && (
+                      <div className="mb-3 relative">
+                        <div 
+                          className="bg-gray-800/50 border border-gray-700 rounded overflow-hidden"
+                          style={{ 
+                            width: '200px',
+                            height: '200px',
+                            padding: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <img
+                            src={logoPreview || uploadedLogoUrl || editingGym?.logo_url}
+                            alt="Gym logo preview"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        {(logoPreview || uploadedLogoUrl) && (
+                          <button
+                            type="button"
+                            onClick={handleRemoveUploadedLogo}
+                            className="mt-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+                            title="Remove logo"
+                          >
+                            <X className="w-3 h-3 inline mr-1" />
+                            Remove Logo
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* File Upload Option */}
+                    <div className="mb-3">
+                      <label
+                        htmlFor="gym-logo-upload"
+                        className={`
+                          flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed rounded cursor-pointer transition-colors
+                          ${isUploadingLogo 
+                            ? 'border-gray-600 bg-gray-800 cursor-not-allowed' 
+                            : 'border-gray-500 bg-gray-800/50 hover:border-gray-400 hover:bg-gray-800'
+                          }
+                        `}
+                        style={{ borderRadius: 4 }}
+                      >
+                        <Upload className={`w-4 h-4 text-gray-400 ${isUploadingLogo ? 'animate-pulse' : ''}`} />
+                        <span className="text-sm text-gray-300">
+                          {isUploadingLogo ? 'Uploading...' : 'Upload Logo File'}
+                        </span>
+                      </label>
+                      <input
+                        id="gym-logo-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        disabled={isUploadingLogo}
+                        className="hidden"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        PNG or SVG recommended. Max 5MB. Logo will be displayed with transparent background.
+                      </p>
+                    </div>
+
+                    {/* URL Input Option */}
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex-1 h-px bg-gray-700"></div>
+                        <span className="text-xs text-gray-500 px-2">OR</span>
+                        <div className="flex-1 h-px bg-gray-700"></div>
+                      </div>
+                      <input
+                        type="url"
+                        name="logo_url"
+                        defaultValue={editingGym.logo_url || ''}
+                        placeholder="https://example.com/logo.png"
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                        disabled={!!uploadedLogoUrl}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Enter a logo URL instead
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
@@ -1672,21 +1897,57 @@ export default function GymDetail() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Opening Hours</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
-                      <div key={day}>
-                        <label className="block text-xs text-gray-400 mb-1 capitalize">{day}</label>
-                        <input
-                          type="text"
-                          name={day}
-                          defaultValue={editingGym.opening_hours?.[day] || ''}
-                          className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
-                          placeholder="9:00-22:00"
-                        />
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="block text-sm font-medium text-gray-300">Opening Hours</label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={useSameHoursForAll}
+                        onChange={(e) => {
+                          setUseSameHoursForAll(e.target.checked);
+                          if (e.target.checked && !universalHours) {
+                            // If enabling and no universal hours set, use first non-empty day's hours
+                            const hours = editingGym?.opening_hours || {};
+                            const firstDay = Object.values(hours).find(h => h && h.trim() !== '');
+                            setUniversalHours(firstDay || '');
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#087E8B] focus:ring-2 focus:ring-[#087E8B] focus:ring-offset-0"
+                      />
+                      <span className="text-xs text-gray-400">Same hours for all days</span>
+                    </label>
                   </div>
+                  
+                  {useSameHoursForAll ? (
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Hours for all days</label>
+                      <input
+                        type="text"
+                        value={universalHours}
+                        onChange={(e) => setUniversalHours(e.target.value)}
+                        className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                        placeholder="9:00-22:00"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        This will apply to Monday through Sunday
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
+                        <div key={day}>
+                          <label className="block text-xs text-gray-400 mb-1 capitalize">{day}</label>
+                          <input
+                            type="text"
+                            name={day}
+                            defaultValue={editingGym.opening_hours?.[day] || ''}
+                            className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                            placeholder="9:00-22:00"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-3 pt-4 border-t border-gray-700">
@@ -1702,6 +1963,8 @@ export default function GymDetail() {
                       setImageFocalX(0.5);
                       setImageFocalY(0.5);
                       setShowFocalPointSelector(false);
+                      setUseSameHoursForAll(false);
+                      setUniversalHours('');
                     }}
                     className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white hover:bg-gray-700 transition-colors"
                   >
