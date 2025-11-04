@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Shield, Settings, MapPin, Flag, CheckCircle, XCircle, Clock, Trash2, MessageSquare, FileText, Search, AlertCircle, MoreVertical, User, MessageCircle, Ban, ShieldCheck, ShieldOff, AlertTriangle, Edit, BarChart3, X, Download, Filter, Calendar, Activity, Star, Eye, EyeOff, ExternalLink, Sparkles, Lightbulb, Bug } from 'lucide-react';
+import { Users, Shield, Settings, MapPin, Flag, CheckCircle, XCircle, Clock, Trash2, MessageSquare, FileText, Search, AlertCircle, MoreVertical, User, MessageCircle, Ban, ShieldCheck, ShieldOff, AlertTriangle, Edit, BarChart3, X, Download, Filter, Calendar, Activity, Star, Eye, EyeOff, ExternalLink, Sparkles, Lightbulb, Bug, ArrowRight } from 'lucide-react';
 import SidebarLayout from '../components/SidebarLayout';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { useToast } from '../providers/ToastProvider';
@@ -56,6 +56,12 @@ export default function AdminPage() {
   
   // Gym Request Bulk Actions State
   const [selectedGymRequests, setSelectedGymRequests] = useState(new Set());
+  const [viewingGymRequest, setViewingGymRequest] = useState(null);
+  const [editingGymRequest, setEditingGymRequest] = useState(null);
+  const [gymRequestNotes, setGymRequestNotes] = useState('');
+  const [approveOptionsModal, setApproveOptionsModal] = useState({ isOpen: false, requestId: null, request: null });
+  const [gymRequestHistory, setGymRequestHistory] = useState([]);
+  const [loadingGymRequestHistory, setLoadingGymRequestHistory] = useState(false);
   
   // Gyms Management State
   const [gyms, setGyms] = useState([]);
@@ -64,7 +70,7 @@ export default function AdminPage() {
   const [viewingGym, setViewingGym] = useState(null);
   const [editingGym, setEditingGym] = useState(null);
   const [selectedGyms, setSelectedGyms] = useState(new Set());
-  const [gymFilters, setGymFilters] = useState({ country: '', city: '', dateFrom: '', dateTo: '', visibility: '' });
+  const [gymFilters, setGymFilters] = useState({ country: '', city: '', dateFrom: '', dateTo: '', visibility: '', viewType: 'all' }); // 'all', 'requests', 'approved', 'rejected'
   const [showGymFilters, setShowGymFilters] = useState(false);
   const [openGymMenuId, setOpenGymMenuId] = useState(null);
   const [gymMenuPosition, setGymMenuPosition] = useState({ top: 0, right: 0, flipUp: false });
@@ -514,19 +520,22 @@ export default function AdminPage() {
     }
   };
 
-  const approveGymRequest = async (requestId) => {
-    const { data: request } = await supabase.from('gym_requests').select('*').eq('id', requestId).single();
-    if (!request) return;
+  const approveGymRequest = (requestId) => {
+    console.log('approveGymRequest called with requestId:', requestId);
+    console.log('Current gymRequests:', gymRequests);
+    // Find the request from the current gymRequests state to avoid extra query
+    const request = gymRequests.find(r => r.id === requestId);
+    if (!request) {
+      console.error('Gym request not found:', requestId);
+      showToast('error', 'Error', 'Gym request not found');
+      return;
+    }
     
-    setConfirmationModal({
+    console.log('Setting approve options modal with request:', request);
+    setApproveOptionsModal({
       isOpen: true,
-      action: 'approveGymRequest',
-      data: { requestId, request },
-      title: 'Approve Gym Request',
-      message: `Are you sure you want to approve the gym request for "${request.gym_name}"? This will add it to the gyms database.`,
-      variant: 'default',
-      icon: CheckCircle,
-      confirmText: 'Approve'
+      requestId,
+      request
     });
   };
 
@@ -543,12 +552,130 @@ export default function AdminPage() {
     });
   };
 
-  const executeApproveGymRequest = async (requestId) => {
+  // Load gym request history
+  const loadGymRequestHistory = async (gymRequestId) => {
+    setLoadingGymRequestHistory(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Loading gym request history for:', gymRequestId);
       
-      const { data: request } = await supabase.from('gym_requests').select('*').eq('id', requestId).single();
-      if (!request) return;
+      const { data, error } = await supabase
+        .from('gym_request_history')
+        .select('*')
+        .eq('gym_request_id', gymRequestId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading gym request history:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        setGymRequestHistory([]);
+        return;
+      }
+
+      console.log('History data loaded:', data);
+
+      // Enrich with profile names
+      if (data && data.length > 0) {
+        console.log(`Found ${data.length} history entries`);
+        const userIds = [...new Set(data.map(entry => entry.changed_by).filter(Boolean))];
+        if (userIds.length > 0) {
+          const { data: profiles, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', userIds);
+
+          if (profileError) {
+            console.error('Error loading profiles for history:', profileError);
+          }
+
+          const profileMap = {};
+          if (profiles) {
+            profiles.forEach(p => profileMap[p.id] = p);
+          }
+
+          const enrichedData = data.map(entry => ({
+            ...entry,
+            changed_by_profile: entry.changed_by ? profileMap[entry.changed_by] : null
+          }));
+
+          console.log('Enriched history data:', enrichedData);
+          setGymRequestHistory(enrichedData);
+        } else {
+          setGymRequestHistory(data);
+        }
+      } else {
+        console.log('No history entries found for this request');
+        setGymRequestHistory([]);
+      }
+    } catch (error) {
+      console.error('Exception loading gym request history:', error);
+      setGymRequestHistory([]);
+    } finally {
+      setLoadingGymRequestHistory(false);
+    }
+  };
+
+  // Helper function to log gym request history
+  const logGymRequestHistory = async (gymRequestId, action, changedBy, changes = {}, notes = null) => {
+    try {
+      console.log('Logging gym request history:', { gymRequestId, action, changedBy, changes, notes });
+      
+      const { data, error } = await supabase.from('gym_request_history').insert({
+        gym_request_id: gymRequestId,
+        action,
+        changed_by: changedBy,
+        changes,
+        notes
+      }).select();
+
+      if (error) {
+        console.error('Error logging gym request history:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+      } else {
+        console.log('History logged successfully:', data);
+      }
+    } catch (error) {
+      console.error('Exception logging gym request history:', error);
+      // Don't throw - history logging failures shouldn't break the main operation
+    }
+  };
+
+
+  const executeApproveGymRequest = async (requestId, hide = false, navigateToGym = false) => {
+    try {
+      console.log('executeApproveGymRequest called with:', { requestId, hide, navigateToGym });
+      
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error('Error getting user:', userError);
+        throw userError;
+      }
+      if (!user) {
+        console.error('No user found');
+        throw new Error('No user found');
+      }
+      
+      console.log('Fetching gym request:', requestId);
+      const { data: request, error: requestError } = await supabase.from('gym_requests').select('*').eq('id', requestId).single();
+      if (requestError) {
+        console.error('Error fetching request:', requestError);
+        throw requestError;
+      }
+      if (!request) {
+        console.error('Request not found');
+        throw new Error('Request not found');
+      }
+      
+      console.log('Request found:', request);
       
       // Clean description to remove rating metadata if present
       let cleanDescription = request.description || null;
@@ -558,7 +685,7 @@ export default function AdminPage() {
         if (cleanDescription === '') cleanDescription = null;
       }
 
-      await supabase.from('gyms').insert({
+      const gymData = {
         name: request.gym_name,
         country: request.country,
         city: request.city,
@@ -570,35 +697,245 @@ export default function AdminPage() {
         facilities: request.facilities && Array.isArray(request.facilities) && request.facilities.length > 0 
           ? request.facilities 
           : [],
-        google_rating: request.google_rating || null,
-        google_ratings_count: request.google_ratings_count || null
-      });
+        // Note: google_rating and google_ratings_count columns may not exist in schema
+        // Uncomment below if you've added these columns via sql-scripts/add-google-ratings-to-gyms.sql
+        // google_rating: request.google_rating || null,
+        // google_ratings_count: request.google_ratings_count || null,
+        is_hidden: Boolean(hide) // Ensure it's a boolean
+      };
+      
+      console.log('Inserting gym with data:', gymData);
+      console.log('is_hidden value:', gymData.is_hidden, 'type:', typeof gymData.is_hidden);
+      
+      const { data: newGym, error: insertError } = await supabase.from('gyms').insert(gymData).select().single();
 
-      await supabase.from('gym_requests').update({
+      if (insertError) {
+        console.error('Error inserting gym:', insertError);
+        // If error is about is_hidden column not existing, try without it
+        if (insertError.message && insertError.message.includes('is_hidden')) {
+          console.log('is_hidden column not found, retrying without it');
+          const gymDataWithoutHidden = { ...gymData };
+          delete gymDataWithoutHidden.is_hidden;
+          const { data: newGymRetry, error: retryError } = await supabase.from('gyms').insert(gymDataWithoutHidden).select().single();
+          if (retryError) throw retryError;
+          console.log('Gym inserted successfully (without is_hidden):', newGymRetry);
+          showToast('warning', 'Approved', 'Gym approved but is_hidden column not found. Run sql-scripts/add-is-hidden-to-gyms.sql to enable hiding.');
+          // Continue with update
+          const { error: updateError } = await supabase.from('gym_requests').update({
+            status: 'approved',
+            reviewed_at: new Date().toISOString(),
+            reviewed_by: user.id
+          }).eq('id', requestId);
+          if (updateError) throw updateError;
+          loadData();
+          if (navigateToGym && newGymRetry) {
+            setTimeout(() => navigate(`/gyms/${newGymRetry.id}`), 500);
+          }
+          return;
+        }
+        throw insertError;
+      }
+      
+      console.log('Gym inserted successfully:', newGym);
+      console.log('Gym is_hidden value:', newGym?.is_hidden, 'type:', typeof newGym?.is_hidden);
+
+      const { error: updateError } = await supabase.from('gym_requests').update({
         status: 'approved',
         reviewed_at: new Date().toISOString(),
         reviewed_by: user.id
       }).eq('id', requestId);
 
+      if (updateError) {
+        console.error('Error updating request status:', updateError);
+        throw updateError;
+      }
+      
+      console.log('Request status updated to approved');
+
+      // Log history
+      await logGymRequestHistory(requestId, 'approved', user.id, {
+        status: { old: 'pending', new: 'approved' },
+        is_hidden: hide
+      }, hide ? 'Approved and hidden from public listing' : 'Approved and added to database');
+
+      const message = hide 
+        ? 'Gym request approved and hidden from public listing' 
+        : 'Gym request approved successfully';
+      
+      showToast('success', hide ? 'Approved & Hidden' : 'Approved', message);
       loadData();
+      
+      // Navigate to gym page if requested
+      if (navigateToGym && newGym) {
+        console.log('Navigating to gym page:', newGym.id);
+        setTimeout(() => {
+          navigate(`/gyms/${newGym.id}`);
+        }, 500);
+      }
+      
+      console.log('executeApproveGymRequest completed successfully');
     } catch (error) {
       console.error('Error approving gym request:', error);
-      alert('Failed to approve gym request');
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      showToast('error', 'Error', `Failed to approve gym request: ${error.message || error.toString()}`);
     }
   };
 
   const executeRejectGymRequest = async (requestId) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      
+      // Get request before updating
+      const { data: request } = await supabase
+        .from('gym_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
       await supabase.from('gym_requests').update({
         status: 'rejected',
         reviewed_at: new Date().toISOString(),
         reviewed_by: user.id
       }).eq('id', requestId);
+
+      // Log history
+      if (request) {
+        await logGymRequestHistory(requestId, 'rejected', user.id, {
+          status: { old: request.status, new: 'rejected' }
+        }, 'Gym request rejected');
+      }
+
+      showToast('success', 'Rejected', 'Gym request rejected successfully');
       loadData();
     } catch (error) {
       console.error('Error rejecting gym request:', error);
-      alert('Failed to reject gym request');
+      showToast('error', 'Error', 'Failed to reject gym request');
+    }
+  };
+
+  const unrejectGymRequest = async (requestId) => {
+    setConfirmationModal({
+      isOpen: true,
+      action: 'unrejectGymRequest',
+      data: { requestId },
+      title: 'Restore Gym Request',
+      message: 'Are you sure you want to restore this gym request to pending status?',
+      variant: 'default',
+      icon: CheckCircle,
+      confirmText: 'Restore'
+    });
+  };
+
+  const executeUnrejectGymRequest = async (requestId) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Get request before updating
+      const { data: request } = await supabase
+        .from('gym_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+      const { error } = await supabase
+        .from('gym_requests')
+        .update({
+          status: 'pending',
+          reviewed_at: null,
+          reviewed_by: null
+        })
+        .eq('id', requestId);
+
+      if (error) {
+        console.error('Error unrejecting gym request:', error);
+        throw error;
+      }
+
+      // Log history
+      if (request) {
+        await logGymRequestHistory(requestId, 'restored', user.id, {
+          status: { old: 'rejected', new: 'pending' }
+        }, 'Gym request restored to pending status');
+      }
+
+      showToast('success', 'Restored', 'Gym request restored to pending status');
+      loadData();
+    } catch (error) {
+      console.error('Error unrejecting gym request:', error);
+      showToast('error', 'Error', 'Failed to restore gym request');
+    }
+  };
+
+  const updateGymRequest = async (requestId, updates) => {
+    try {
+      console.log('Updating gym request:', requestId, updates);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Get original request to track changes
+      const { data: originalRequest } = await supabase
+        .from('gym_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+      // If admin_notes column doesn't exist, remove it from updates
+      // Note: Run sql-scripts/add-admin-notes-to-gym-requests.sql to add this column
+      const updatesToSend = { ...updates };
+      
+      // Track changes for history
+      const changes = {};
+      if (originalRequest) {
+        Object.keys(updatesToSend).forEach(key => {
+          if (updatesToSend[key] !== originalRequest[key] && key !== 'admin_notes') {
+            changes[key] = {
+              old: originalRequest[key] || null,
+              new: updatesToSend[key] || null
+            };
+          }
+        });
+      }
+      
+      // Try to update, if it fails due to missing admin_notes column, retry without it
+      let { error } = await supabase
+        .from('gym_requests')
+        .update(updatesToSend)
+        .eq('id', requestId);
+
+      if (error) {
+        // If error is about admin_notes column not existing, retry without it
+        if (error.message && error.message.includes('admin_notes')) {
+          console.log('admin_notes column not found, retrying without it');
+          const { admin_notes, ...updatesWithoutNotes } = updatesToSend;
+          const { error: retryError } = await supabase
+            .from('gym_requests')
+            .update(updatesWithoutNotes)
+            .eq('id', requestId);
+          
+          if (retryError) {
+            console.error('Error updating gym request:', retryError);
+            throw retryError;
+          }
+          
+          showToast('warning', 'Updated', 'Gym request updated but admin_notes column not found. Run sql-scripts/add-admin-notes-to-gym-requests.sql to enable notes.');
+        } else {
+          console.error('Error updating gym request:', error);
+          throw error;
+        }
+      } else {
+        showToast('success', 'Updated', 'Gym request updated successfully');
+      }
+
+      // Log history if there were actual changes
+      if (Object.keys(changes).length > 0 && originalRequest) {
+        await logGymRequestHistory(requestId, 'edited', user.id, changes, 'Gym request details updated');
+      }
+      
+      loadData();
+      setEditingGymRequest(null);
+    } catch (error) {
+      console.error('Error updating gym request:', error);
+      showToast('error', 'Error', `Failed to update gym request: ${error.message || error.toString()}`);
     }
   };
 
@@ -661,8 +998,10 @@ export default function AdminPage() {
           facilities: request.facilities && Array.isArray(request.facilities) && request.facilities.length > 0 
             ? request.facilities 
             : [],
-          google_rating: request.google_rating || null,
-          google_ratings_count: request.google_ratings_count || null
+          // Note: google_rating and google_ratings_count columns may not exist in schema
+          // Uncomment below if you've added these columns via sql-scripts/add-google-ratings-to-gyms.sql
+          // google_rating: request.google_rating || null,
+          // google_ratings_count: request.google_ratings_count || null
         };
       });
 
@@ -702,15 +1041,68 @@ export default function AdminPage() {
     }
   };
 
-  // Toggle select all gym requests
-  const toggleSelectAllGymRequests = () => {
-    const pendingRequests = gymRequests.filter(r => r.status === 'pending');
-    if (selectedGymRequests.size === pendingRequests.length) {
+  // Bulk reject gym requests
+  const bulkRejectGymRequests = () => {
+    if (selectedGymRequests.size === 0) return;
+
+    const pendingRequests = gymRequests.filter(r => 
+      r.status === 'pending' && selectedGymRequests.has(r.id)
+    );
+
+    setConfirmationModal({
+      isOpen: true,
+      action: 'bulkRejectGymRequests',
+      data: { requestIds: Array.from(selectedGymRequests) },
+      title: 'Bulk Reject Gym Requests',
+      message: `Are you sure you want to reject ${pendingRequests.length} gym request(s)? This action cannot be undone.`,
+      variant: 'danger',
+      icon: XCircle,
+      confirmText: `Reject ${pendingRequests.length} Requests`
+    });
+  };
+
+  const executeBulkRejectGymRequests = async (requestIds) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Get all pending requests that are selected
+      const { data: requests } = await supabase
+        .from('gym_requests')
+        .select('*')
+        .in('id', requestIds)
+        .eq('status', 'pending');
+
+      if (!requests || requests.length === 0) {
+        showToast('error', 'No Requests', 'No pending requests found to reject');
+        setSelectedGymRequests(new Set());
+        return;
+      }
+
+      // Update all requests to rejected status
+      const { error } = await supabase
+        .from('gym_requests')
+        .update({
+          status: 'rejected',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user.id
+        })
+        .in('id', requestIds)
+        .eq('status', 'pending');
+
+      if (error) {
+        console.error('Error bulk rejecting gym requests:', error);
+        throw error;
+      }
+
+      showToast('success', 'Rejected', `Successfully rejected ${requests.length} gym request(s)`);
       setSelectedGymRequests(new Set());
-    } else {
-      setSelectedGymRequests(new Set(pendingRequests.map(r => r.id)));
+      loadData();
+    } catch (error) {
+      console.error('Error bulk rejecting gym requests:', error);
+      showToast('error', 'Error', 'Failed to bulk reject gym requests');
     }
   };
+
 
   // Toggle individual gym request selection
   const toggleGymRequestSelection = (requestId) => {
@@ -740,19 +1132,34 @@ export default function AdminPage() {
 
   const executeDeleteGym = async (gymId) => {
     try {
+      console.log('executeDeleteGym called with gymId:', gymId);
+      
       const { error } = await supabase
         .from('gyms')
         .delete()
         .eq('id', gymId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting gym:', error);
+        throw error;
+      }
 
+      console.log('Gym deleted successfully:', gymId);
       showToast('success', 'Deleted', 'Gym deleted successfully');
+      
+      // Close menu and modal immediately
       setOpenGymMenuId(null);
-      loadData();
+      setConfirmationModal({ isOpen: false, action: null, data: null });
+      
+      // Reload data
+      await loadData();
+      
+      console.log('Data reloaded after delete');
     } catch (error) {
       console.error('Error deleting gym:', error);
-      showToast('error', 'Error', 'Failed to delete gym');
+      showToast('error', 'Error', `Failed to delete gym: ${error.message || error.toString()}`);
+      // Close modal even on error
+      setConfirmationModal({ isOpen: false, action: null, data: null });
     }
   };
 
@@ -953,66 +1360,132 @@ export default function AdminPage() {
 
   const handleSelectAllGyms = () => {
     const filtered = getFilteredGyms();
-    if (selectedGyms.size === filtered.length && filtered.length > 0) {
-      setSelectedGyms(new Set());
+    const gymsInFilter = filtered.filter(g => g._type === 'gym');
+    const requestsInFilter = filtered.filter(g => g._type === 'request' && g._status === 'pending');
+    
+    // Only selectable items count
+    const selectableCount = gymsInFilter.length + requestsInFilter.length;
+    if (selectableCount === 0) return; // Nothing to select
+    
+    // Check if all selectable items are selected
+    const allGymsSelected = gymsInFilter.length === 0 || (gymsInFilter.length > 0 && gymsInFilter.every(g => selectedGyms.has(g.id)));
+    const allRequestsSelected = requestsInFilter.length === 0 || (requestsInFilter.length > 0 && requestsInFilter.every(r => selectedGymRequests.has(r.id)));
+    
+    if (allGymsSelected && allRequestsSelected) {
+      // Deselect all selectable items
+      const newSelectedGyms = new Set(selectedGyms);
+      const newSelectedRequests = new Set(selectedGymRequests);
+      gymsInFilter.forEach(g => newSelectedGyms.delete(g.id));
+      requestsInFilter.forEach(r => newSelectedRequests.delete(r.id));
+      setSelectedGyms(newSelectedGyms);
+      setSelectedGymRequests(newSelectedRequests);
     } else {
-      setSelectedGyms(new Set(filtered.map(g => g.id)));
+      // Select all selectable items
+      const newSelectedGyms = new Set(selectedGyms);
+      const newSelectedRequests = new Set(selectedGymRequests);
+      gymsInFilter.forEach(g => newSelectedGyms.add(g.id));
+      requestsInFilter.forEach(r => newSelectedRequests.add(r.id));
+      setSelectedGyms(newSelectedGyms);
+      setSelectedGymRequests(newSelectedRequests);
     }
   };
 
   const getFilteredGyms = () => {
-    let filtered = [...gyms];
+    // Merge gyms and requests into unified structure
+    const combined = [];
+    
+    // Add approved gyms (from gyms table)
+    gyms.forEach(gym => {
+      combined.push({
+        ...gym,
+        _type: 'gym',
+        _status: 'approved',
+        _displayName: gym.name,
+        _source: gym
+      });
+    });
+    
+    // Add requests (pending, rejected)
+    gymRequests.forEach(request => {
+      combined.push({
+        ...request,
+        _type: 'request',
+        _status: request.status,
+        _displayName: request.gym_name,
+        _source: request
+      });
+    });
+    
+    let filtered = combined;
+
+    // View type filter (all, requests, approved, rejected)
+    if (gymFilters.viewType === 'requests') {
+      filtered = filtered.filter(item => item._type === 'request' && item._status === 'pending');
+    } else if (gymFilters.viewType === 'approved') {
+      filtered = filtered.filter(item => item._status === 'approved');
+    } else if (gymFilters.viewType === 'rejected') {
+      filtered = filtered.filter(item => item._type === 'request' && item._status === 'rejected');
+    }
+    // 'all' shows everything
 
     // Search filter
     if (gymSearchQuery) {
       const query = gymSearchQuery.toLowerCase();
-      filtered = filtered.filter(gym =>
-        gym.name?.toLowerCase().includes(query) ||
-        gym.city?.toLowerCase().includes(query) ||
-        gym.country?.toLowerCase().includes(query) ||
-        gym.address?.toLowerCase().includes(query)
-      );
+      filtered = filtered.filter(item => {
+        const name = item._type === 'gym' ? item.name : item.gym_name;
+        const city = item.city;
+        const country = item.country;
+        const address = item.address;
+        const submitter = item._type === 'request' && item.profiles ? item.profiles.full_name : '';
+        
+        return name?.toLowerCase().includes(query) ||
+               city?.toLowerCase().includes(query) ||
+               country?.toLowerCase().includes(query) ||
+               address?.toLowerCase().includes(query) ||
+               submitter?.toLowerCase().includes(query);
+      });
     }
 
     // Country filter
     if (gymFilters.country) {
-      filtered = filtered.filter(gym => gym.country === gymFilters.country);
+      filtered = filtered.filter(item => item.country === gymFilters.country);
     }
 
     // City filter
     if (gymFilters.city) {
-      filtered = filtered.filter(gym => gym.city === gymFilters.city);
+      filtered = filtered.filter(item => item.city === gymFilters.city);
     }
 
     // Date range filter
     if (gymFilters.dateFrom) {
-      filtered = filtered.filter(gym => {
-        const gymDate = new Date(gym.created_at);
-        return gymDate >= new Date(gymFilters.dateFrom);
+      filtered = filtered.filter(item => {
+        const itemDate = new Date(item.created_at);
+        return itemDate >= new Date(gymFilters.dateFrom);
       });
     }
 
     if (gymFilters.dateTo) {
-      filtered = filtered.filter(gym => {
-        const gymDate = new Date(gym.created_at);
+      filtered = filtered.filter(item => {
+        const itemDate = new Date(item.created_at);
         const toDate = new Date(gymFilters.dateTo);
         toDate.setHours(23, 59, 59, 999);
-        return gymDate <= toDate;
+        return itemDate <= toDate;
       });
     }
 
-    // Visibility filter (hidden/visible)
+    // Visibility filter (only for approved gyms)
     if (gymFilters.visibility === 'hidden') {
-      filtered = filtered.filter(gym => gym.is_hidden === true);
+      filtered = filtered.filter(item => item._type === 'gym' && item.is_hidden === true);
     } else if (gymFilters.visibility === 'visible') {
-      filtered = filtered.filter(gym => !gym.is_hidden);
+      filtered = filtered.filter(item => item._type === 'gym' && !item.is_hidden);
     }
-    // If visibility is empty string '', show all gyms
 
     return filtered;
   };
 
   const filteredGyms = getFilteredGyms();
+
+  // Gym Request Filtering Functions
 
   // Community Management Functions
   const getFilteredCommunities = () => {
@@ -2164,6 +2637,16 @@ export default function AdminPage() {
   const handleConfirmAction = () => {
     const { action, data } = confirmationModal;
     
+    if (!action || !data) {
+      console.warn('handleConfirmAction called with invalid state:', { action, data });
+      return;
+    }
+    
+    // Close modal immediately to prevent double-clicks and state issues
+    setConfirmationModal({ isOpen: false, action: null, data: null });
+    
+    console.log('handleConfirmAction executing:', action, data);
+    
     switch (action) {
       case 'makeAdmin':
         executeMakeAdmin(data.userId);
@@ -2184,13 +2667,19 @@ export default function AdminPage() {
         executeBulkDelete(data.userIds);
         break;
       case 'approveGymRequest':
-        executeApproveGymRequest(data.requestId);
+        executeApproveGymRequest(data.requestId, data.hide || false, data.navigateToGym || false);
         break;
       case 'rejectGymRequest':
         executeRejectGymRequest(data.requestId);
         break;
+      case 'unrejectGymRequest':
+        executeUnrejectGymRequest(data.requestId);
+        break;
       case 'bulkApproveGymRequests':
         executeBulkApproveGymRequests(data.requestIds);
+        break;
+      case 'bulkRejectGymRequests':
+        executeBulkRejectGymRequests(data.requestIds);
         break;
       case 'dismissReport':
         executeDismissReport(data.reportId);
@@ -2223,6 +2712,10 @@ export default function AdminPage() {
         executeDeleteComment(data.commentId, data.reportId);
         break;
       case 'deleteGym':
+        if (!data.gymId) {
+          console.error('deleteGym called without gymId');
+          return;
+        }
         executeDeleteGym(data.gymId);
         break;
       case 'bulkDeleteGyms':
@@ -2455,19 +2948,8 @@ export default function AdminPage() {
               Communities
             </button>
             <button
-              onClick={() => setActiveTab('requests')}
-              className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors ${
-                activeTab === 'requests'
-                  ? 'bg-[#087E8B] text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
-              }`}
-              style={{ borderRadius: 0 }}
-            >
-              Requests
-            </button>
-            <button
               onClick={() => setActiveTab('gyms')}
-              className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors ${
+              className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors relative ${
                 activeTab === 'gyms'
                   ? 'bg-[#087E8B] text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
@@ -2475,6 +2957,11 @@ export default function AdminPage() {
               style={{ borderRadius: 0 }}
             >
               Gyms
+              {gymRequests.filter(r => r.status === 'pending').length > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-amber-500 text-white rounded-full font-semibold min-w-[18px] inline-flex items-center justify-center">
+                  {gymRequests.filter(r => r.status === 'pending').length}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setActiveTab('reports')}
@@ -3424,131 +3911,32 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Gym Requests Tab */}
-          {activeTab === 'requests' && (
-            <div className="bg-gray-800/50 border border-gray-700/50" style={{ borderRadius: 0 }}>
-              <div className="p-4 border-b border-gray-700/50 flex items-center justify-between">
-                <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Gym Requests</h2>
-                <button
-                  onClick={() => navigate('/gyms/request')}
-                  className="px-3 py-1.5 text-xs bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors flex items-center gap-1.5"
-                  style={{ borderRadius: 2 }}
-                >
-                  <MapPin className="w-3 h-3" />
-                  Create Gym
-                </button>
-              </div>
-              
-              {/* Bulk Actions Bar */}
-              {gymRequests.length > 0 && gymRequests.some(r => r.status === 'pending') && (
-                <div className="p-3 border-b border-gray-700/50 bg-gray-800/30 flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-3">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={gymRequests.filter(r => r.status === 'pending').length > 0 && 
-                                 selectedGymRequests.size === gymRequests.filter(r => r.status === 'pending').length}
-                        onChange={toggleSelectAllGymRequests}
-                        className="w-4 h-4 rounded border-gray-600 cursor-pointer"
-                        style={{ accentColor: '#087E8B' }}
-                      />
-                      <span className="text-xs text-gray-300">Select All</span>
-                    </label>
-                    {selectedGymRequests.size > 0 && (
-                      <span className="text-xs text-gray-400">
-                        {selectedGymRequests.size} selected
-                      </span>
-                    )}
-                  </div>
-                  {selectedGymRequests.size > 0 && (
-                    <button
-                      onClick={bulkApproveGymRequests}
-                      className="px-3 py-1.5 text-xs bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-1.5"
-                      style={{ borderRadius: 2 }}
-                    >
-                      <CheckCircle className="w-3 h-3" />
-                      Bulk Approve ({selectedGymRequests.size})
-                    </button>
-                  )}
-                </div>
-              )}
+          {/* Gym Requests Tab - REMOVED: Consolidated into Gyms tab */}
+          {/* Disabled code block removed - all functionality moved to consolidated Gyms tab */}
 
-              {gymRequests.length === 0 ? (
-                <div className="p-12 text-center">
-                  <p className="text-sm text-gray-400">No gym requests found</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-700/50">
-                  {gymRequests.map((request) => (
-                    <div key={request.id} className="p-4">
-                      <div className="flex items-start gap-3 mb-3">
-                        {request.status === 'pending' && (
-                          <input
-                            type="checkbox"
-                            checked={selectedGymRequests.has(request.id)}
-                            onChange={() => toggleGymRequestSelection(request.id)}
-                            className="mt-1 w-4 h-4 rounded border-gray-600 cursor-pointer flex-shrink-0"
-                            style={{ accentColor: '#087E8B' }}
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between mb-1">
-                            <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{request.gym_name}</p>
-                            <span className={`ml-3 px-2 py-1 text-xs flex-shrink-0 ${
-                              request.status === 'pending' ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20' :
-                              request.status === 'approved' ? 'bg-green-500/10 text-green-300 border border-green-500/20' :
-                              'bg-red-500/10 text-red-300 border border-red-500/20'
-                            }`}
-                            style={{ borderRadius: 2 }}>
-                              {request.status}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-400">{request.city}, {request.country}</p>
-                          {request.description && (
-                            <p className="text-xs text-gray-400 mt-2 line-clamp-2">{request.description}</p>
-                          )}
-                        </div>
-                      </div>
-                      {request.status === 'pending' && (
-                        <div className="flex gap-2 mt-3 ml-7">
-                          <button
-                            onClick={() => approveGymRequest(request.id)}
-                            className="flex-1 px-3 py-1.5 text-xs bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center justify-center"
-                            style={{ borderRadius: 2 }}
-                          >
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => rejectGymRequest(request.id)}
-                            className="flex-1 px-3 py-1.5 text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors flex items-center justify-center"
-                            style={{ borderRadius: 2 }}
-                          >
-                            <XCircle className="w-3 h-3 mr-1" />
-                            Reject
-                          </button>
-                        </div>
-                      )}
-                      <p className="text-xs text-gray-500 mt-3 ml-7">
-                        By {request.profiles?.full_name || 'Unknown'} • {new Date(request.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Gyms Tab */}
+          {/* Gyms Tab - Consolidated with Requests */}
           {activeTab === 'gyms' && (
             <div className="bg-gray-800/50 border border-gray-700/50" style={{ borderRadius: 0 }}>
               <div className="p-4 border-b border-gray-700/50 space-y-3">
                 <div className="flex items-center justify-between">
                   <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Gyms
+                    Gyms & Requests
                     <span className="ml-2 text-xs text-gray-400">({filteredGyms.length})</span>
+                    {gymRequests.filter(r => r.status === 'pending').length > 0 && (
+                      <span className="ml-2 px-2 py-0.5 text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full">
+                        {gymRequests.filter(r => r.status === 'pending').length} pending
+                      </span>
+                    )}
                   </h2>
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => navigate('/gyms/request')}
+                      className="px-3 py-1.5 text-xs bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors flex items-center gap-1.5"
+                      style={{ borderRadius: 2 }}
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      Create Gym
+                    </button>
                     <button
                       onClick={() => exportGyms()}
                       className="px-3 py-1.5 text-xs bg-gray-700/50 text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-1.5"
@@ -3567,6 +3955,32 @@ export default function AdminPage() {
                       <Filter className="w-3.5 h-3.5" />
                       Filters
                     </button>
+                  </div>
+                </div>
+                
+                {/* View Type Toggle */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">View:</span>
+                  <div className="flex gap-1 bg-gray-900/50 p-1 rounded" style={{ borderRadius: 2 }}>
+                    {[
+                      { value: 'all', label: 'All' },
+                      { value: 'requests', label: 'Pending Requests' },
+                      { value: 'approved', label: 'Approved Gyms' },
+                      { value: 'rejected', label: 'Rejected' }
+                    ].map(option => (
+                      <button
+                        key={option.value}
+                        onClick={() => setGymFilters({ ...gymFilters, viewType: option.value })}
+                        className={`px-3 py-1 text-xs transition-colors ${
+                          gymFilters.viewType === option.value
+                            ? 'bg-[#087E8B] text-white'
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                        style={{ borderRadius: 2 }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
                 
@@ -3596,7 +4010,7 @@ export default function AdminPage() {
                           style={{ borderRadius: 2 }}
                         >
                           <option value="">All Countries</option>
-                          {[...new Set(gyms.map(g => g.country).filter(Boolean))].sort().map(country => (
+                          {[...new Set([...gyms.map(g => g.country), ...gymRequests.map(r => r.country)].filter(Boolean))].sort().map(country => (
                             <option key={country} value={country}>{country}</option>
                           ))}
                         </select>
@@ -3610,12 +4024,10 @@ export default function AdminPage() {
                           style={{ borderRadius: 2 }}
                         >
                           <option value="">All Cities</option>
-                          {[...new Set(
-                            gyms
-                              .filter(g => !gymFilters.country || g.country === gymFilters.country)
-                              .map(g => g.city)
-                              .filter(Boolean)
-                          )].sort().map(city => (
+                          {[...new Set([
+                            ...gyms.filter(g => !gymFilters.country || g.country === gymFilters.country).map(g => g.city),
+                            ...gymRequests.filter(r => !gymFilters.country || r.country === gymFilters.country).map(r => r.city)
+                          ].filter(Boolean))].sort().map(city => (
                             <option key={city} value={city}>{city}</option>
                           ))}
                         </select>
@@ -3660,7 +4072,7 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <button
-                      onClick={() => setGymFilters({ country: '', city: '', dateFrom: '', dateTo: '', visibility: '' })}
+                      onClick={() => setGymFilters({ country: '', city: '', dateFrom: '', dateTo: '', visibility: '', viewType: 'all' })}
                       className="text-xs text-gray-400 hover:text-white"
                     >
                       Clear All Filters
@@ -3669,44 +4081,76 @@ export default function AdminPage() {
                 )}
 
                 {/* Bulk Actions Bar */}
-                {selectedGyms.size > 0 && (
+                {(selectedGyms.size > 0 || selectedGymRequests.size > 0) && (
                   <div className="flex items-center justify-between p-3 bg-gray-900/30 border border-gray-700/50" style={{ borderRadius: 2 }}>
-                    <span className="text-xs text-gray-300">{selectedGyms.size} gym(s) selected</span>
+                    <span className="text-xs text-gray-300">
+                      {selectedGyms.size + selectedGymRequests.size} selected
+                      {selectedGyms.size > 0 && selectedGymRequests.size > 0 && ` (${selectedGyms.size} gyms, ${selectedGymRequests.size} requests)`}
+                    </span>
                     <div className="flex items-center gap-2">
+                      {/* Bulk actions for requests */}
+                      {selectedGymRequests.size > 0 && (
+                        <>
+                          <button
+                            onClick={bulkApproveGymRequests}
+                            className="px-3 py-1 text-xs bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-1.5"
+                            style={{ borderRadius: 2 }}
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                            Bulk Approve ({selectedGymRequests.size})
+                          </button>
+                          <button
+                            onClick={bulkRejectGymRequests}
+                            className="px-3 py-1 text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors flex items-center gap-1.5"
+                            style={{ borderRadius: 2 }}
+                          >
+                            <XCircle className="w-3 h-3" />
+                            Bulk Reject ({selectedGymRequests.size})
+                          </button>
+                        </>
+                      )}
+                      {/* Bulk actions for gyms */}
+                      {selectedGyms.size > 0 && (
+                        <>
+                          <button
+                            onClick={() => bulkToggleGymVisibility(false)}
+                            className="px-3 py-1 text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center gap-1.5"
+                            style={{ borderRadius: 2 }}
+                          >
+                            <Eye className="w-3 h-3" />
+                            Show
+                          </button>
+                          <button
+                            onClick={() => bulkToggleGymVisibility(true)}
+                            className="px-3 py-1 text-xs bg-gray-600 text-white hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+                            style={{ borderRadius: 2 }}
+                          >
+                            <EyeOff className="w-3 h-3" />
+                            Hide
+                          </button>
+                          <button
+                            onClick={bulkDeleteGyms}
+                            className="px-3 py-1 text-xs bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center gap-1.5"
+                            style={{ borderRadius: 2 }}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Delete
+                          </button>
+                          <button
+                            onClick={() => exportGyms(filteredGyms.filter(g => g._type === 'gym' && selectedGyms.has(g.id)))}
+                            className="px-3 py-1 text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center gap-1.5"
+                            style={{ borderRadius: 2 }}
+                          >
+                            <Download className="w-3 h-3" />
+                            Export Selected
+                          </button>
+                        </>
+                      )}
                       <button
-                        onClick={() => bulkToggleGymVisibility(false)}
-                        className="px-3 py-1 text-xs bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-1.5"
-                        style={{ borderRadius: 2 }}
-                      >
-                        <Eye className="w-3 h-3" />
-                        Show
-                      </button>
-                      <button
-                        onClick={() => bulkToggleGymVisibility(true)}
-                        className="px-3 py-1 text-xs bg-gray-600 text-white hover:bg-gray-700 transition-colors flex items-center gap-1.5"
-                        style={{ borderRadius: 2 }}
-                      >
-                        <EyeOff className="w-3 h-3" />
-                        Hide
-                      </button>
-                      <button
-                        onClick={bulkDeleteGyms}
-                        className="px-3 py-1 text-xs bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center gap-1.5"
-                        style={{ borderRadius: 2 }}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        Delete
-                      </button>
-                      <button
-                        onClick={() => exportGyms(filteredGyms.filter(g => selectedGyms.has(g.id)))}
-                        className="px-3 py-1 text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors flex items-center gap-1.5"
-                        style={{ borderRadius: 2 }}
-                      >
-                        <Download className="w-3 h-3" />
-                        Export Selected
-                      </button>
-                      <button
-                        onClick={() => setSelectedGyms(new Set())}
+                        onClick={() => {
+                          setSelectedGyms(new Set());
+                          setSelectedGymRequests(new Set());
+                        }}
                         className="px-3 py-1 text-xs bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
                         style={{ borderRadius: 2 }}
                       >
@@ -3719,67 +4163,121 @@ export default function AdminPage() {
 
               {filteredGyms.length === 0 ? (
                 <div className="p-12 text-center">
-                  <p className="text-sm text-gray-400">No gyms found</p>
+                  <p className="text-sm text-gray-400">
+                    {gymFilters.viewType === 'all' 
+                      ? 'No gyms or requests found' 
+                      : gymFilters.viewType === 'requests'
+                      ? 'No pending requests found'
+                      : gymFilters.viewType === 'approved'
+                      ? 'No approved gyms found'
+                      : 'No rejected requests found'}
+                  </p>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-700/50">
-                  {/* Select All */}
-                  <div className="p-3 border-b border-gray-700/50">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedGyms.size === filteredGyms.length && filteredGyms.length > 0}
-                        onChange={handleSelectAllGyms}
-                        className="w-4 h-4 rounded border-gray-600 cursor-pointer"
-                        style={{ accentColor: '#087E8B' }}
-                      />
-                      <span className="text-xs text-gray-400">Select All ({filteredGyms.length})</span>
-                    </label>
-                  </div>
-
-                  {filteredGyms.map((gym) => {
-                    const metrics = gymMetrics[gym.id] || {};
-                    const hasImage = !!gym.image_url;
-                    const hasCoordinates = !!(gym.latitude && gym.longitude);
-                    const hasDescription = !!gym.description;
+                  {/* Select All - Only show if there are selectable items */}
+                  {(() => {
+                    const gymsInFilter = filteredGyms.filter(g => g._type === 'gym');
+                    const requestsInFilter = filteredGyms.filter(g => g._type === 'request' && g._status === 'pending');
+                    const selectableCount = gymsInFilter.length + requestsInFilter.length;
+                    
+                    if (selectableCount === 0) return null; // Don't show select all if nothing is selectable
                     
                     return (
-                      <div key={gym.id} className="p-4 flex items-start justify-between relative">
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="p-3 border-b border-gray-700/50">
+                        <label className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={selectedGyms.has(gym.id)}
-                            onChange={() => handleSelectGym(gym.id)}
-                            className="mt-1 w-4 h-4 rounded border-gray-600 cursor-pointer flex-shrink-0"
+                            checked={(() => {
+                              const allGymsSelected = gymsInFilter.length === 0 || (gymsInFilter.length > 0 && gymsInFilter.every(g => selectedGyms.has(g.id)));
+                              const allRequestsSelected = requestsInFilter.length === 0 || (requestsInFilter.length > 0 && requestsInFilter.every(r => selectedGymRequests.has(r.id)));
+                              return allGymsSelected && allRequestsSelected;
+                            })()}
+                            onChange={handleSelectAllGyms}
+                            className="w-4 h-4 rounded border-gray-600 cursor-pointer"
                             style={{ accentColor: '#087E8B' }}
                           />
+                          <span className="text-xs text-gray-400">
+                            Select All ({selectableCount} selectable)
+                          </span>
+                        </label>
+                      </div>
+                    );
+                  })()}
+
+                  {filteredGyms.map((item) => {
+                    // Handle both gyms and requests
+                    const isRequest = item._type === 'request';
+                    const displayName = isRequest ? item.gym_name : item.name;
+                    const itemId = item.id;
+                    const metrics = !isRequest ? (gymMetrics[itemId] || {}) : {};
+                    const hasImage = !isRequest && !!item.image_url;
+                    const hasCoordinates = !isRequest && !!(item.latitude && item.longitude);
+                    const hasDescription = !!item.description;
+                    
+                    return (
+                      <div key={`${item._type}-${itemId}`} className="p-4 flex items-start justify-between relative">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          {/* Checkbox - only for pending requests or approved gyms */}
+                          {(isRequest && item._status === 'pending') || (!isRequest && item._status === 'approved') ? (
+                            <input
+                              type="checkbox"
+                              checked={
+                                isRequest 
+                                  ? selectedGymRequests.has(itemId)
+                                  : selectedGyms.has(itemId)
+                              }
+                              onChange={() => {
+                                if (isRequest) {
+                                  toggleGymRequestSelection(itemId);
+                                } else {
+                                  handleSelectGym(itemId);
+                                }
+                              }}
+                              className="mt-1 w-4 h-4 rounded border-gray-600 cursor-pointer flex-shrink-0"
+                              style={{ accentColor: '#087E8B' }}
+                            />
+                          ) : (
+                            <div className="w-4 h-4 flex-shrink-0" /> // Spacer for alignment
+                          )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
-                                {gym.name}
+                                {displayName}
                               </p>
-                              {gym.is_hidden && (
+                              {/* Status badges */}
+                              {isRequest && (
+                                <span className={`px-2 py-0.5 text-xs flex-shrink-0 ${
+                                  item._status === 'pending' ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20' :
+                                  item._status === 'approved' ? 'bg-green-500/10 text-green-300 border border-green-500/20' :
+                                  'bg-red-500/10 text-red-300 border border-red-500/20'
+                                }`}
+                                style={{ borderRadius: 2 }}>
+                                  {item._status}
+                                </span>
+                              )}
+                              {!isRequest && item.is_hidden && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 flex-shrink-0" style={{ borderRadius: 2 }}>
                                   <EyeOff className="w-3 h-3" />
                                   Hidden
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-gray-400">{gym.city}, {gym.country}</p>
-                            {gym.address && <p className="text-xs text-gray-500 mt-1">{gym.address}</p>}
+                            <p className="text-xs text-gray-400">{item.city}, {item.country}</p>
+                            {item.address && <p className="text-xs text-gray-500 mt-1">{item.address}</p>}
                             
                             {/* Contact Info */}
-                            {(gym.phone || gym.email || gym.website) && (
+                            {(item.phone || item.email || item.website) && (
                               <div className="flex flex-wrap items-center gap-3 mt-2">
-                                {gym.phone && (
-                                  <span className="text-xs text-gray-400">📞 {gym.phone}</span>
+                                {item.phone && (
+                                  <span className="text-xs text-gray-400">📞 {item.phone}</span>
                                 )}
-                                {gym.email && (
-                                  <span className="text-xs text-gray-400">✉️ {gym.email}</span>
+                                {item.email && (
+                                  <span className="text-xs text-gray-400">✉️ {item.email}</span>
                                 )}
-                                {gym.website && (
+                                {item.website && (
                                   <a 
-                                    href={gym.website} 
+                                    href={item.website} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     className="text-xs text-[#087E8B] hover:underline flex items-center gap-1"
@@ -3791,41 +4289,50 @@ export default function AdminPage() {
                               </div>
                             )}
 
-                            {/* Statistics */}
-                            <div className="flex flex-wrap items-center gap-4 mt-3">
-                              {metrics.reviewsCount > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <Star className="w-3 h-3 text-yellow-400" />
-                                  <span className="text-xs text-gray-400">
-                                    {metrics.avgRating?.toFixed(1)} ({metrics.reviewsCount})
-                                  </span>
-                                </div>
-                              )}
-                              {gym.google_rating && (
-                                <div className="flex items-center gap-1">
-                                  <Star className="w-3 h-3 text-orange-400" />
-                                  <span className="text-xs text-gray-400">
-                                    Google: {gym.google_rating.toFixed(1)}
-                                    {gym.google_ratings_count && ` (${gym.google_ratings_count})`}
-                                  </span>
-                                </div>
-                              )}
-                              {metrics.favoritesCount > 0 && (
-                                <span className="text-xs text-gray-400">❤️ {metrics.favoritesCount} favorites</span>
-                              )}
-                              {metrics.communitiesCount > 0 && (
-                                <span className="text-xs text-gray-400">👥 {metrics.communitiesCount} communities</span>
-                              )}
-                            </div>
+                            {/* Request submitter info */}
+                            {isRequest && item.profiles && (
+                              <div className="text-xs text-gray-500 mt-2">
+                                Submitted by {item.profiles.full_name || 'Unknown'} • {new Date(item.created_at).toLocaleDateString()}
+                              </div>
+                            )}
+
+                            {/* Statistics - only for approved gyms */}
+                            {!isRequest && (
+                              <div className="flex flex-wrap items-center gap-4 mt-3">
+                                {metrics.reviewsCount > 0 && (
+                                  <div className="flex items-center gap-1">
+                                    <Star className="w-3 h-3 text-yellow-400" />
+                                    <span className="text-xs text-gray-400">
+                                      {metrics.avgRating?.toFixed(1)} ({metrics.reviewsCount})
+                                    </span>
+                                  </div>
+                                )}
+                                {item.google_rating && (
+                                  <div className="flex items-center gap-1">
+                                    <Star className="w-3 h-3 text-orange-400" />
+                                    <span className="text-xs text-gray-400">
+                                      Google: {item.google_rating.toFixed(1)}
+                                      {item.google_ratings_count && ` (${item.google_ratings_count})`}
+                                    </span>
+                                  </div>
+                                )}
+                                {metrics.favoritesCount > 0 && (
+                                  <span className="text-xs text-gray-400">❤️ {metrics.favoritesCount} favorites</span>
+                                )}
+                                {metrics.communitiesCount > 0 && (
+                                  <span className="text-xs text-gray-400">👥 {metrics.communitiesCount} communities</span>
+                                )}
+                              </div>
+                            )}
 
                             {/* Metadata & Indicators */}
                             <div className="flex flex-wrap items-center gap-3 mt-2">
                               <span className="text-xs text-gray-500">
-                                Created {new Date(gym.created_at).toLocaleDateString()}
+                                Created {new Date(item.created_at).toLocaleDateString()}
                               </span>
-                              {gym.updated_at && gym.updated_at !== gym.created_at && (
+                              {!isRequest && item.updated_at && item.updated_at !== item.created_at && (
                                 <span className="text-xs text-gray-500">
-                                  Updated {new Date(gym.updated_at).toLocaleDateString()}
+                                  Updated {new Date(item.updated_at).toLocaleDateString()}
                                 </span>
                               )}
                               <div className="flex items-center gap-2">
@@ -3849,122 +4356,203 @@ export default function AdminPage() {
                           </div>
                         </div>
                         
-                        {/* 3-dot Menu */}
-                        <div className="relative ml-3">
-                          <button
-                            onClick={(e) => {
-                              const button = e.currentTarget;
-                              const rect = button.getBoundingClientRect();
-                              const menuHeight = 300;
-                              const spaceBelow = window.innerHeight - rect.bottom;
-                              const spaceAbove = rect.top;
-                              const shouldFlipUp = spaceBelow < menuHeight && spaceAbove > spaceBelow;
-                              
-                              setGymMenuPosition({
-                                top: shouldFlipUp ? undefined : rect.bottom + 4,
-                                bottom: shouldFlipUp ? window.innerHeight - rect.top + 4 : undefined,
-                                right: window.innerWidth - rect.right,
-                                flipUp: shouldFlipUp
-                              });
-                              setOpenGymMenuId(openGymMenuId === gym.id ? null : gym.id);
-                            }}
-                            className="p-1.5 hover:bg-gray-700/50 transition-colors"
-                            style={{ borderRadius: 2 }}
-                          >
-                            <MoreVertical className="w-4 h-4 text-gray-400" />
-                          </button>
-                          
-                          {openGymMenuId === gym.id && (
+                        {/* Action Buttons - Different for requests vs gyms */}
+                        <div className="flex items-center gap-2 ml-3">
+                          {isRequest ? (
+                            // Request actions
                             <>
-                              <div 
-                                className="fixed inset-0 z-[150]" 
-                                onClick={() => setOpenGymMenuId(null)}
-                              />
-                              <div 
-                                className="fixed w-48 bg-gray-900 border border-gray-700/50 shadow-lg z-[200]" 
-                                style={{ 
-                                  borderRadius: 4, 
-                                  top: gymMenuPosition.flipUp ? undefined : `${gymMenuPosition.top}px`,
-                                  bottom: gymMenuPosition.flipUp ? `${gymMenuPosition.bottom}px` : undefined,
-                                  right: `${gymMenuPosition.right}px`,
-                                  maxHeight: 'calc(100vh - 140px)',
-                                  overflowY: 'auto'
+                              <button
+                                onClick={async () => {
+                                  setViewingGymRequest(item._source);
+                                  setGymRequestNotes(item.admin_notes || '');
+                                  await loadGymRequestHistory(itemId);
                                 }}
+                                className="px-3 py-1.5 text-xs bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors flex items-center gap-1.5"
+                                style={{ borderRadius: 2 }}
                               >
-                                <div className="px-4 py-2 border-b border-gray-700/50">
-                                  <p className="text-[10px] text-gray-500 truncate">{gym.name || 'Unknown Gym'}</p>
-                                </div>
-                                <button
-                                  onClick={() => {
-                                    setViewingGym(gym);
-                                    setOpenGymMenuId(null);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-800 transition-colors flex items-center gap-2"
-                                  style={{ fontSize: '11px' }}
-                                >
-                                  <FileText className="w-3.5 h-3.5" />
-                                  View Details
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setEditingGym(gym);
-                                    setOpenGymMenuId(null);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-800 transition-colors flex items-center gap-2"
-                                  style={{ fontSize: '11px' }}
-                                >
-                                  <Edit className="w-3.5 h-3.5" />
-                                  Edit Gym
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    navigate(`/gyms/${gym.id}`);
-                                    setOpenGymMenuId(null);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-800 transition-colors flex items-center gap-2"
-                                  style={{ fontSize: '11px' }}
-                                >
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                  View Public Page
-                                </button>
-                                <div className="border-t border-gray-700/50 my-1" />
-                                {gym.is_hidden ? (
+                                <Eye className="w-3 h-3" />
+                                View
+                              </button>
+                              {item._status === 'pending' && (
+                                <>
                                   <button
-                                    onClick={() => {
-                                      showGym(gym.id);
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      approveGymRequest(itemId);
                                     }}
-                                    className="w-full px-4 py-2 text-left text-green-400 hover:bg-gray-800 transition-colors flex items-center gap-2"
-                                    style={{ fontSize: '11px' }}
+                                    className="px-3 py-1.5 text-xs bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-1.5"
+                                    style={{ borderRadius: 2 }}
                                   >
-                                    <Eye className="w-3.5 h-3.5" />
-                                    Show Gym
+                                    <CheckCircle className="w-3 h-3" />
+                                    Approve
                                   </button>
-                                ) : (
                                   <button
-                                    onClick={() => {
-                                      hideGym(gym.id);
-                                    }}
-                                    className="w-full px-4 py-2 text-left text-gray-400 hover:bg-gray-800 transition-colors flex items-center gap-2"
-                                    style={{ fontSize: '11px' }}
+                                    onClick={() => rejectGymRequest(itemId)}
+                                    className="px-3 py-1.5 text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors flex items-center gap-1.5"
+                                    style={{ borderRadius: 2 }}
                                   >
-                                    <EyeOff className="w-3.5 h-3.5" />
-                                    Hide Gym
+                                    <XCircle className="w-3 h-3" />
+                                    Reject
                                   </button>
-                                )}
-                                <div className="border-t border-gray-700/50 my-1" />
+                                </>
+                              )}
+                              {item._status === 'approved' && (
                                 <button
-                                  onClick={() => {
-                                    deleteGym(gym.id);
-                                    setOpenGymMenuId(null);
+                                  onClick={async () => {
+                                    try {
+                                      const { data: gym } = await supabase
+                                        .from('gyms')
+                                        .select('id')
+                                        .eq('name', item.gym_name)
+                                        .eq('city', item.city)
+                                        .limit(1)
+                                        .single();
+                                      
+                                      if (gym) navigate(`/gyms/${gym.id}`);
+                                    } catch (error) {
+                                      showToast('error', 'Error', 'Could not find the gym page');
+                                    }
                                   }}
-                                  className="w-full px-4 py-2 text-left text-red-400 hover:bg-gray-800 transition-colors flex items-center gap-2"
-                                  style={{ fontSize: '11px' }}
+                                  className="px-3 py-1.5 text-xs bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-1.5"
+                                  style={{ borderRadius: 2 }}
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                  Delete Gym
+                                  <ArrowRight className="w-3 h-3" />
+                                  Go to Gym
                                 </button>
-                              </div>
+                              )}
+                              {item._status === 'rejected' && (
+                                <button
+                                  onClick={() => unrejectGymRequest(itemId)}
+                                  className="px-3 py-1.5 text-xs bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center gap-1.5"
+                                  style={{ borderRadius: 2 }}
+                                >
+                                  <CheckCircle className="w-3 h-3" />
+                                  Restore
+                                </button>
+                              )}
                             </>
+                          ) : (
+                            // Gym actions - 3-dot menu
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  const button = e.currentTarget;
+                                  const rect = button.getBoundingClientRect();
+                                  const menuHeight = 300;
+                                  const spaceBelow = window.innerHeight - rect.bottom;
+                                  const spaceAbove = rect.top;
+                                  const shouldFlipUp = spaceBelow < menuHeight && spaceAbove > spaceBelow;
+                                  
+                                  setGymMenuPosition({
+                                    top: shouldFlipUp ? undefined : rect.bottom + 4,
+                                    bottom: shouldFlipUp ? window.innerHeight - rect.top + 4 : undefined,
+                                    right: window.innerWidth - rect.right,
+                                    flipUp: shouldFlipUp
+                                  });
+                                  setOpenGymMenuId(openGymMenuId === itemId ? null : itemId);
+                                }}
+                                className="p-1.5 hover:bg-gray-700/50 transition-colors"
+                                style={{ borderRadius: 2 }}
+                              >
+                                <MoreVertical className="w-4 h-4 text-gray-400" />
+                              </button>
+                              
+                              {openGymMenuId === itemId && (
+                                <>
+                                  <div 
+                                    className="fixed inset-0 z-[150]" 
+                                    onClick={() => setOpenGymMenuId(null)}
+                                  />
+                                  <div 
+                                    className="fixed w-48 bg-gray-900 border border-gray-700/50 shadow-lg z-[200]" 
+                                    style={{ 
+                                      borderRadius: 4, 
+                                      top: gymMenuPosition.flipUp ? undefined : `${gymMenuPosition.top}px`,
+                                      bottom: gymMenuPosition.flipUp ? `${gymMenuPosition.bottom}px` : undefined,
+                                      right: `${gymMenuPosition.right}px`,
+                                      maxHeight: 'calc(100vh - 140px)',
+                                      overflowY: 'auto'
+                                    }}
+                                  >
+                                    <div className="px-4 py-2 border-b border-gray-700/50">
+                                      <p className="text-[10px] text-gray-500 truncate">{item.name || 'Unknown Gym'}</p>
+                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        setViewingGym(item._source);
+                                        setOpenGymMenuId(null);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-800 transition-colors flex items-center gap-2"
+                                      style={{ fontSize: '11px' }}
+                                    >
+                                      <FileText className="w-3.5 h-3.5" />
+                                      View Details
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setEditingGym(item._source);
+                                        setOpenGymMenuId(null);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-800 transition-colors flex items-center gap-2"
+                                      style={{ fontSize: '11px' }}
+                                    >
+                                      <Edit className="w-3.5 h-3.5" />
+                                      Edit Gym
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        navigate(`/gyms/${itemId}`);
+                                        setOpenGymMenuId(null);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-800 transition-colors flex items-center gap-2"
+                                      style={{ fontSize: '11px' }}
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                      View Public Page
+                                    </button>
+                                    <div className="border-t border-gray-700/50 my-1" />
+                                    {item.is_hidden ? (
+                                      <button
+                                        onClick={() => {
+                                          showGym(itemId);
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-green-400 hover:bg-gray-800 transition-colors flex items-center gap-2"
+                                        style={{ fontSize: '11px' }}
+                                      >
+                                        <Eye className="w-3.5 h-3.5" />
+                                        Show Gym
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => {
+                                          hideGym(itemId);
+                                        }}
+                                        className="w-full px-4 py-2 text-left text-gray-400 hover:bg-gray-800 transition-colors flex items-center gap-2"
+                                        style={{ fontSize: '11px' }}
+                                      >
+                                        <EyeOff className="w-3.5 h-3.5" />
+                                        Hide Gym
+                                      </button>
+                                    )}
+                                    <div className="border-t border-gray-700/50 my-1" />
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setOpenGymMenuId(null);
+                                        deleteGym(itemId);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-red-400 hover:bg-gray-800 transition-colors flex items-center gap-2"
+                                      style={{ fontSize: '11px' }}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                      Delete Gym
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -4687,6 +5275,604 @@ export default function AdminPage() {
         variant={confirmationModal.variant || 'default'}
         icon={confirmationModal.icon}
       />
+
+      {/* Approve Options Modal */}
+      {approveOptionsModal.isOpen && (
+        <div 
+          className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setApproveOptionsModal({ isOpen: false, requestId: null, request: null });
+            }
+          }}
+        >
+          <div 
+            className="bg-gray-900 border border-gray-700 w-full max-w-md overflow-hidden flex flex-col" 
+            style={{ borderRadius: 4 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
+              <div>
+                <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Approve Gym Request</h3>
+                <p className="text-sm text-gray-400 mt-1">{approveOptionsModal.request?.gym_name || 'Loading...'}</p>
+              </div>
+              <button
+                onClick={() => setApproveOptionsModal({ isOpen: false, requestId: null, request: null })}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-4 space-y-3">
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Approve & Show clicked');
+                  if (!approveOptionsModal.requestId) {
+                    console.error('No requestId in modal');
+                    return;
+                  }
+                  await executeApproveGymRequest(approveOptionsModal.requestId, false, false);
+                  setApproveOptionsModal({ isOpen: false, requestId: null, request: null });
+                }}
+                className="w-full px-4 py-3 text-left bg-green-600/10 hover:bg-green-600/20 border border-green-600/20 text-green-300 transition-colors flex items-center justify-between cursor-pointer"
+                style={{ borderRadius: 2, pointerEvents: 'auto' }}
+              >
+                <div className="flex items-center gap-3 pointer-events-none">
+                  <CheckCircle className="w-5 h-5" />
+                  <div>
+                    <div className="font-medium">Approve & Show</div>
+                    <div className="text-xs text-green-400/80">Add to database and make visible to users</div>
+                  </div>
+                </div>
+                <ArrowRight className="w-4 h-4 pointer-events-none" />
+              </button>
+
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Approve & Hide clicked');
+                  if (!approveOptionsModal.requestId) {
+                    console.error('No requestId in modal');
+                    return;
+                  }
+                  await executeApproveGymRequest(approveOptionsModal.requestId, true, false);
+                  setApproveOptionsModal({ isOpen: false, requestId: null, request: null });
+                }}
+                className="w-full px-4 py-3 text-left bg-amber-600/10 hover:bg-amber-600/20 border border-amber-600/20 text-amber-300 transition-colors flex items-center justify-between cursor-pointer"
+                style={{ borderRadius: 2, pointerEvents: 'auto' }}
+              >
+                <div className="flex items-center gap-3 pointer-events-none">
+                  <EyeOff className="w-5 h-5" />
+                  <div>
+                    <div className="font-medium">Approve & Hide</div>
+                    <div className="text-xs text-amber-400/80">Add to database but hide from public listing</div>
+                  </div>
+                </div>
+                <ArrowRight className="w-4 h-4 pointer-events-none" />
+              </button>
+
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Approve & Go to Gym clicked');
+                  if (!approveOptionsModal.requestId) {
+                    console.error('No requestId in modal');
+                    return;
+                  }
+                  await executeApproveGymRequest(approveOptionsModal.requestId, false, true);
+                  setApproveOptionsModal({ isOpen: false, requestId: null, request: null });
+                }}
+                className="w-full px-4 py-3 text-left bg-blue-600/10 hover:bg-blue-600/20 border border-blue-600/20 text-blue-300 transition-colors flex items-center justify-between cursor-pointer"
+                style={{ borderRadius: 2, pointerEvents: 'auto' }}
+              >
+                <div className="flex items-center gap-3 pointer-events-none">
+                  <ArrowRight className="w-5 h-5" />
+                  <div>
+                    <div className="font-medium">Approve & Go to Gym</div>
+                    <div className="text-xs text-blue-400/80">Approve and navigate to the gym page</div>
+                  </div>
+                </div>
+                <ArrowRight className="w-4 h-4 pointer-events-none" />
+              </button>
+            </div>
+
+            <div className="p-4 border-t border-gray-700 flex-shrink-0">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setApproveOptionsModal({ isOpen: false, requestId: null, request: null });
+                }}
+                className="w-full px-4 py-2 text-sm bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors cursor-pointer"
+                style={{ borderRadius: 2 }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Gym Request Details Modal */}
+      {viewingGymRequest && (
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-700 w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col" style={{ borderRadius: 4 }}>
+            <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
+              <div>
+                <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Gym Request Details</h3>
+                <p className="text-sm text-gray-400 mt-1">{viewingGymRequest.gym_name}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setViewingGymRequest(null);
+                  setGymRequestNotes('');
+                }}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Basic Information */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Basic Information</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-400 min-w-[100px]">Name:</span>
+                    <span style={{ color: 'var(--text-primary)' }}>{viewingGymRequest.gym_name}</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-400 min-w-[100px]">Location:</span>
+                    <span style={{ color: 'var(--text-primary)' }}>{viewingGymRequest.city}, {viewingGymRequest.country}</span>
+                  </div>
+                  {viewingGymRequest.address && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-gray-400 min-w-[100px]">Address:</span>
+                      <span style={{ color: 'var(--text-primary)' }}>{viewingGymRequest.address}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Contact Information</h4>
+                <div className="space-y-2 text-sm">
+                  {viewingGymRequest.phone && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-gray-400 min-w-[100px]">Phone:</span>
+                      <a href={`tel:${viewingGymRequest.phone}`} className="text-blue-400 hover:text-blue-300">
+                        {viewingGymRequest.phone}
+                      </a>
+                    </div>
+                  )}
+                  {viewingGymRequest.email && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-gray-400 min-w-[100px]">Email:</span>
+                      <a href={`mailto:${viewingGymRequest.email}`} className="text-blue-400 hover:text-blue-300">
+                        {viewingGymRequest.email}
+                      </a>
+                    </div>
+                  )}
+                  {viewingGymRequest.website && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-gray-400 min-w-[100px]">Website:</span>
+                      <a
+                        href={viewingGymRequest.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 inline-flex items-center gap-1.5"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        {viewingGymRequest.website}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Description */}
+              {viewingGymRequest.description && viewingGymRequest.description.trim() !== 'A facility' && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Description</h4>
+                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{viewingGymRequest.description}</p>
+                </div>
+              )}
+
+              {/* Admin Notes */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Admin Notes</h4>
+                <textarea
+                  value={gymRequestNotes}
+                  onChange={(e) => setGymRequestNotes(e.target.value)}
+                  placeholder="Add notes about this gym request..."
+                  className="w-full p-3 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded"
+                  rows={4}
+                  style={{ borderRadius: 2 }}
+                />
+              </div>
+
+              {/* Request History */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Request History</h4>
+                {loadingGymRequestHistory ? (
+                  <p className="text-xs text-gray-400">Loading history...</p>
+                ) : gymRequestHistory.length === 0 ? (
+                  <p className="text-xs text-gray-400">No history available</p>
+                ) : (
+                  <div className="space-y-2">
+                    {gymRequestHistory.map((entry) => {
+                      const actionColors = {
+                        created: 'text-blue-400',
+                        updated: 'text-gray-300',
+                        edited: 'text-amber-400',
+                        approved: 'text-green-400',
+                        rejected: 'text-red-400',
+                        restored: 'text-amber-400'
+                      };
+                      const actionIcons = {
+                        created: Clock,
+                        updated: Edit,
+                        edited: Edit,
+                        approved: CheckCircle,
+                        rejected: XCircle,
+                        restored: CheckCircle
+                      };
+                      const ActionIcon = actionIcons[entry.action] || Clock;
+                      
+                      return (
+                        <div key={entry.id} className="p-2 bg-gray-800/50 border border-gray-700/50 rounded text-xs" style={{ borderRadius: 2 }}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-2 flex-1">
+                              <ActionIcon className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${actionColors[entry.action] || 'text-gray-400'}`} />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className={`font-medium capitalize ${actionColors[entry.action] || 'text-gray-300'}`}>
+                                    {entry.action}
+                                  </span>
+                                  <span className="text-gray-500">
+                                    {new Date(entry.created_at).toLocaleString()}
+                                  </span>
+                                </div>
+                                {entry.changed_by_profile && (
+                                  <div className="text-gray-400 mb-1">
+                                    by {entry.changed_by_profile.full_name || 'Unknown'}
+                                  </div>
+                                )}
+                                {entry.notes && (
+                                  <div className="text-gray-300 mb-1">{entry.notes}</div>
+                                )}
+                                {entry.changes && Object.keys(entry.changes).length > 0 && (
+                                  <div className="mt-1 space-y-1">
+                                    {Object.entries(entry.changes).map(([field, change]) => (
+                                      <div key={field} className="text-gray-400">
+                                        <span className="capitalize">{field.replace(/_/g, ' ')}:</span>{' '}
+                                        <span className="text-red-300 line-through">{change.old || '(empty)'}</span>
+                                        {' → '}
+                                        <span className="text-green-300">{change.new || '(empty)'}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Metadata */}
+              <div className="pt-2 border-t border-gray-700">
+                <div className="text-xs text-gray-400 space-y-1">
+                  <div>Status: <span className="text-gray-300 capitalize">{viewingGymRequest.status}</span></div>
+                  <div>Submitted: {new Date(viewingGymRequest.created_at).toLocaleString()}</div>
+                  {viewingGymRequest.profiles && (
+                    <div>Submitted by: {viewingGymRequest.profiles.full_name || 'Unknown'}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 p-4 border-t border-gray-700 flex-shrink-0">
+              <button
+                onClick={() => {
+                  setViewingGymRequest(null);
+                  setGymRequestNotes('');
+                }}
+                className="flex-1 px-4 py-2 text-sm bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+                style={{ borderRadius: 2 }}
+              >
+                Close
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const { error } = await supabase
+                      .from('gym_requests')
+                      .update({ admin_notes: gymRequestNotes || null })
+                      .eq('id', viewingGymRequest.id);
+                    
+                    if (error) throw error;
+                    
+                    showToast('success', 'Saved', 'Notes saved successfully');
+                    loadData();
+                    setViewingGymRequest(null);
+                    setGymRequestNotes('');
+                  } catch (error) {
+                    console.error('Error saving notes:', error);
+                    showToast('error', 'Error', 'Failed to save notes');
+                  }
+                }}
+                className="flex-1 px-4 py-2 text-sm bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
+                style={{ borderRadius: 2 }}
+              >
+                Save Notes
+              </button>
+              {viewingGymRequest.status === 'pending' && (
+                <>
+                  <button
+                    onClick={() => {
+                      setEditingGymRequest({ ...viewingGymRequest, admin_notes: gymRequestNotes });
+                      setViewingGymRequest(null);
+                      setGymRequestNotes('');
+                    }}
+                    className="px-4 py-2 text-sm bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors flex items-center gap-2"
+                    style={{ borderRadius: 2 }}
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      setViewingGymRequest(null);
+                      setGymRequestNotes('');
+                      approveGymRequest(viewingGymRequest.id);
+                    }}
+                    className="px-4 py-2 text-sm bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-2"
+                    style={{ borderRadius: 2 }}
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => {
+                      rejectGymRequest(viewingGymRequest.id);
+                      setViewingGymRequest(null);
+                      setGymRequestNotes('');
+                    }}
+                    className="px-4 py-2 text-sm bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors flex items-center gap-2"
+                    style={{ borderRadius: 2 }}
+                  >
+                    <XCircle className="w-4 h-4" />
+                    Reject
+                  </button>
+                </>
+              )}
+              {viewingGymRequest.status === 'rejected' && (
+                <button
+                  onClick={() => {
+                    unrejectGymRequest(viewingGymRequest.id);
+                    setViewingGymRequest(null);
+                    setGymRequestNotes('');
+                  }}
+                  className="px-4 py-2 text-sm bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center gap-2"
+                  style={{ borderRadius: 2 }}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Restore to Pending
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Gym Request Modal */}
+      {editingGymRequest && (
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-700 w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col" style={{ borderRadius: 4 }}>
+            <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
+              <div>
+                <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Edit Gym Request</h3>
+                <p className="text-sm text-gray-400 mt-1">Make changes before approving</p>
+              </div>
+              <button
+                onClick={() => setEditingGymRequest(null)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                
+                const updates = {
+                  gym_name: formData.get('gym_name')?.trim() || '',
+                  country: formData.get('country')?.trim() || '',
+                  city: formData.get('city')?.trim() || '',
+                  address: formData.get('address')?.trim() || null,
+                  phone: formData.get('phone')?.trim() || null,
+                  email: formData.get('email')?.trim() || null,
+                  website: formData.get('website')?.trim() || null,
+                  description: formData.get('description')?.trim() || null,
+                  admin_notes: formData.get('admin_notes')?.trim() || null,
+                };
+
+                // Validate required fields
+                if (!updates.gym_name || !updates.country || !updates.city) {
+                  showToast('error', 'Validation Error', 'Name, country, and city are required fields');
+                  return;
+                }
+
+                await updateGymRequest(editingGymRequest.id, updates);
+              }}
+              className="flex-1 overflow-y-auto p-4 space-y-4"
+            >
+              {/* Basic Information */}
+              <div>
+                <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Basic Information</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Gym Name *</label>
+                    <input
+                      type="text"
+                      name="gym_name"
+                      defaultValue={editingGymRequest.gym_name}
+                      required
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B]"
+                      style={{ borderRadius: 2 }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Country *</label>
+                      <input
+                        type="text"
+                        name="country"
+                        defaultValue={editingGymRequest.country}
+                        required
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B]"
+                        style={{ borderRadius: 2 }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">City *</label>
+                      <input
+                        type="text"
+                        name="city"
+                        defaultValue={editingGymRequest.city}
+                        required
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B]"
+                        style={{ borderRadius: 2 }}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Address</label>
+                    <input
+                      type="text"
+                      name="address"
+                      defaultValue={editingGymRequest.address || ''}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B]"
+                      style={{ borderRadius: 2 }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div>
+                <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Contact Information</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Phone</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      defaultValue={editingGymRequest.phone || ''}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B]"
+                      style={{ borderRadius: 2 }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      defaultValue={editingGymRequest.email || ''}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B]"
+                      style={{ borderRadius: 2 }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Website</label>
+                    <input
+                      type="url"
+                      name="website"
+                      defaultValue={editingGymRequest.website || ''}
+                      placeholder="https://example.com"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B]"
+                      style={{ borderRadius: 2 }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Description</h4>
+                <textarea
+                  name="description"
+                  defaultValue={editingGymRequest.description || ''}
+                  rows={4}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B] resize-none"
+                  style={{ borderRadius: 2 }}
+                  placeholder="Describe the gym..."
+                />
+              </div>
+
+              {/* Admin Notes */}
+              <div>
+                <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Admin Notes</h4>
+                <textarea
+                  name="admin_notes"
+                  defaultValue={editingGymRequest.admin_notes || ''}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B] resize-none"
+                  style={{ borderRadius: 2 }}
+                  placeholder="Internal notes about this request..."
+                />
+              </div>
+
+              {/* Metadata (Read-only) */}
+              <div className="pt-2 border-t border-gray-700">
+                <div className="text-xs text-gray-400 space-y-1">
+                  <div>Status: <span className="text-gray-300 capitalize">{editingGymRequest.status}</span></div>
+                  <div>Submitted: {new Date(editingGymRequest.created_at).toLocaleString()}</div>
+                  {editingGymRequest.profiles && (
+                    <div>Submitted by: {editingGymRequest.profiles.full_name || 'Unknown'}</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4 border-t border-gray-700 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setEditingGymRequest(null)}
+                  className="flex-1 px-4 py-2 text-sm bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+                  style={{ borderRadius: 2 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 text-sm bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors flex items-center justify-center gap-2"
+                  style={{ borderRadius: 2 }}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Community Changes Confirmation Modal */}
       {showCommunityChangesConfirmation && pendingCommunityChanges && (
