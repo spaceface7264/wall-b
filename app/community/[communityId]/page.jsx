@@ -543,6 +543,14 @@ export default function CommunityPage() {
 
   const handleCreatePost = async (postData) => {
     try {
+      // Get user's display name before creating post
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('nickname, full_name, avatar_url')
+        .eq('id', user.id)
+        .single();
+      
+      const displayName = profile?.nickname || profile?.full_name || user.user_metadata?.full_name || 'Anonymous';
       
       const { data, error } = await supabase
         .from('posts')
@@ -551,18 +559,25 @@ export default function CommunityPage() {
           content: postData.content,
           community_id: communityId,
           user_id: user.id,
+          user_name: displayName, // Store display name in post
           post_type: postData.post_type || 'post',
           tag: postData.tag || 'general',
           media_files: postData.media_files || []
         })
-        .select()
+        .select(`
+          *,
+          profiles!user_id (
+            nickname,
+            full_name,
+            avatar_url
+          )
+        `)
         .single();
 
       if (error) {
         console.error('❌ Error creating post:', error);
         throw error;
       }
-
 
       // Add the new post to the beginning of the posts array
       setPosts(prev => [data, ...prev]);

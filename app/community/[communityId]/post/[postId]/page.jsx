@@ -651,8 +651,8 @@ export default function PostDetailPage() {
       <div className="mobile-container">
 
         {/* Post Card */}
-        <div className="animate-fade-in w-full border-b border-gray-700/50" style={{ marginBottom: '24px', paddingBottom: '24px' }}>
-          <div className="mobile-card-header" style={{ marginBottom: '16px' }}>
+        <div className="animate-fade-in w-full border-b border-gray-700/50 mb-6" style={{ paddingBottom: '24px' }}>
+          <div className="mobile-card-header mt-6" style={{ marginBottom: '16px' }}>
             <div className="mb-4">
               <div className="flex items-start gap-2 mb-2">
                 {/* Profile Icon */}

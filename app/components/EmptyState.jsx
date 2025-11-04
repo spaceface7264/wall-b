@@ -203,16 +203,37 @@ export function EmptySearch({ searchTerm, onClearSearch }) {
 }
 
 export function EmptyComments({ onCreateClick }) {
+  const handleClick = () => {
+    if (onCreateClick) {
+      onCreateClick();
+    }
+    // Scroll to comment input
+    setTimeout(() => {
+      const commentInput = document.querySelector('textarea[placeholder*="jump"], textarea[placeholder*="comment"], textarea[placeholder*="Add"]');
+      if (commentInput) {
+        commentInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        commentInput.focus();
+      }
+    }, 100);
+  };
+
   return (
-    <EmptyState
-      icon={MessageCircle}
-      title="No comments yet"
-      description="Be the first to share your thoughts! Start a conversation by leaving a comment."
-      actionLabel="Add Comment"
-      onAction={onCreateClick}
-      variant="primary"
-      iconSize={32}
-    />
+    <div className="py-8 my-6">
+      <div className="text-center">
+        <MessageCircle className="text-[#087E8B] mx-auto mb-3" size={32} />
+        <h3 className="text-base font-medium mb-2" style={{ color: 'var(--text-primary)' }}>No comments yet</h3>
+        <p className="text-sm text-gray-400 mb-4" style={{ color: 'var(--text-muted)' }}>
+          Be the first to share your thoughts!
+        </p>
+        <button
+          onClick={handleClick}
+          className="mobile-btn-primary minimal-flex gap-2 mx-auto"
+        >
+          <Plus className="minimal-icon" />
+          Add Comment
+        </button>
+      </div>
+    </div>
   );
 }
 

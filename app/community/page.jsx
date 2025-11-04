@@ -1,22 +1,48 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Plus, MapPin, Calendar, MessageCircle, Building, Globe, AlertTriangle } from 'lucide-react';
+import { Users, Plus, MapPin, Calendar, MessageCircle, Building, Globe, AlertTriangle, Search, Filter, X, Sparkles, ArrowRight, ChevronDown } from 'lucide-react';
 import CommunityCard from '../components/CommunityCard';
 import ReportCommunityModal from '../components/ReportCommunityModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { useToast } from '../providers/ToastProvider';
 import { enrichCommunitiesWithActualCounts } from '../../lib/community-utils';
+import { getRecommendedCommunities } from '../../lib/recommendation-utils';
+import { useGeolocation } from '../hooks/useGeolocation';
 import { EmptyCommunities } from '../components/EmptyState';
 import ListSkeleton from '../components/ListSkeleton';
 
 export default function CommunitiesPage() {
   const [user, setUser] = useState(null);
+  const [userIntent, setUserIntent] = useState([]);
   const [communities, setCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [myCommunities, setMyCommunities] = useState([]);
+  const [recommendedCommunities, setRecommendedCommunities] = useState([]);
+  const [loadingRecommended, setLoadingRecommended] = useState(false);
+  
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedType, setSelectedType] = useState(''); // 'gym', 'location', 'online', ''
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [sortBy, setSortBy] = useState('newest'); // 'newest', 'members', 'active', 'alphabetical'
+  
   const navigate = useNavigate();
   const { showToast } = useToast();
+  
+  // Geolocation for recommendations
+  const { location, requestLocation, isSupported: geolocationSupported } = useGeolocation();
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     const getUser = async () => {
@@ -25,6 +51,24 @@ export default function CommunitiesPage() {
         setUser(user);
         if (user) {
           loadMyCommunities(user.id);
+          
+          // Get user intent for recommendations
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('user_intent')
+            .eq('id', user.id)
+            .single();
+          
+          if (profile?.user_intent) {
+            setUserIntent(profile.user_intent || []);
+          }
+          
+          // Request location if supported (for location-based recommendations)
+          if (geolocationSupported && !location) {
+            requestLocation().catch(() => {
+              // Silently fail - location is optional
+            });
+          }
         }
       } catch (error) {
         console.error('Error getting user:', error);
@@ -33,6 +77,32 @@ export default function CommunitiesPage() {
     getUser();
     loadCommunities();
   }, []);
+  
+  // Load recommended communities when user and intent are available
+  useEffect(() => {
+    const loadRecommended = async () => {
+      if (!user || !userIntent || userIntent.length === 0) {
+        return;
+      }
+      
+      setLoadingRecommended(true);
+      try {
+        const recommended = await getRecommendedCommunities(
+          user.id,
+          userIntent,
+          location,
+          8
+        );
+        setRecommendedCommunities(recommended);
+      } catch (error) {
+        console.error('Error loading recommended communities:', error);
+      } finally {
+        setLoadingRecommended(false);
+      }
+    };
+    
+    loadRecommended();
+  }, [user, userIntent, location]);
 
   // Reload communities when navigating back to this page
   useEffect(() => {
@@ -303,16 +373,164 @@ export default function CommunitiesPage() {
     }
   };
 
-  // Filter out invalid communities and communities the user has already joined
-  const filteredCommunities = communities.filter(community => {
-    // Safety checks for null/undefined values
-    if (!community || !community.name) {
-      return false;
+  // Combine all communities (my communities, recommended, and all others) into one list
+  const allCommunities = useMemo(() => {
+    const combined = [...communities];
+    
+    // Add my communities if they're not already in the list
+    myCommunities.forEach(myComm => {
+      if (!combined.find(c => c.id === myComm.id)) {
+        combined.push(myComm);
+      }
+    });
+    
+    // Add recommended communities if they're not already in the list
+    recommendedCommunities.forEach(recComm => {
+      if (!combined.find(c => c.id === recComm.id)) {
+        combined.push(recComm);
+      }
+    });
+    
+    return combined;
+  }, [communities, myCommunities, recommendedCommunities]);
+  
+  // Get unique countries and cities from all communities
+  const availableCountries = useMemo(() => {
+    const countries = new Set();
+    allCommunities.forEach(community => {
+      const gymData = community.gyms 
+        ? (Array.isArray(community.gyms) ? community.gyms[0] : community.gyms)
+        : null;
+      if (gymData?.country) {
+        countries.add(gymData.country);
+      }
+    });
+    return Array.from(countries).sort();
+  }, [allCommunities]);
+  
+  const availableCities = useMemo(() => {
+    const cities = new Set();
+    allCommunities.forEach(community => {
+      const gymData = community.gyms 
+        ? (Array.isArray(community.gyms) ? community.gyms[0] : community.gyms)
+        : null;
+      if (gymData?.city) {
+        cities.add(gymData.city);
+      }
+    });
+    return Array.from(cities).sort();
+  }, [allCommunities]);
+  
+  // Filter and sort communities
+  const filteredCommunities = useMemo(() => {
+    let filtered = allCommunities.filter(community => {
+      // Safety checks
+      if (!community || !community.name) {
+        return false;
+      }
+      return true; // Include all communities now
+    });
+    
+    // Search filter
+    if (debouncedSearchQuery.trim()) {
+      const searchLower = debouncedSearchQuery.toLowerCase().trim();
+      filtered = filtered.filter(community => {
+        const nameMatch = community.name?.toLowerCase().includes(searchLower);
+        const descriptionMatch = community.description?.toLowerCase().includes(searchLower);
+        
+        // Search in gym data
+        const gymData = community.gyms 
+          ? (Array.isArray(community.gyms) ? community.gyms[0] : community.gyms)
+          : null;
+        const gymNameMatch = gymData?.name?.toLowerCase().includes(searchLower);
+        const cityMatch = gymData?.city?.toLowerCase().includes(searchLower);
+        const countryMatch = gymData?.country?.toLowerCase().includes(searchLower);
+        
+        return nameMatch || descriptionMatch || gymNameMatch || cityMatch || countryMatch;
+      });
     }
-    // Exclude communities user is already a member of (they're shown in "My Communities")
-    const isMember = myCommunities.some(c => c.id === community.id);
-    return !isMember;
-  });
+    
+    // Type filter
+    if (selectedType) {
+      filtered = filtered.filter(community => {
+        if (selectedType === 'gym') {
+          return community.gym_id || (community.gyms && community.gyms.length > 0);
+        }
+        if (selectedType === 'location') {
+          return community.community_type === 'location';
+        }
+        if (selectedType === 'online') {
+          return community.community_type === 'online';
+        }
+        return true;
+      });
+    }
+    
+    // Country filter
+    if (selectedCountry) {
+      filtered = filtered.filter(community => {
+        const gymData = community.gyms 
+          ? (Array.isArray(community.gyms) ? community.gyms[0] : community.gyms)
+          : null;
+        return gymData?.country === selectedCountry;
+      });
+    }
+    
+    // City filter
+    if (selectedCity) {
+      filtered = filtered.filter(community => {
+        const gymData = community.gyms 
+          ? (Array.isArray(community.gyms) ? community.gyms[0] : community.gyms)
+          : null;
+        return gymData?.city === selectedCity;
+      });
+    }
+    
+    // Sort
+    filtered = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'members':
+          return (b.member_count || 0) - (a.member_count || 0);
+        case 'active':
+          const aPosts = a.post_count || a.posts_count || 0;
+          const bPosts = b.post_count || b.posts_count || 0;
+          return bPosts - aPosts;
+        case 'alphabetical':
+          return (a.name || '').localeCompare(b.name || '');
+        case 'newest':
+        default:
+          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      }
+    });
+    
+    return filtered;
+  }, [allCommunities, debouncedSearchQuery, selectedType, selectedCountry, selectedCity, sortBy]);
+  
+  
+  const clearFilters = useCallback(() => {
+    setSearchQuery('');
+    setSelectedType('');
+    setSelectedCountry('');
+    setSelectedCity('');
+    setSortBy('newest');
+  }, []);
+  
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (selectedType) count++;
+    if (selectedCountry) count++;
+    if (selectedCity) count++;
+    return count;
+  }, [selectedType, selectedCountry, selectedCity]);
+  
+  // Helper function to check if community is new (< 7 days old)
+  const isNewCommunity = useCallback((community) => {
+    if (!community.created_at) return false;
+    const createdDate = new Date(community.created_at);
+    const now = new Date();
+    const daysDiff = (now - createdDate) / (1000 * 60 * 60 * 24);
+    return daysDiff < 7;
+  }, []);
 
   const [joiningCommunity, setJoiningCommunity] = useState(null);
   const [leavingCommunity, setLeavingCommunity] = useState(null);
@@ -339,9 +557,28 @@ export default function CommunitiesPage() {
       }
 
       showToast('success', 'Success', 'Joined community successfully!');
+      
+      // Remove from recommended if it was there
+      setRecommendedCommunities(prev => prev.filter(c => c.id !== communityId));
+      
       await loadCommunities();
       if (user) {
         await loadMyCommunities(user.id);
+        
+        // Reload recommendations to get fresh suggestions
+        if (userIntent && userIntent.length > 0) {
+          try {
+            const recommended = await getRecommendedCommunities(
+              user.id,
+              userIntent,
+              location,
+              8
+            );
+            setRecommendedCommunities(recommended);
+          } catch (error) {
+            console.error('Error reloading recommended communities:', error);
+          }
+        }
       }
     } catch (error) {
       console.error('Error joining community:', error);
@@ -401,7 +638,7 @@ export default function CommunitiesPage() {
   };
 
   const handleReportCommunity = async (communityId) => {
-    const community = communities.find(c => c.id === communityId) || myCommunities.find(c => c.id === communityId);
+    const community = allCommunities.find(c => c.id === communityId);
     setReportingCommunity({ id: communityId, name: community?.name || 'Community' });
     setShowReportModal(true);
   };
@@ -428,61 +665,197 @@ export default function CommunitiesPage() {
     <>
       <div className="mobile-container">
         <div className="mobile-section">
-          {/* My Communities */}
-          {myCommunities.length > 0 && (
-            <div className="animate-slide-up mt-6">
-              <h2 className="minimal-heading mb-4 minimal-flex">
-                <Users className="minimal-icon mr-2 text-[#087E8B]" />
-                My Communities
-              </h2>
-              <div className="-mx-4 md:-mx-6" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
-                <div className="flex flex-col gap-3 px-3">
-                {myCommunities.map((community) => (
-                    <div
-                      key={community.id}
-                      className="rounded-lg transition-all duration-200 cursor-pointer"
-                      style={{
-                        backgroundColor: 'var(--bg-surface)',
-                        border: '1px solid var(--border-color)',
-                        padding: 'var(--card-padding-mobile)'
-                      }}
-                      onClick={() => navigate(`/community/${community.id}`)}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
-                      }}
-                    >
-                  <CommunityCard
-                    community={community}
-                    isMember={true}
-                    onJoin={handleJoinCommunity}
-                    onLeave={handleLeaveCommunity}
-                    onReport={handleReportCommunity}
-                    onOpen={() => navigate(`/community/${community.id}`)}
-                    leaving={leavingCommunity === community.id}
-                  />
-                    </div>
-                ))}
+          {/* Search Bar */}
+          <div className="animate-slide-up mt-6 mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search communities..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-10 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
+                style={{ color: 'var(--text-primary)' }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Filter and Sort Controls */}
+          <div className="animate-slide-up mb-4 flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                showFilters || activeFilterCount > 0
+                  ? 'bg-[#087E8B]/20 text-[#087E8B] border border-[#087E8B]/30'
+                  : 'bg-gray-800/50 text-gray-300 border border-gray-700 hover:bg-gray-700/50'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-[#087E8B] text-white text-xs rounded-full">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-1.5 bg-gray-800/50 border border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              <option value="newest">Newest</option>
+              <option value="members">Most Members</option>
+              <option value="active">Most Active</option>
+              <option value="alphabetical">A-Z</option>
+            </select>
+
+            {(activeFilterCount > 0 || searchQuery.trim()) && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Filter Panel */}
+          {showFilters && (
+            <div className="animate-slide-up mb-4 p-4 bg-gray-800/50 border border-gray-700 rounded-lg">
+              <div className="space-y-4">
+                {/* Type Filter */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    Type
+                  </label>
+                  <div className="flex gap-2 flex-wrap">
+                    {['', 'gym', 'location', 'online'].map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => setSelectedType(type === selectedType ? '' : type)}
+                        className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                          selectedType === type
+                            ? 'bg-[#087E8B] text-white'
+                            : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+                        }`}
+                      >
+                        {type === '' ? 'All' : type === 'gym' ? 'Gym-based' : type === 'location' ? 'Location-based' : 'Online'}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Country Filter */}
+                {availableCountries.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                      Country
+                    </label>
+                    <select
+                      value={selectedCountry}
+                      onChange={(e) => {
+                        setSelectedCountry(e.target.value);
+                        setSelectedCity(''); // Reset city when country changes
+                      }}
+                      className="w-full px-3 py-1.5 bg-gray-700/50 border border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      <option value="">All Countries</option>
+                      {availableCountries.map((country) => (
+                        <option key={country} value={country}>
+                          {country}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* City Filter */}
+                {availableCities.length > 0 && selectedCountry && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                      City
+                    </label>
+                    <select
+                      value={selectedCity}
+                      onChange={(e) => setSelectedCity(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-gray-700/50 border border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      <option value="">All Cities</option>
+                      {availableCities
+                        .filter(city => {
+                          // Only show cities from selected country
+                          return allCommunities.some(community => {
+                            const gymData = community.gyms 
+                              ? (Array.isArray(community.gyms) ? community.gyms[0] : community.gyms)
+                              : null;
+                            return gymData?.city === city && gymData?.country === selectedCountry;
+                          });
+                        })
+                        .map((city) => (
+                          <option key={city} value={city}>
+                            {city}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* All Communities */}
+          {/* Active Filters Display */}
+          {(activeFilterCount > 0 || searchQuery.trim()) && (
+            <div className="animate-slide-up mb-4 flex items-center gap-2 flex-wrap text-sm text-gray-400">
+              {searchQuery.trim() && (
+                <span className="px-2 py-1 bg-gray-800/50 rounded text-xs">
+                  Search: "{searchQuery}"
+                </span>
+              )}
+              {selectedType && (
+                <span className="px-2 py-1 bg-gray-800/50 rounded text-xs">
+                  Type: {selectedType === 'gym' ? 'Gym-based' : selectedType === 'location' ? 'Location-based' : 'Online'}
+                </span>
+              )}
+              {selectedCountry && (
+                <span className="px-2 py-1 bg-gray-800/50 rounded text-xs">
+                  Country: {selectedCountry}
+                </span>
+              )}
+              {selectedCity && (
+                <span className="px-2 py-1 bg-gray-800/50 rounded text-xs">
+                  City: {selectedCity}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* All Communities - Unified List */}
           <div className="animate-slide-up mt-6">
-            <h2 className="minimal-heading mb-4 minimal-flex">
-              <Globe className="minimal-icon mr-2 text-[#087E8B]" />
-              All Communities
-            </h2>
-            
             {filteredCommunities.length === 0 ? (
               <EmptyCommunities onCreateClick={() => navigate('/community/new')} />
             ) : (
               <div className="-mx-4 md:-mx-6" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
                 <div className="flex flex-col gap-3 px-3">
-                {filteredCommunities.map((community) => (
+                {filteredCommunities.map((community) => {
+                  // Check if user is a member
+                  const isMember = myCommunities.some(c => c.id === community.id);
+                  // Check if community is recommended
+                  const isRecommended = recommendedCommunities.some(c => c.id === community.id);
+                  
+                  return (
                     <div
                       key={community.id}
                       className="rounded-lg transition-all duration-200 cursor-pointer"
@@ -501,16 +874,19 @@ export default function CommunitiesPage() {
                     >
                   <CommunityCard
                     community={community}
-                    isMember={false}
+                    isMember={isMember}
                     onJoin={handleJoinCommunity}
                     onLeave={handleLeaveCommunity}
                     onReport={handleReportCommunity}
                     onOpen={() => navigate(`/community/${community.id}`)}
                     joining={joiningCommunity === community.id}
                     leaving={leavingCommunity === community.id}
+                    isRecommended={isRecommended}
+                    showNewBadge={isNewCommunity(community)}
                   />
                     </div>
-                ))}
+                  );
+                })}
                 </div>
               </div>
             )}

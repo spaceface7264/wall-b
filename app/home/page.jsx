@@ -144,13 +144,13 @@ export default function HomePage() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Users className="minimal-icon text-[#087E8B]" />
-            <h2 className="minimal-heading">Recommended Communities</h2>
+            <h2 className="minimal-heading">Communities</h2>
           </div>
           <button
             onClick={() => navigate('/communities')}
             className="flex items-center gap-1 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
           >
-            View All
+            Explore
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -212,13 +212,13 @@ export default function HomePage() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <MapPin className="minimal-icon text-[#087E8B]" />
-            <h2 className="minimal-heading">Recommended Gyms</h2>
+            <h2 className="minimal-heading">Gyms</h2>
           </div>
           <button
             onClick={() => navigate('/gyms')}
             className="flex items-center gap-1 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
           >
-            View All
+            Explore
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Users, MessageSquare, Check, MoreVertical, LogOut, Flag, MapPin } from 'lucide-react';
+import { Users, MessageSquare, Check, MoreVertical, LogOut, Flag, MapPin, Sparkles } from 'lucide-react';
 
 const CommunityCard = React.memo(function CommunityCard({
   community,
@@ -9,7 +9,9 @@ const CommunityCard = React.memo(function CommunityCard({
   onReport,
   onOpen,
   joining = false,
-  leaving = false
+  leaving = false,
+  isRecommended = false,
+  showNewBadge = false
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
@@ -103,7 +105,24 @@ const CommunityCard = React.memo(function CommunityCard({
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex-1 min-w-0">
               {/* Community Title - Own Line */}
-              <h3 className="mobile-subheading truncate mb-1">{community.name}</h3>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <h3 className="mobile-subheading truncate">{community.name}</h3>
+                
+                {/* Badges */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {isRecommended && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] bg-[#087E8B]/20 text-[#087E8B] border border-[#087E8B]/30 rounded">
+                      <Sparkles className="w-3 h-3" />
+                      Recommended
+                    </span>
+                  )}
+                  {showNewBadge && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] bg-green-500/20 text-green-300 border border-green-500/30 rounded">
+                      New
+                    </span>
+                  )}
+                </div>
+              </div>
               
               {/* City and Gym - Below Title */}
               {gym && (gym.city || gym.name) && (
