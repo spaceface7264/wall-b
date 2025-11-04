@@ -100,22 +100,27 @@ const CommunityCard = React.memo(function CommunityCard({
     >
       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <h3 className="mobile-subheading truncate">{community.name}</h3>
-              {gym && gym.name && (
-                <>
-                  <span className="flex-shrink-0" style={{ color: 'var(--text-subtle)' }}>│</span>
-                  <div className="flex items-center gap-1.5 flex-shrink-0" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {gym.city && (
-                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-md" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}>
-                        <MapPin className="w-3 h-3 flex-shrink-0" style={{ width: '12px', height: '12px', color: 'var(--text-muted)' }} />
-                        <span className="truncate" title={gym.city} style={{ color: 'var(--text-secondary)' }}>{gym.city}</span>
-                      </div>
-                    )}
-                    <span className="truncate max-w-[120px]" title={gym.name}>{gym.name}</span>
-                  </div>
-                </>
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex-1 min-w-0">
+              {/* Community Title - Own Line */}
+              <h3 className="mobile-subheading truncate mb-1">{community.name}</h3>
+              
+              {/* City and Gym - Below Title */}
+              {gym && (gym.city || gym.name) && (
+                <div className="flex items-center gap-1.5 flex-wrap" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {gym.city && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3 flex-shrink-0" style={{ width: '12px', height: '12px', color: 'var(--text-muted)' }} />
+                      <span className="truncate" title={gym.city} style={{ color: 'var(--text-secondary)' }}>{gym.city}</span>
+                    </div>
+                  )}
+                  {gym.city && gym.name && (
+                    <span className="flex-shrink-0" style={{ color: 'var(--text-subtle)' }}>·</span>
+                  )}
+                  {gym.name && (
+                    <span className="truncate" title={gym.name} style={{ color: 'var(--text-secondary)' }}>{gym.name}</span>
+                  )}
+                </div>
               )}
             </div>
             

@@ -430,7 +430,7 @@ export default function CommunitiesPage() {
         <div className="mobile-section">
           {/* My Communities */}
           {myCommunities.length > 0 && (
-            <div className="animate-slide-up">
+            <div className="animate-slide-up mt-6">
               <h2 className="minimal-heading mb-4 minimal-flex">
                 <Users className="minimal-icon mr-2 text-[#087E8B]" />
                 My Communities
@@ -471,7 +471,7 @@ export default function CommunitiesPage() {
           )}
 
           {/* All Communities */}
-          <div className="animate-slide-up">
+          <div className="animate-slide-up mt-6">
             <h2 className="minimal-heading mb-4 minimal-flex">
               <Globe className="minimal-icon mr-2 text-[#087E8B]" />
               All Communities

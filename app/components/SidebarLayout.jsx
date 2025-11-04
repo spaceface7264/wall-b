@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe, Sun, Moon, MessageSquare } from 'lucide-react';
+import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe, Sun, Moon, MessageSquare, MapPin } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import BottomNav from './BottomNav';
 import FeedbackModal from './FeedbackModal';
@@ -67,7 +67,13 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
             name,
             description,
             member_count,
-            is_active
+            is_active,
+            gym_id,
+            gyms (
+              id,
+              name,
+              city
+            )
           )
         `)
         .eq('user_id', userId)
@@ -599,32 +605,48 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                 <ListSkeleton variant="community" count={3} />
               ) : communities.length > 0 ? (
                 <div className="space-y-1">
-                  {communities.map((community) => (
-                    <button
-                      key={community.id}
-                      onClick={() => navigateToCommunity(community.id)}
-                      onMouseDown={createRipple}
-                      className={`mobile-drawer-item ripple-effect w-full ${
-                        currentCommunityId === community.id
-                          ? 'active'
-                          : ''
-                      } ${
-                        community.hasNewPosts && currentCommunityId !== community.id
-                          ? 'ring-1 ring-[#087E8B]/50'
-                          : ''
-                      }`}
-                      style={
-                        community.hasNewPosts && currentCommunityId !== community.id
-                          ? { backgroundColor: 'var(--accent-primary-lighter)' }
-                          : {}
-                      }
-                    >
-                      <Users className="mobile-drawer-icon" />
-                      <span className="mobile-drawer-text truncate">
-                        {community.name}
-                      </span>
-                    </button>
-                  ))}
+                  {communities.map((community) => {
+                    // Get gym data - Supabase returns nested relations as arrays
+                    const gymData = community.gyms 
+                      ? (Array.isArray(community.gyms) ? community.gyms[0] : community.gyms)
+                      : null;
+                    const gym = gymData;
+                    
+                    return (
+                      <button
+                        key={community.id}
+                        onClick={() => navigateToCommunity(community.id)}
+                        onMouseDown={createRipple}
+                        className={`mobile-drawer-item ripple-effect w-full ${
+                          currentCommunityId === community.id
+                            ? 'active'
+                            : ''
+                        } ${
+                          community.hasNewPosts && currentCommunityId !== community.id
+                            ? 'ring-1 ring-[#087E8B]/50'
+                            : ''
+                        }`}
+                        style={
+                          community.hasNewPosts && currentCommunityId !== community.id
+                            ? { backgroundColor: 'var(--accent-primary-lighter)' }
+                            : {}
+                        }
+                      >
+                        <Users className="mobile-drawer-icon" />
+                        <div className="flex-1 min-w-0 flex flex-col items-start">
+                          <span className="mobile-drawer-text truncate w-full text-left">
+                            {community.name}
+                          </span>
+                          {gym && gym.name && (
+                            <div className="flex items-center gap-1 mt-0.5 w-full" style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                              <MapPin className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{gym.name}</span>
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-4">

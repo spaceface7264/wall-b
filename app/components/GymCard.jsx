@@ -16,14 +16,14 @@ const GymCard = React.memo(function GymCard({
       onClick={() => onOpen(gym)}
       style={{ padding: '16px 0', position: 'relative' }}
     >
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', padding: '0 16px' }}>
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '0 16px' }}>
         {/* Gym Logo */}
           <div style={{ 
             flexShrink: 0, 
-          width: '100px', 
-          height: '100px',
-          minWidth: '100px',
-          minHeight: '100px',
+          width: '70px', 
+          height: '70px',
+          minWidth: '70px',
+          minHeight: '70px',
             backgroundColor: '#1e1e1e',
             borderRadius: '4px',
             border: '1px solid #333333',
@@ -32,7 +32,7 @@ const GymCard = React.memo(function GymCard({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '12px'
+          padding: '8px'
           }}>
           {(gym.logo_url || gym.logo) ? (
             <img
@@ -65,7 +65,7 @@ const GymCard = React.memo(function GymCard({
         </div>
         
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="flex items-center gap-2" style={{ marginBottom: '8px', flexWrap: 'wrap' }}>
+          <div className="flex items-center gap-2" style={{ marginBottom: '6px', flexWrap: 'wrap' }}>
             <h3 className="mobile-subheading truncate" style={{ margin: 0, flex: '1 1 auto', minWidth: 0 }}>{gym.name}</h3>
             {gym.is_hidden && isAdmin && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 flex-shrink-0 rounded">
@@ -80,12 +80,12 @@ const GymCard = React.memo(function GymCard({
             )}
           </div>
 
-          <div className="minimal-flex mobile-text-xs text-gray-400 items-center" style={{ marginBottom: '8px', flexWrap: 'wrap', gap: '4px' }}>
-            <MapPin className="minimal-icon flex-shrink-0" style={{ marginRight: '6px' }} />
+          <div className="minimal-flex mobile-text-xs text-gray-400 items-center" style={{ marginBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
+            <MapPin className="minimal-icon flex-shrink-0" style={{ marginRight: '4px' }} />
             <span className="truncate">{gym.city}, {gym.country}</span>
           </div>
 
-          <p className="mobile-text-xs text-gray-300 line-clamp-2" style={{ lineHeight: '1.7', marginBottom: '8px' }}>
+          <p className="mobile-text-xs text-gray-300 line-clamp-2" style={{ lineHeight: '1.6', marginBottom: '6px' }}>
             {gym.description}
           </p>
 

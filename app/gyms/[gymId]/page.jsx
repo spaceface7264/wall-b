@@ -1073,26 +1073,11 @@ export default function GymDetail() {
                     <span className="minimal-text text-sm">{gym.city}, {gym.country}</span>
                   </div>
                 </div>
-                {/* Map */}
-                <div className="mt-4 rounded-lg overflow-hidden border border-gray-700/50 bg-gray-800/30" style={{ height: '250px', position: 'relative' }}>
-                  <a
-                    href={mapLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute inset-0 flex items-center justify-center bg-gray-800/50 hover:bg-gray-800/70 transition-colors group cursor-pointer"
-                  >
-                    <div className="text-center p-4">
-                      <MapPin className="w-12 h-12 text-[#087E8B] mx-auto mb-2 group-hover:scale-110 transition-transform" />
-                      <span className="text-white text-sm font-medium">View on Google Maps</span>
-                      <span className="text-gray-400 text-xs block mt-1">Click to open</span>
-                    </div>
-                  </a>
-                </div>
                 <a
                   href={mapLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 mt-3 text-sm text-[#087E8B] hover:text-[#066a75] transition-colors"
+                  className="inline-flex items-center gap-2 mt-4 text-sm text-[#087E8B] hover:text-[#066a75] transition-colors"
                 >
                   <MapPin className="w-4 h-4" />
                   Open in Google Maps
@@ -1247,17 +1232,35 @@ export default function GymDetail() {
               <EmptyCommunities onCreateClick={() => navigate(`/community/new?gym_id=${gym.id}`)} />
             ) : (
               <div style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
-                {communities.map((community) => (
-                  <CommunityCard
-                    key={community.id} 
-                    community={community}
-                    isMember={false}
-                    onOpen={() => navigate(`/community/${community.id}`)}
-                    onJoin={() => {}}
-                    onLeave={() => {}}
-                    onReport={() => {}}
-                  />
-                ))}
+                <div className="flex flex-col gap-3 px-3">
+                  {communities.map((community) => (
+                    <div
+                      key={community.id}
+                      className="rounded-lg transition-all duration-200 cursor-pointer"
+                      style={{
+                        backgroundColor: 'var(--bg-surface)',
+                        border: '1px solid var(--border-color)',
+                        padding: 'var(--card-padding-mobile)'
+                      }}
+                      onClick={() => navigate(`/community/${community.id}`)}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+                      }}
+                    >
+                      <CommunityCard
+                        community={community}
+                        isMember={false}
+                        onOpen={() => navigate(`/community/${community.id}`)}
+                        onJoin={() => {}}
+                        onLeave={() => {}}
+                        onReport={() => {}}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -1487,7 +1490,7 @@ export default function GymDetail() {
           )}
 
           {/* Tab Navigation */}
-          <div className="animate-slide-up">
+          <div className="animate-slide-up mb-6">
             <TabNavigation
               tabs={tabs}
               activeTab={activeTab}
