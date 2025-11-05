@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe, Sun, Moon, MessageSquare, MapPin } from 'lucide-react';
+import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe, Sun, Moon, MessageSquare, MapPin, ChevronLeft } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import BottomNav from './BottomNav';
 import FeedbackModal from './FeedbackModal';
@@ -23,6 +23,11 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     // Initialize theme from localStorage or default to 'dark'
     const savedTheme = localStorage.getItem('theme');
     return savedTheme || 'dark';
+  });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    // Initialize sidebar state from localStorage or default to expanded
+    const saved = localStorage.getItem('sidebarCollapsed');
+    return saved === 'true';
   });
   const navigate = useNavigate();
   const location = useLocation();
@@ -132,6 +137,14 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
 
   const toggleTheme = () => {
     setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
+  };
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const newState = !prev;
+      localStorage.setItem('sidebarCollapsed', String(newState));
+      return newState;
+    });
   };
 
   useEffect(() => {
@@ -495,7 +508,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
   return (
     <div className="mobile-app mobile-safe-area">
       {/* Mobile Header */}
-      <div className="mobile-header">
+      <div className="mobile-header mobile-only">
         <button 
           onClick={toggleDrawer}
           onMouseDown={createRipple}
@@ -515,19 +528,41 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
         </div>
       </div>
 
-      {/* Drawer Overlay */}
+      {/* Drawer Overlay - Mobile Only */}
       {drawerOpen && (
         <div 
-          className="mobile-drawer-overlay open"
+          className="mobile-drawer-overlay open mobile-only"
           onClick={closeDrawer}
         />
       )}
 
-      {/* Drawer */}
-      <div className={`mobile-drawer ${drawerOpen ? 'open' : ''}`} style={{ overflowX: 'hidden' }}>
+      {/* Drawer - Mobile: Sliding drawer, Desktop: Persistent sidebar */}
+      <div className={`mobile-drawer desktop-sidebar ${drawerOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} style={{ overflowX: 'hidden' }}>
+        {/* Collapse Toggle Button - Desktop Only */}
+        <button
+          onClick={toggleSidebar}
+          className="desktop-sidebar-toggle desktop-only"
+          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <ChevronLeft className={`w-5 h-5 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} />
+        </button>
+
+        {/* Logo Section - Desktop Only */}
+        <div className="sidebar-logo-section desktop-only">
+          {!sidebarCollapsed ? (
+            <div className="sidebar-logo-full">
+              <h1 className="sidebar-logo-text">Rocha</h1>
+            </div>
+          ) : (
+            <div className="sidebar-logo-icon">
+              <span className="sidebar-logo-letter">R</span>
+            </div>
+          )}
+        </div>
 
         {/* Search Section */}
-        <div className="px-4 py-4 border-b" style={{ borderColor: 'var(--divider-color)' }}>
+        <div className={`sidebar-search-section ${sidebarCollapsed ? 'collapsed' : ''}`} style={{ borderColor: 'var(--divider-color)' }}>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4" style={{ color: 'var(--text-muted)' }} />
@@ -563,6 +598,15 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               <span className="font-medium">Search all communities</span>
             </button>
           )}
+          
+          {/* Desktop collapsed search icon - hidden on mobile and when not collapsed */}
+          <button
+            onClick={handleSearchAllCommunities}
+            className="sidebar-icon-button desktop-only"
+            title="Search communities"
+          >
+            <Search className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Communities Section */}
@@ -584,6 +628,19 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               <PlusCircle className="mobile-drawer-icon" />
               <span className="mobile-drawer-text">Create Community</span>
             </button>
+            
+            {/* Desktop collapsed icon version */}
+            <button
+              onClick={() => {
+                navigate('/community/new');
+                closeDrawer();
+              }}
+              onMouseDown={createRipple}
+              className={`sidebar-icon-button desktop-only ${location.pathname === '/community/new' ? 'active' : ''}`}
+              title="Create Community"
+            >
+              <PlusCircle className="w-5 h-5" />
+            </button>
 
             {/* Explore Communities Button */}
             <button
@@ -597,6 +654,16 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
             >
               <Compass className="mobile-drawer-icon" />
               <span className="mobile-drawer-text">Explore Communities</span>
+            </button>
+            
+            {/* Desktop collapsed icon version */}
+            <button
+              onClick={navigateToJoinCommunity}
+              onMouseDown={createRipple}
+              className={`sidebar-icon-button desktop-only ${location.pathname === '/communities' ? 'active' : ''}`}
+              title="Explore Communities"
+            >
+              <Compass className="w-5 h-5" />
             </button>
 
             {/* Find Gyms Button */}
@@ -615,9 +682,22 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               <MapPin className="mobile-drawer-icon" />
               <span className="mobile-drawer-text">Find Gyms</span>
             </button>
+            
+            {/* Desktop collapsed icon version */}
+            <button
+              onClick={() => {
+                navigate('/gyms');
+                closeDrawer();
+              }}
+              onMouseDown={createRipple}
+              className={`sidebar-icon-button desktop-only ${location.pathname === '/gyms' || location.pathname.startsWith('/gyms/') ? 'active' : ''}`}
+              title="Find Gyms"
+            >
+              <MapPin className="w-5 h-5" />
+            </button>
 
             {/* Communities List - Takes remaining space */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+            <div className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 ${sidebarCollapsed ? 'collapsed' : ''}`}>
               {communitiesLoading ? (
                 <ListSkeleton variant="community" count={3} />
               ) : communities.length > 0 ? (
@@ -630,6 +710,8 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                     const gym = gymData;
                     
                     return (
+                      <>
+                        {/* Mobile/Desktop full version */}
                       <button
                         key={community.id}
                         onClick={() => navigateToCommunity(community.id)}
@@ -662,6 +744,25 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                           )}
                         </div>
                       </button>
+                        
+                        {/* Desktop collapsed icon version */}
+                        <button
+                          key={`${community.id}-collapsed`}
+                          onClick={() => navigateToCommunity(community.id)}
+                          onMouseDown={createRipple}
+                          className={`sidebar-icon-button desktop-only ${
+                            currentCommunityId === community.id ? 'active' : ''
+                          } ${community.hasNewPosts && currentCommunityId !== community.id ? 'has-new-posts' : ''}`}
+                          title={community.name}
+                          style={
+                            community.hasNewPosts && currentCommunityId !== community.id
+                              ? { backgroundColor: 'var(--accent-primary-lighter)' }
+                              : {}
+                          }
+                        >
+                          <Users className="w-5 h-5" />
+                        </button>
+                      </>
                     );
                   })}
                 </div>
@@ -676,9 +777,10 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
         </div>
 
         {/* Drawer Footer */}
-        <div className="mobile-drawer-footer">
+        <div className={`mobile-drawer-footer ${sidebarCollapsed ? 'collapsed' : ''}`}>
           {/* Admin Panel - Only show if user is admin */}
           {isAdmin && (
+            <>
             <button
               onClick={() => navigateToPage('admin')}
               onMouseDown={createRipple}
@@ -691,6 +793,16 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               <Shield className="mobile-drawer-icon" />
               <span className="mobile-drawer-text">Admin Panel</span>
             </button>
+              {/* Desktop collapsed icon version */}
+              <button
+                onClick={() => navigateToPage('admin')}
+                onMouseDown={createRipple}
+                className={`sidebar-icon-button desktop-only ${currentPage === 'admin' ? 'active' : ''}`}
+                title="Admin Panel"
+              >
+                <Shield className="w-5 h-5" />
+              </button>
+            </>
           )}
           <button
             onClick={() => {
@@ -702,6 +814,18 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           >
             <MessageSquare className="mobile-drawer-icon" />
             <span className="mobile-drawer-text">Send Feedback</span>
+          </button>
+          {/* Desktop collapsed icon version */}
+          <button
+            onClick={() => {
+              setFeedbackModalOpen(true);
+              closeDrawer();
+            }}
+            onMouseDown={createRipple}
+            className="sidebar-icon-button desktop-only"
+            title="Send Feedback"
+          >
+            <MessageSquare className="w-5 h-5" />
           </button>
           <button
             onClick={() => {
@@ -721,6 +845,23 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
             </span>
           </button>
+          {/* Desktop collapsed icon version */}
+          <button
+            onClick={() => {
+              toggleTheme();
+              closeDrawer();
+            }}
+            onMouseDown={createRipple}
+            className="sidebar-icon-button desktop-only"
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-5 h-5" />
+            ) : (
+              <Moon className="w-5 h-5" />
+            )}
+          </button>
           <button
             onClick={handleLogout}
             onMouseDown={createRipple}
@@ -729,16 +870,27 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
             <LogOut className="mobile-drawer-icon" />
             <span className="mobile-drawer-text">Logout</span>
           </button>
+          {/* Desktop collapsed icon version */}
+          <button
+            onClick={handleLogout}
+            onMouseDown={createRipple}
+            className="sidebar-icon-button desktop-only text-red-400 hover:bg-red-500/10 hover:text-red-300"
+            title="Logout"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className={`mobile-content ${currentPage === 'chat' ? 'mobile-content-chat' : 'mobile-content-with-cards'}`}>
+      <div className={`mobile-content desktop-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${currentPage === 'chat' ? 'mobile-content-chat' : 'mobile-content-with-cards'}`}>
           {children}
       </div>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation - Mobile Only */}
+      <div className="mobile-only">
       <BottomNav />
+      </div>
 
       {/* Feedback Modal */}
       <FeedbackModal

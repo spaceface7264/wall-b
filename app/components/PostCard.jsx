@@ -460,74 +460,74 @@ export default function PostCard({
         {post.is_nsfw ? (
           <NSFWWarning content={post}>
             <div>
-              <h3 className="post-title">{post.title}</h3>
-              
-              {post.content && (
-                <p className="post-text">
-                  {post.content.length > 200 
-                    ? (
-                      <>
-                        {parseEventMentions(post.content.substring(0, 200))}
-                        <span className="text-gray-400">...</span>
-                      </>
-                    )
-                  : parseEventMentions(post.content)
-                }
-              </p>
-              )}
-              
-              {/* Media Files */}
-              {post.media_files && post.media_files.length > 0 && (
-                <div className="post-media">
-                  {post.media_files.length === 1 ? (
-                    <div className="post-media-single">
-                      {post.media_files[0].type?.startsWith('image/') ? (
+        <h3 className="post-title">{post.title}</h3>
+        
+        {post.content && (
+          <p className="post-text">
+            {post.content.length > 200 
+              ? (
+                <>
+                  {parseEventMentions(post.content.substring(0, 200))}
+                  <span className="text-gray-400">...</span>
+                </>
+              )
+            : parseEventMentions(post.content)
+          }
+        </p>
+        )}
+        
+        {/* Media Files */}
+        {post.media_files && post.media_files.length > 0 && (
+          <div className="post-media">
+            {post.media_files.length === 1 ? (
+              <div className="post-media-single">
+                {post.media_files[0].type?.startsWith('image/') ? (
+                  <img
+                    src={post.media_files[0].url}
+                    alt={post.media_files[0].name || 'Post media'}
+                    className="post-media-image"
+                    loading="lazy"
+                    onError={(e) => e.target.style.display = 'none'}
+                  />
+                ) : post.media_files[0].type?.startsWith('video/') ? (
+                  <video
+                    src={post.media_files[0].url}
+                    className="post-media-video"
+                    controls
+                    preload="metadata"
+                  />
+                ) : null}
+              </div>
+            ) : (
+              <div className="post-media-grid">
+                {post.media_files.slice(0, 4).map((file, index) => (
+                  <div key={index} className="post-media-item">
+                    {file.type?.startsWith('image/') ? (
                         <img
-                          src={post.media_files[0].url}
-                          alt={post.media_files[0].name || 'Post media'}
-                          className="post-media-image"
+                          src={file.url}
+                        alt={file.name || `Media ${index + 1}`}
+                        className="post-media-thumb"
                           loading="lazy"
                           onError={(e) => e.target.style.display = 'none'}
                         />
-                      ) : post.media_files[0].type?.startsWith('video/') ? (
+                    ) : file.type?.startsWith('video/') ? (
                         <video
-                          src={post.media_files[0].url}
-                          className="post-media-video"
+                          src={file.url}
+                        className="post-media-thumb"
                           controls
                           preload="metadata"
                         />
-                      ) : null}
+                    ) : null}
+                      {post.media_files.length > 4 && index === 3 && (
+                      <div className="post-media-overlay">
+                        <span>+{post.media_files.length - 4}</span>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="post-media-grid">
-                      {post.media_files.slice(0, 4).map((file, index) => (
-                        <div key={index} className="post-media-item">
-                          {file.type?.startsWith('image/') ? (
-                              <img
-                                src={file.url}
-                              alt={file.name || `Media ${index + 1}`}
-                              className="post-media-thumb"
-                                loading="lazy"
-                                onError={(e) => e.target.style.display = 'none'}
-                              />
-                          ) : file.type?.startsWith('video/') ? (
-                              <video
-                                src={file.url}
-                              className="post-media-thumb"
-                                controls
-                                preload="metadata"
-                              />
-                          ) : null}
-                            {post.media_files.length > 4 && index === 3 && (
-                            <div className="post-media-overlay">
-                              <span>+{post.media_files.length - 4}</span>
-                              </div>
-                            )}
-                          </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                ))}
+              </div>
+            )}
+          </div>
               )}
             </div>
           </NSFWWarning>

@@ -1327,14 +1327,16 @@ export default function Gyms() {
                 </div>
               </div>
             ) : (
-              filteredGyms.map((gym, index) => (
+              <div className="desktop-grid-3">
+                {filteredGyms.map((gym, index) => (
                 <GymCard
                   key={gym.id}
                   gym={gym}
                   onOpen={openGym}
                   isAdmin={isAdmin}
                 />
-              ))
+                ))}
+              </div>
             )}
         </div>
       </div>

@@ -172,7 +172,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
-            <div className="flex flex-col gap-3 px-3">
+            <div className="desktop-grid-3 px-3">
               {recommendedCommunities.map((community) => (
                 <div
                   key={community.id}
@@ -240,7 +240,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
-            <div className="flex flex-col gap-3 px-3">
+            <div className="desktop-grid-3 px-3">
               {recommendedGyms.map((gym) => (
                 <GymCard
                   key={gym.id}

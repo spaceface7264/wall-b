@@ -730,7 +730,8 @@ export default function CommunityPage() {
                   isMember={isMember || isAdmin}
                 />
               ) : (
-                posts.map((post) => (
+                <div className="desktop-grid-2" style={{ marginLeft: 'var(--container-padding-mobile)', marginRight: 'var(--container-padding-mobile)' }}>
+                  {posts.map((post) => (
                   <PostCard
                     key={post.id}
                     post={post}
@@ -749,7 +750,8 @@ export default function CommunityPage() {
                     isLiking={likingPost === post.id}
                     showActions={true}
                   />
-                ))
+                  ))}
+                </div>
               )}
             </div>
           </div>
