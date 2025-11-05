@@ -41,7 +41,7 @@ export default function GymDetail() {
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userLoaded, setUserLoaded] = useState(false);
-  const [activeTab, setActiveTab] = useState('details');
+  const [activeTab, setActiveTab] = useState('communities');
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -71,9 +71,9 @@ export default function GymDetail() {
   const { showToast } = useToast();
 
   const tabs = [
-    { id: 'details', label: 'Details', icon: Info },
     { id: 'communities', label: 'Communities', icon: Users },
-    { id: 'events', label: 'Events', icon: Calendar }
+    { id: 'events', label: 'Events', icon: Calendar },
+    { id: 'details', label: 'Details', icon: Info }
   ];
 
   useEffect(() => {
@@ -1131,7 +1131,7 @@ export default function GymDetail() {
                   href={mapLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 mt-4 text-sm text-[#087E8B] hover:text-[#066a75] transition-colors"
+                  className="inline-flex items-center gap-2 text-sm text-[#087E8B] hover:text-[#066a75] transition-colors"
                 >
                   <MapPin className="w-4 h-4" />
                   Open in Google Maps

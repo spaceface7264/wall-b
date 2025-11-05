@@ -1,7 +1,11 @@
-import { Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal, Edit2, Trash2, Calendar, User } from 'lucide-react';
-import { useState } from 'react';
+import { Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal, Edit2, Trash2, Calendar, User, Users, MapPin, Ban, VolumeX } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ConfirmationModal from './ConfirmationModal';
+import BlockUserModal from './BlockUserModal';
+import MuteUserModal from './MuteUserModal';
+import NSFWWarning from './NSFWWarning';
+import { isUserBlocked, isUserMuted } from '../../lib/user-blocking';
 
 export default function PostCard({ 
   post, 
@@ -23,13 +27,35 @@ export default function PostCard({
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showMuteModal, setShowMuteModal] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const navigate = useNavigate();
   const isOwnPost = post.user_id === currentUserId;
   const canEdit = showActions && isOwnPost; // Only owners can edit
   const canDelete = showActions && (isOwnPost || isAdmin); // Owners and admins can delete
-  const canShowActions = canEdit || canDelete; // Show menu if any action is available
+  const canBlockMute = showActions && !isOwnPost && currentUserId; // Can block/mute if not own post
+  const canShowActions = canEdit || canDelete || canBlockMute; // Show menu if any action is available
   const isPostLiked = liked || isLiked;
   const isPostLoading = loadingLike || isLiking;
+
+  // Check if user is blocked or muted
+  useEffect(() => {
+    const checkBlockStatus = async () => {
+      if (!currentUserId || isOwnPost || !post.user_id) return;
+      
+      const [blocked, muted] = await Promise.all([
+        isUserBlocked(post.user_id),
+        isUserMuted(post.user_id)
+      ]);
+      
+      setIsBlocked(blocked);
+      setIsMuted(muted);
+    };
+    
+    checkBlockStatus();
+  }, [currentUserId, post.user_id, isOwnPost]);
 
   const handleProfileClick = (e) => {
     e.stopPropagation();
@@ -172,6 +198,27 @@ export default function PostCard({
   const authorAvatar = post.profiles?.avatar_url;
   const authorInitial = authorName.charAt(0).toUpperCase();
 
+  // Hide post if user is blocked
+  if (isBlocked) {
+    return (
+      <div className="p-4 border-b border-gray-700 text-center text-gray-400 text-sm">
+        You have blocked this user. Their content is hidden.
+      </div>
+    );
+  }
+
+  // Hide post content if user is muted (but show it's muted)
+  if (isMuted) {
+    return (
+      <div className="p-4 border-b border-gray-700">
+        <div className="flex items-center gap-2 text-gray-400 text-sm mb-2">
+          <VolumeX className="w-4 h-4" />
+          <span>You have muted {authorName}. Their content is hidden.</span>
+        </div>
+      </div>
+    );
+  }
+
   if (compact) {
     return (
       <div 
@@ -253,37 +300,42 @@ export default function PostCard({
       }}
     >
       {/* Header */}
-      <div className="post-header" style={{ padding: '0 16px', marginBottom: '12px' }}>
-        <div className="post-author-info flex-1">
+      <div className="post-header" style={{ padding: '0 16px', marginBottom: '0px' }}>
+        <div className="post-author-info flex-1" style={{ gap: '4px' }}>
           {authorAvatar ? (
             <img 
               src={authorAvatar} 
               alt={authorName} 
               className="post-avatar"
               onClick={handleProfileClick}
+              style={{ width: '28px', height: '28px' }}
             />
           ) : (
             <div 
               className="post-avatar post-avatar-placeholder"
               onClick={handleProfileClick}
+              style={{ width: '28px', height: '28px' }}
             >
               {authorInitial}
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <div className="flex items-center gap-1.5 mb-0 flex-wrap">
               <button
                 onClick={handleProfileClick}
-              className="post-author-name"
+                className="text-xs"
+                style={{ color: 'var(--text-muted)', cursor: 'pointer' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
               >
-              {authorName}
+                {authorName}
               </button>
               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 {formatTime(post.created_at)}
               </span>
               {post.tag && (
                 <span
-                  className="px-3 py-1 rounded-full text-xs font-medium"
+                  className="px-2 py-0.5 rounded-full text-[10px] font-medium"
                   style={{
                     backgroundColor: `${getTagColor(post.tag)}20`,
                     border: `1px solid ${getTagColor(post.tag)}40`,
@@ -330,6 +382,33 @@ export default function PostCard({
                       <span>Delete Post</span>
                     </button>
                   )}
+                  {canBlockMute && (
+                    <>
+                      <div className="border-t border-gray-700 my-1"></div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowMenu(false);
+                          setShowMuteModal(true);
+                        }}
+                        className="post-menu-item"
+                      >
+                        <VolumeX className="w-4 h-4" />
+                        <span>Mute {authorName}</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowMenu(false);
+                          setShowBlockModal(true);
+                        }}
+                        className="post-menu-item post-menu-item-danger"
+                      >
+                        <Ban className="w-4 h-4" />
+                        <span>Block {authorName}</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </>
               )}
@@ -339,79 +418,157 @@ export default function PostCard({
 
       {/* Content */}
       <div className="post-content" style={{ padding: '0 16px' }}>
-        <h3 className="post-title">{post.title}</h3>
-        
-        {post.content && (
-          <p className="post-text">
-            {post.content.length > 200 
-              ? (
-                <>
-                  {parseEventMentions(post.content.substring(0, 200))}
-                  <span className="text-gray-400">...</span>
-                </>
-              )
-            : parseEventMentions(post.content)
-          }
-        </p>
-        )}
-        
-        {/* Media Files */}
-        {post.media_files && post.media_files.length > 0 && (
-          <div className="post-media">
-            {post.media_files.length === 1 ? (
-              <div className="post-media-single">
-                {post.media_files[0].type?.startsWith('image/') ? (
-                  <img
-                    src={post.media_files[0].url}
-                    alt={post.media_files[0].name || 'Post media'}
-                    className="post-media-image"
-                    loading="lazy"
-                    onError={(e) => e.target.style.display = 'none'}
-                  />
-                ) : post.media_files[0].type?.startsWith('video/') ? (
-                  <video
-                    src={post.media_files[0].url}
-                    className="post-media-video"
-                    controls
-                    preload="metadata"
-                  />
-                ) : null}
-              </div>
-            ) : (
-              <div className="post-media-grid">
-                {post.media_files.slice(0, 4).map((file, index) => (
-                  <div key={index} className="post-media-item">
-                    {file.type?.startsWith('image/') ? (
+        {post.is_nsfw ? (
+          <NSFWWarning content={post}>
+            <div>
+              <h3 className="post-title">{post.title}</h3>
+              
+              {post.content && (
+                <p className="post-text">
+                  {post.content.length > 200 
+                    ? (
+                      <>
+                        {parseEventMentions(post.content.substring(0, 200))}
+                        <span className="text-gray-400">...</span>
+                      </>
+                    )
+                  : parseEventMentions(post.content)
+                }
+              </p>
+              )}
+              
+              {/* Media Files */}
+              {post.media_files && post.media_files.length > 0 && (
+                <div className="post-media">
+                  {post.media_files.length === 1 ? (
+                    <div className="post-media-single">
+                      {post.media_files[0].type?.startsWith('image/') ? (
                         <img
-                          src={file.url}
-                        alt={file.name || `Media ${index + 1}`}
-                        className="post-media-thumb"
+                          src={post.media_files[0].url}
+                          alt={post.media_files[0].name || 'Post media'}
+                          className="post-media-image"
                           loading="lazy"
                           onError={(e) => e.target.style.display = 'none'}
                         />
-                    ) : file.type?.startsWith('video/') ? (
+                      ) : post.media_files[0].type?.startsWith('video/') ? (
                         <video
-                          src={file.url}
-                        className="post-media-thumb"
+                          src={post.media_files[0].url}
+                          className="post-media-video"
                           controls
                           preload="metadata"
                         />
-                    ) : null}
-                      {post.media_files.length > 4 && index === 3 && (
-                      <div className="post-media-overlay">
-                        <span>+{post.media_files.length - 4}</span>
-                        </div>
-                      )}
+                      ) : null}
                     </div>
-                ))}
+                  ) : (
+                    <div className="post-media-grid">
+                      {post.media_files.slice(0, 4).map((file, index) => (
+                        <div key={index} className="post-media-item">
+                          {file.type?.startsWith('image/') ? (
+                              <img
+                                src={file.url}
+                              alt={file.name || `Media ${index + 1}`}
+                              className="post-media-thumb"
+                                loading="lazy"
+                                onError={(e) => e.target.style.display = 'none'}
+                              />
+                          ) : file.type?.startsWith('video/') ? (
+                              <video
+                                src={file.url}
+                              className="post-media-thumb"
+                                controls
+                                preload="metadata"
+                              />
+                          ) : null}
+                            {post.media_files.length > 4 && index === 3 && (
+                            <div className="post-media-overlay">
+                              <span>+{post.media_files.length - 4}</span>
+                              </div>
+                            )}
+                          </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </NSFWWarning>
+        ) : (
+          <>
+            <h3 className="post-title">{post.title}</h3>
+            
+            {post.content && (
+              <p className="post-text">
+                {post.content.length > 200 
+                  ? (
+                    <>
+                      {parseEventMentions(post.content.substring(0, 200))}
+                      <span className="text-gray-400">...</span>
+                    </>
+                  )
+                : parseEventMentions(post.content)
+              }
+            </p>
+            )}
+            
+            {/* Media Files */}
+            {post.media_files && post.media_files.length > 0 && (
+              <div className="post-media">
+                {post.media_files.length === 1 ? (
+                  <div className="post-media-single">
+                    {post.media_files[0].type?.startsWith('image/') ? (
+                      <img
+                        src={post.media_files[0].url}
+                        alt={post.media_files[0].name || 'Post media'}
+                        className="post-media-image"
+                        loading="lazy"
+                        onError={(e) => e.target.style.display = 'none'}
+                      />
+                    ) : post.media_files[0].type?.startsWith('video/') ? (
+                      <video
+                        src={post.media_files[0].url}
+                        className="post-media-video"
+                        controls
+                        preload="metadata"
+                      />
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="post-media-grid">
+                    {post.media_files.slice(0, 4).map((file, index) => (
+                      <div key={index} className="post-media-item">
+                        {file.type?.startsWith('image/') ? (
+                            <img
+                              src={file.url}
+                            alt={file.name || `Media ${index + 1}`}
+                            className="post-media-thumb"
+                              loading="lazy"
+                              onError={(e) => e.target.style.display = 'none'}
+                            />
+                        ) : file.type?.startsWith('video/') ? (
+                            <video
+                              src={file.url}
+                            className="post-media-thumb"
+                              controls
+                              preload="metadata"
+                            />
+                        ) : null}
+                          {post.media_files.length > 4 && index === 3 && (
+                          <div className="post-media-overlay">
+                            <span>+{post.media_files.length - 4}</span>
+                            </div>
+                          )}
+                        </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
       
       {/* Actions */}
-      <div className="post-actions" style={{ padding: '0 16px', marginTop: '12px' }}>
+      <div className="post-actions" style={{ padding: '0 16px', marginTop: '1px', gap: '6px' }}>
           <button 
             onClick={handleLike}
           disabled={isPostLoading}
@@ -426,7 +583,7 @@ export default function PostCard({
           </button>
         
           <button 
-            onClick={handleComment}
+            onClick={handleOpen}
           className="post-action-btn"
           >
           <MessageCircle className="w-4 h-4" />
@@ -463,6 +620,32 @@ export default function PostCard({
         cancelText="Cancel"
         variant="danger"
         icon={Trash2}
+      />
+
+      {/* Block User Modal */}
+      <BlockUserModal
+        isOpen={showBlockModal}
+        onClose={(success) => {
+          setShowBlockModal(false);
+          if (success) {
+            setIsBlocked(true);
+          }
+        }}
+        userId={post.user_id}
+        userName={authorName}
+      />
+
+      {/* Mute User Modal */}
+      <MuteUserModal
+        isOpen={showMuteModal}
+        onClose={(success) => {
+          setShowMuteModal(false);
+          if (success) {
+            setIsMuted(true);
+          }
+        }}
+        userId={post.user_id}
+        userName={authorName}
       />
     </div>
   );

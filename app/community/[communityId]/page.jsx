@@ -122,6 +122,7 @@ export default function CommunityPage() {
         .select(`
           *,
           gyms (
+            id,
             name,
             city,
             country,
@@ -183,7 +184,8 @@ export default function CommunityPage() {
           
           setCreator({
             name: profile?.nickname || profile?.full_name || 'Unknown',
-            joinedAt: firstMember.joined_at
+            joinedAt: firstMember.joined_at,
+            userId: firstMember.user_id
           });
         }
       } catch (error) {
@@ -213,7 +215,7 @@ export default function CommunityPage() {
     try {
       console.log('🔄 Loading posts for community:', commId);
       
-      // First try with profiles join
+      // First try with profiles join and community/gym data
       const { data: postsData, error } = await supabase
         .from('posts')
         .select(`
@@ -222,6 +224,17 @@ export default function CommunityPage() {
             nickname,
             full_name,
             avatar_url
+          ),
+          communities!community_id (
+            id,
+            name,
+            gym_id,
+            gyms (
+              id,
+              name,
+              city,
+              country
+            )
           )
         `)
         .eq('community_id', commId)
@@ -236,11 +249,24 @@ export default function CommunityPage() {
           code: error.code
         });
         
-        // Fallback: try without profiles join
+        // Fallback: try without profiles join but with community/gym data
         console.log('🔄 Trying fallback query without profiles join...');
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('posts')
-          .select('*')
+          .select(`
+            *,
+            communities!community_id (
+              id,
+              name,
+              gym_id,
+              gyms (
+                id,
+                name,
+                city,
+                country
+              )
+            )
+          `)
           .eq('community_id', commId)
           .order('created_at', { ascending: false });
           
@@ -804,24 +830,31 @@ export default function CommunityPage() {
             </div>
 
             {/* Gym Connection */}
-            {community?.gyms && (
-              <div className="animate-slide-up">
-                <h4 className="minimal-heading mb-3 minimal-flex">
-                  <MapPin className="minimal-icon mr-2 text-[#087E8B]" />
-                  Location
-                </h4>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-200">{community.gyms.name}</p>
-                  <p className="text-sm text-gray-300">{community.gyms.city}, {community.gyms.country}</p>
-                  {community.gyms.address && (
-                    <p className="text-sm text-gray-400">{community.gyms.address}</p>
-                  )}
-                  {community.gyms.description && (
-                    <p className="text-sm text-gray-300 mt-2">{community.gyms.description}</p>
-                  )}
+            {(() => {
+              // Extract gym data (handle both array and object formats from Supabase)
+              const gym = community?.gyms 
+                ? (Array.isArray(community.gyms) ? community.gyms[0] : community.gyms)
+                : null;
+              
+              return gym ? (
+                <div className="animate-slide-up">
+                  <h4 className="minimal-heading mb-3 minimal-flex">
+                    <MapPin className="minimal-icon mr-2 text-[#087E8B]" />
+                    Location
+                  </h4>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-200">{gym.name}</p>
+                    <p className="text-sm text-gray-300">{gym.city}, {gym.country}</p>
+                    {gym.address && (
+                      <p className="text-sm text-gray-400">{gym.address}</p>
+                    )}
+                    {gym.description && (
+                      <p className="text-sm text-gray-300 mt-2">{gym.description}</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : null;
+            })()}
 
             {/* Moderators List */}
             <div className="animate-slide-up">
@@ -924,19 +957,42 @@ export default function CommunityPage() {
               <div className="flex-1 min-w-0">
                 <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>{community?.name}</h1>
                 <div className="flex flex-col gap-1 text-sm text-gray-400 mb-3">
-                  {community?.gyms && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 flex-shrink-0" />
-                      <span className="text-gray-300">{community.gyms.name}</span>
-                      {community.gyms.city && (
-                        <span className="text-gray-400">• {community.gyms.city}</span>
-                      )}
-                    </div>
-                  )}
+                  {(() => {
+                    // Extract gym data (handle both array and object formats from Supabase)
+                    const gym = community?.gyms 
+                      ? (Array.isArray(community.gyms) ? community.gyms[0] : community.gyms)
+                      : null;
+                    
+                    return gym && gym.id ? (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 flex-shrink-0" />
+                        <button
+                          onClick={() => navigate(`/gyms/${gym.id}`)}
+                          className="text-gray-300 hover:text-gray-200 transition-colors cursor-pointer"
+                        >
+                          {gym.name}
+                        </button>
+                        {gym.city && (
+                          <span className="text-gray-400">• {gym.city}</span>
+                        )}
+                      </div>
+                    ) : null;
+                  })()}
                   {creator && (
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 flex-shrink-0" />
-                      <span>Created by <span className="text-gray-300">{creator.name}</span></span>
+                      <span>Created by{' '}
+                        {creator.userId ? (
+                          <button
+                            onClick={() => navigate(`/profile/${creator.userId}`)}
+                            className="text-gray-300 hover:text-gray-200 transition-colors cursor-pointer"
+                          >
+                            {creator.name}
+                          </button>
+                        ) : (
+                          <span className="text-gray-300">{creator.name}</span>
+                        )}
+                      </span>
                       {community?.created_at && (
                         <span className="text-gray-400">
                           • {(() => {

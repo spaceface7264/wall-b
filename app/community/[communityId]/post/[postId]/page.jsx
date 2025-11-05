@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Heart, MessageCircle, Edit2, Trash2, Shield, X, ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, Edit2, Trash2, Shield, X, ChevronLeft, ChevronRight, MoreVertical, Users, MapPin } from 'lucide-react';
 import SidebarLayout from '../../../../components/SidebarLayout';
 import CommentThread from '../../../../components/CommentThread';
 import CommentInput from '../../../../components/CommentInput';
@@ -32,6 +32,7 @@ export default function PostDetailPage() {
   const [communityName, setCommunityName] = useState(null);
   const [authorDisplayName, setAuthorDisplayName] = useState(null);
   const [authorAvatar, setAuthorAvatar] = useState(null);
+  const [gymData, setGymData] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -115,15 +116,31 @@ export default function PostDetailPage() {
 
       setPost(postData);
 
-      // Fetch community name
+      // Fetch community name and gym data
       const { data: communityData } = await supabase
         .from('communities')
-        .select('name')
+        .select(`
+          name,
+          gym_id,
+          gyms (
+            id,
+            name,
+            city,
+            country
+          )
+        `)
         .eq('id', communityId)
         .single();
       
       if (communityData) {
         setCommunityName(communityData.name);
+        // Extract gym data (handle both array and object formats from Supabase)
+        const gym = communityData.gyms 
+          ? (Array.isArray(communityData.gyms) ? communityData.gyms[0] : communityData.gyms)
+          : null;
+        if (gym && gym.id) {
+          setGymData(gym);
+        }
       }
 
       // Fetch author's display name and avatar from profiles
@@ -677,17 +694,52 @@ export default function PostDetailPage() {
                   </div>
                 </div>
 
-                {/* Community Name and Creator Name Stacked */}
+                {/* Community, Gym Name and Creator Name Stacked */}
                 <div className="flex-1 min-w-0">
-                  {/* Community Name with forward slash */}
-                  {communityName && (
-                    <p className="text-sm text-gray-400">
-                      /{communityName}
-                    </p>
-                  )}
+                  {/* Breadcrumb: Community and Gym */}
+                  <div className="flex flex-col gap-1 mb-1">
+                    {/* Community Name with icon */}
+                    {communityName && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/community/${communityId}`);
+                        }}
+                        className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        <span>{communityName}</span>
+                      </button>
+                    )}
+                    
+                    {/* Gym Name with map icon (if exists) */}
+                    {gymData && gymData.name && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/gyms/${gymData.id}`);
+                        }}
+                        className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>{gymData.name}</span>
+                      </button>
+                    )}
+                  </div>
                   
                   {/* Creator Name */}
-                  {authorDisplayName && (
+                  {authorDisplayName && post?.user_id && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/profile/${post.user_id}`);
+                      }}
+                      className="text-base font-medium text-white hover:text-gray-300 transition-colors cursor-pointer block"
+                    >
+                      {authorDisplayName}
+                    </button>
+                  )}
+                  {authorDisplayName && !post?.user_id && (
                     <p className="text-base font-medium text-white">
                       {authorDisplayName}
                     </p>

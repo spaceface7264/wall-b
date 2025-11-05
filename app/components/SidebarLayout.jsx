@@ -599,6 +599,23 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               <span className="mobile-drawer-text">Explore Communities</span>
             </button>
 
+            {/* Find Gyms Button */}
+            <button
+              onClick={() => {
+                navigate('/gyms');
+                closeDrawer();
+              }}
+              onMouseDown={createRipple}
+              className={`mobile-drawer-item ripple-effect w-full flex-shrink-0 ${
+                location.pathname === '/gyms' || location.pathname.startsWith('/gyms/')
+                  ? 'active'
+                  : ''
+              }`}
+            >
+              <MapPin className="mobile-drawer-icon" />
+              <span className="mobile-drawer-text">Find Gyms</span>
+            </button>
+
             {/* Communities List - Takes remaining space */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
               {communitiesLoading ? (
