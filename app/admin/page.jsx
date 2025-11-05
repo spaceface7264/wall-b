@@ -1405,8 +1405,13 @@ export default function AdminPage() {
       });
     });
     
-    // Add requests (pending, rejected)
+    // Add requests (only pending and rejected - skip approved since they're already in gyms table)
     gymRequests.forEach(request => {
+      // Skip approved requests - they should already be in the gyms table
+      if (request.status === 'approved') {
+        return;
+      }
+      
       combined.push({
         ...request,
         _type: 'request',

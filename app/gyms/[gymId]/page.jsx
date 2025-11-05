@@ -53,6 +53,8 @@ export default function GymDetail() {
   const [uploadedLogoUrl, setUploadedLogoUrl] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [selectedFacilities, setSelectedFacilities] = useState([]);
+  const [selectedDifficulties, setSelectedDifficulties] = useState([]);
+  const [newDifficulty, setNewDifficulty] = useState('');
   const [useSameHoursForAll, setUseSameHoursForAll] = useState(false);
   const [universalHours, setUniversalHours] = useState('');
   const [originalGymData, setOriginalGymData] = useState(null);
@@ -61,6 +63,7 @@ export default function GymDetail() {
   const [imageFocalX, setImageFocalX] = useState(0.5);
   const [imageFocalY, setImageFocalY] = useState(0.5);
   const [showFocalPointSelector, setShowFocalPointSelector] = useState(false);
+  const [isUpdatingGym, setIsUpdatingGym] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
   const params = useParams();
@@ -755,6 +758,11 @@ export default function GymDetail() {
         ? (gymData.facilities.length > 0 ? gymData.facilities : [])
         : [];
 
+      // Prepare difficulty_levels - ensure it's always an array
+      const difficulty_levels = Array.isArray(gymData.difficulty_levels) 
+        ? (gymData.difficulty_levels.length > 0 ? gymData.difficulty_levels : [])
+        : [];
+
       const cleanedData = {
         name: name,
         description: (gymData.description || '').trim() || null,
@@ -770,42 +778,84 @@ export default function GymDetail() {
                       logo_url: uploadedLogoUrl || (gymData.logo_url || '').trim() || null,
         facilities: facilities,
         opening_hours: Object.keys(cleanedOpeningHours).length > 0 ? cleanedOpeningHours : {},
+        // Admin-only fields
+        single_entry_price: (gymData.single_entry_price || '').trim() || null,
+        membership_price: (gymData.membership_price || '').trim() || null,
+        price_range: (gymData.price_range || '').trim() || null,
+        latitude: gymData.latitude ? parseFloat(gymData.latitude) : null,
+        longitude: gymData.longitude ? parseFloat(gymData.longitude) : null,
+        difficulty_levels: difficulty_levels,
+        is_hidden: gymData.is_hidden || false,
         updated_at: new Date().toISOString()
       };
 
       console.log('Updating gym with data:', cleanedData);
       console.log('Gym ID:', gym.id);
 
-      const { data, error } = await supabase
-        .from('gyms')
-        .update(cleanedData)
-        .eq('id', gym.id)
-        .select()
-        .single();
+      console.log('About to call Supabase update...');
+      console.log('Cleaned data being sent:', JSON.stringify(cleanedData, null, 2));
+      
+      // Try a simpler update first - without .select() to see if that's causing the hang
+      try {
+        console.log('Attempting Supabase update...');
+        
+        // First, try a simple update without select
+        const { error: updateError } = await supabase
+          .from('gyms')
+          .update(cleanedData)
+          .eq('id', gym.id);
 
-      if (error) {
-        console.error('Error updating gym:', error);
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        
-        // Provide helpful error message for missing columns
-        let errorMessage = error.message;
-        if (error.message && error.message.includes('facilities')) {
-          errorMessage = 'Missing facilities column. Please run the migration script: sql-scripts/add-missing-gym-columns.sql';
-        } else if (error.message && error.message.includes('schema cache')) {
-          errorMessage = 'Schema cache error. Please refresh the Supabase schema cache or run the migration script.';
+        if (updateError) {
+          console.error('❌ Error updating gym:', updateError);
+          showToast('error', 'Error', `Failed to update gym: ${updateError.message}`);
+          return false;
         }
+
+        console.log('✅ Gym update successful');
         
-        showToast('error', 'Error', `Failed to update gym: ${errorMessage}`);
+        // Now fetch the updated data separately
+        const { data: updatedGym, error: fetchError } = await supabase
+          .from('gyms')
+          .select('*')
+          .eq('id', gym.id)
+          .single();
+
+        if (fetchError) {
+          console.warn('⚠️ Update succeeded but failed to fetch updated data:', fetchError);
+          // Don't fail the update if fetch fails - update was successful
+        }
+
+        const data = updatedGym;
+        const error = null;
+
+        if (error) {
+          console.error('❌ Error updating gym:', error);
+          console.error('Error details:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          });
+          
+          // Provide helpful error message for missing columns
+          let errorMessage = error.message;
+          if (error.message && error.message.includes('facilities')) {
+            errorMessage = 'Missing facilities column. Please run the migration script: sql-scripts/add-missing-gym-columns.sql';
+          } else if (error.message && error.message.includes('schema cache')) {
+            errorMessage = 'Schema cache error. Please refresh the Supabase schema cache or run the migration script.';
+          }
+          
+          showToast('error', 'Error', `Failed to update gym: ${errorMessage}`);
+          return false;
+        }
+
+        console.log('Update response:', { data, error });
+        console.log('Gym updated successfully:', data);
+      } catch (updateError) {
+        console.error('❌ Unexpected error during update:', updateError);
+        showToast('error', 'Error', `Update failed: ${updateError.message || 'Unknown error'}`);
         return false;
       }
-
-      console.log('Update response:', { data, error });
-      console.log('Gym updated successfully:', data);
 
       // Always close modal and reset states
         setShowEditModal(false);
@@ -815,6 +865,8 @@ export default function GymDetail() {
       setUploadedLogoUrl(null);
       setLogoPreview(null);
       setSelectedFacilities([]);
+      setSelectedDifficulties([]);
+      setNewDifficulty('');
       setOriginalGymData(null);
       setShowChangesConfirmation(false);
       setPendingChanges(null);
@@ -835,21 +887,23 @@ export default function GymDetail() {
       console.error('Error updating gym:', error);
       console.error('Error stack:', error.stack);
       showToast('error', 'Error', `Something went wrong: ${error.message}`);
-      // Still close modal even on error to allow retry
-      setShowEditModal(false);
-      setEditingGym(null);
-      setUploadedImageUrl(null);
-      setImagePreview(null);
-      setUploadedLogoUrl(null);
-      setLogoPreview(null);
-      setSelectedFacilities([]);
-      setOriginalGymData(null);
-      setShowChangesConfirmation(false);
-      setPendingChanges(null);
-      setImageFocalX(0.5);
-      setImageFocalY(0.5);
-      setShowFocalPointSelector(false);
-      return false;
+        // Still close modal even on error to allow retry
+        setShowEditModal(false);
+        setEditingGym(null);
+        setUploadedImageUrl(null);
+        setImagePreview(null);
+        setUploadedLogoUrl(null);
+        setLogoPreview(null);
+        setSelectedFacilities([]);
+        setSelectedDifficulties([]);
+        setNewDifficulty('');
+        setOriginalGymData(null);
+        setShowChangesConfirmation(false);
+        setPendingChanges(null);
+        setImageFocalX(0.5);
+        setImageFocalY(0.5);
+        setShowFocalPointSelector(false);
+        return false;
     }
   };
 
@@ -1424,10 +1478,16 @@ export default function GymDetail() {
                               ? gym.facilities 
                               : (typeof gym.facilities === 'string' ? JSON.parse(gym.facilities || '[]') : []);
                             setSelectedFacilities(gymFacilities);
+                            // Initialize selected difficulties from gym data
+                            const gymDifficulties = Array.isArray(gym.difficulty_levels) 
+                              ? gym.difficulty_levels 
+                              : [];
+                            setSelectedDifficulties(gymDifficulties);
                             // Store original data for comparison
                             setOriginalGymData({
                               ...gym,
-                              facilities: gymFacilities
+                              facilities: gymFacilities,
+                              difficulty_levels: gymDifficulties
                             });
                             // Initialize focal point from gym data or default to center
                             setImageFocalX(gym.image_focal_x ?? 0.5);
@@ -1515,13 +1575,15 @@ export default function GymDetail() {
                 onClick={() => {
                   setShowEditModal(false);
                   setEditingGym(null);
-                  setUploadedImageUrl(null);
-                  setImagePreview(null);
-                  setSelectedFacilities([]);
-                  setOriginalGymData(null);
-                  setImageFocalX(0.5);
-                  setImageFocalY(0.5);
-                  setShowFocalPointSelector(false);
+                      setUploadedImageUrl(null);
+                      setImagePreview(null);
+                      setSelectedFacilities([]);
+                      setSelectedDifficulties([]);
+                      setNewDifficulty('');
+                      setOriginalGymData(null);
+                      setImageFocalX(0.5);
+                      setImageFocalY(0.5);
+                      setShowFocalPointSelector(false);
                 }}
                 className="text-gray-400 hover:text-white"
               >
@@ -1576,7 +1638,15 @@ export default function GymDetail() {
                       image_focal_y: imageFocalY,
                       logo_url: uploadedLogoUrl || formData.get('logo_url') || '',
                       facilities: selectedFacilities,
-                      opening_hours: openingHours
+                      opening_hours: openingHours,
+                      // Admin-only fields
+                      single_entry_price: formData.get('single_entry_price') || '',
+                      membership_price: formData.get('membership_price') || '',
+                      price_range: formData.get('price_range') || '',
+                      latitude: formData.get('latitude') ? parseFloat(formData.get('latitude')) : null,
+                      longitude: formData.get('longitude') ? parseFloat(formData.get('longitude')) : null,
+                      difficulty_levels: selectedDifficulties,
+                      is_hidden: formData.get('is_hidden') === 'on' || formData.get('is_hidden') === 'true'
                     };
 
                     // Calculate changes and show confirmation
@@ -1953,6 +2023,137 @@ export default function GymDetail() {
                   )}
                 </div>
 
+                {/* Admin-only fields section */}
+                {isAdmin && (
+                  <>
+                    <div className="pt-4 border-t border-gray-700">
+                      <h4 className="text-sm font-semibold text-gray-300 mb-4">Admin Settings</h4>
+                      
+                      {/* Price Fields */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">Single Entry Price</label>
+                          <input
+                            type="text"
+                            name="single_entry_price"
+                            defaultValue={editingGym.single_entry_price || ''}
+                            placeholder="e.g., $20, €15-25"
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">Membership Price</label>
+                          <input
+                            type="text"
+                            name="membership_price"
+                            defaultValue={editingGym.membership_price || ''}
+                            placeholder="e.g., $80/month, €50/month"
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">Price Range</label>
+                          <input
+                            type="text"
+                            name="price_range"
+                            defaultValue={editingGym.price_range || ''}
+                            placeholder="e.g., $15-30"
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Difficulty Levels */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Difficulty Levels</label>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {selectedDifficulties.map((difficulty, idx) => (
+                            <span key={idx} className="px-2 py-1 text-xs bg-gray-800 text-gray-300 flex items-center gap-1 rounded" style={{ borderRadius: 2 }}>
+                              {difficulty}
+                              <button 
+                                type="button" 
+                                onClick={() => setSelectedDifficulties(selectedDifficulties.filter((_, i) => i !== idx))} 
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={newDifficulty}
+                            onChange={(e) => setNewDifficulty(e.target.value)}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (newDifficulty.trim() && !selectedDifficulties.includes(newDifficulty.trim())) {
+                                  setSelectedDifficulties([...selectedDifficulties, newDifficulty.trim()]);
+                                  setNewDifficulty('');
+                                }
+                              }
+                            }}
+                            placeholder="Add difficulty level"
+                            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                          />
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              if (newDifficulty.trim() && !selectedDifficulties.includes(newDifficulty.trim())) {
+                                setSelectedDifficulties([...selectedDifficulties, newDifficulty.trim()]);
+                                setNewDifficulty('');
+                              }
+                            }} 
+                            className="px-3 py-2 bg-gray-700 text-white text-sm hover:bg-gray-600 rounded transition-colors"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Location Coordinates */}
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">Latitude</label>
+                          <input
+                            type="number"
+                            step="any"
+                            name="latitude"
+                            defaultValue={editingGym.latitude || ''}
+                            placeholder="e.g., 55.6761"
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">Longitude</label>
+                          <input
+                            type="number"
+                            step="any"
+                            name="longitude"
+                            defaultValue={editingGym.longitude || ''}
+                            placeholder="e.g., 12.5683"
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Hide from public */}
+                      <div>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="is_hidden"
+                            defaultChecked={editingGym.is_hidden || false}
+                            className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#087E8B] focus:ring-2 focus:ring-[#087E8B] focus:ring-offset-0"
+                          />
+                          <span className="text-sm text-gray-300">Hide from public listing</span>
+                        </label>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 <div className="flex gap-3 pt-4 border-t border-gray-700">
                   <button
                     type="button"
@@ -1962,6 +2163,8 @@ export default function GymDetail() {
                       setUploadedImageUrl(null);
                       setImagePreview(null);
                       setSelectedFacilities([]);
+                      setSelectedDifficulties([]);
+                      setNewDifficulty('');
                       setOriginalGymData(null);
                       setImageFocalX(0.5);
                       setImageFocalY(0.5);
@@ -2083,15 +2286,43 @@ export default function GymDetail() {
                 Cancel
               </button>
               <button
-                onClick={async () => {
-                  const success = await handleUpdateGym(pendingChanges.data);
-                  if (!success) {
-                    console.error('Gym update failed');
+                onClick={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
+                  // Prevent multiple clicks
+                  if (isUpdatingGym) {
+                    console.log('Button already processing, ignoring click');
+                    return;
+                  }
+                  
+                  setIsUpdatingGym(true);
+                  
+                  try {
+                    console.log('Confirm button clicked, calling handleUpdateGym with:', pendingChanges.data);
+                    const success = await handleUpdateGym(pendingChanges.data);
+                    if (success) {
+                      // Explicitly close confirmation modal
+                      setShowChangesConfirmation(false);
+                      setPendingChanges(null);
+                      setIsUpdatingGym(false);
+                      console.log('Gym update successful');
+                    } else {
+                      console.error('Gym update failed');
+                      setIsUpdatingGym(false);
+                      // Keep modal open on failure so user can see errors
+                    }
+                  } catch (error) {
+                    console.error('Error in confirm button handler:', error);
+                    showToast('error', 'Error', `Failed to update gym: ${error.message || 'Unknown error'}`);
+                    setIsUpdatingGym(false);
                   }
                 }}
-                className="flex-1 px-4 py-2 bg-[#087E8B] text-white rounded hover:bg-[#066a75] transition-colors"
+                disabled={isUpdatingGym}
+                className="flex-1 px-4 py-2 bg-[#087E8B] text-white rounded hover:bg-[#066a75] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                type="button"
               >
-                Confirm Changes
+                {isUpdatingGym ? 'Processing...' : 'Confirm Changes'}
               </button>
             </div>
           </div>

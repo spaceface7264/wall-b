@@ -852,8 +852,6 @@ export default function CommunitiesPage() {
                 {filteredCommunities.map((community) => {
                   // Check if user is a member
                   const isMember = myCommunities.some(c => c.id === community.id);
-                  // Check if community is recommended
-                  const isRecommended = recommendedCommunities.some(c => c.id === community.id);
                   
                   return (
                     <div
@@ -881,8 +879,6 @@ export default function CommunitiesPage() {
                     onOpen={() => navigate(`/community/${community.id}`)}
                     joining={joiningCommunity === community.id}
                     leaving={leavingCommunity === community.id}
-                    isRecommended={isRecommended}
-                    showNewBadge={isNewCommunity(community)}
                   />
                     </div>
                   );

@@ -524,7 +524,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       )}
 
       {/* Drawer */}
-      <div className={`mobile-drawer ${drawerOpen ? 'open' : ''}`}>
+      <div className={`mobile-drawer ${drawerOpen ? 'open' : ''}`} style={{ overflowX: 'hidden' }}>
 
         {/* Search Section */}
         <div className="px-4 py-4 border-b" style={{ borderColor: 'var(--divider-color)' }}>
@@ -600,7 +600,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
             </button>
 
             {/* Communities List - Takes remaining space */}
-            <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
               {communitiesLoading ? (
                 <ListSkeleton variant="community" count={3} />
               ) : communities.length > 0 ? (
@@ -634,7 +634,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                       >
                         <Users className="mobile-drawer-icon" />
                         <div className="flex-1 min-w-0 flex flex-col items-start">
-                          <span className="mobile-drawer-text truncate w-full text-left">
+                          <span className="mobile-drawer-text truncate w-full text-left block overflow-hidden text-ellipsis whitespace-nowrap">
                             {community.name}
                           </span>
                           {gym && gym.name && (
