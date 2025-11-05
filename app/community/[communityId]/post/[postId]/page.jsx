@@ -664,12 +664,11 @@ export default function PostDetailPage() {
   const canDelete = isOwnPost || isAdmin; // Owners and admins can delete
 
   return (
+    <>
     <SidebarLayout currentPage="community">
       <div className="mobile-container">
-        {/* Desktop: Multi-column layout, Mobile: Single column */}
-        <div className="desktop-post-detail-layout">
-          {/* Left Column: Post Content */}
-          <div className="desktop-post-main">
+        {/* Post Content */}
+        <div>
         {/* Post Card */}
         <div className="animate-fade-in w-full border-b border-gray-700/50 mb-6" style={{ paddingBottom: '24px' }}>
           <div className="mobile-card-header mt-6" style={{ marginBottom: '16px' }}>
@@ -944,68 +943,37 @@ export default function PostDetailPage() {
             onSubmit={handleAddComment}
             placeholder="jump in"
           />
-            </div>
         </div>
 
-          {/* Right Column: Comments Sidebar (Desktop Only) */}
-          <div className="desktop-comments-sidebar">
-        {/* Comments Section */}
-        <div className="mb-6" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
-          {topLevelComments.length === 0 ? (
-            <EmptyComments onCreateClick={() => {/* Scroll to input field */}} />
-          ) : (
-            <div>
-              {topLevelComments.map((comment) => (
-                <CommentThread
-                  key={comment.id}
-                  comment={comment}
-                  postId={postId}
-                  userId={user?.id}
-                  depth={0}
-                  replies={getReplies(comment.id)}
-                  onReply={handleAddComment}
-                  onLike={handleLikeComment}
-                  onEdit={handleEditComment}
-                  onDelete={handleDeleteComment}
-                  isAdmin={isAdmin}
-                />
-              ))}
-            </div>
-          )}
-            </div>
-          </div>
-
-          {/* Mobile: Comments below post */}
-          <div className="mobile-comments mobile-only">
-            {/* Comments Section */}
-            <div className="mb-6" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
-              {topLevelComments.length === 0 ? (
-                <EmptyComments onCreateClick={() => {/* Scroll to input field */}} />
-              ) : (
-                <div>
-                  {topLevelComments.map((comment) => (
-                    <CommentThread
-                      key={comment.id}
-                      comment={comment}
-                      postId={postId}
-                      userId={user?.id}
-                      depth={0}
-                      replies={getReplies(comment.id)}
-                      onReply={handleAddComment}
-                      onLike={handleLikeComment}
-                      onEdit={handleEditComment}
-                      onDelete={handleDeleteComment}
-                      isAdmin={isAdmin}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+          {/* Comments Section */}
+          <div className="mobile-comments mb-6" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
+            {topLevelComments.length === 0 ? (
+              <EmptyComments onCreateClick={() => {/* Scroll to input field */}} />
+            ) : (
+              <div>
+                {topLevelComments.map((comment) => (
+                  <CommentThread
+                    key={comment.id}
+                    comment={comment}
+                    postId={postId}
+                    userId={user?.id}
+                    depth={0}
+                    replies={getReplies(comment.id)}
+                    onReply={handleAddComment}
+                    onLike={handleLikeComment}
+                    onEdit={handleEditComment}
+                    onDelete={handleDeleteComment}
+                    isAdmin={isAdmin}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
+    </SidebarLayout>
 
-      {/* Edit Post Modal */}
+    {/* Edit Post Modal */}
       {showEditModal && (
         <CreatePostModal
           communityId={communityId}
@@ -1135,7 +1103,7 @@ export default function PostDetailPage() {
         variant="danger"
         icon={Trash2}
       />
-    </SidebarLayout>
+    </>
   );
 }
 

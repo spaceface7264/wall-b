@@ -424,27 +424,6 @@
       display: none;
     }
     
-    .desktop-sidebar.collapsed .mobile-drawer-item {
-      justify-content: center;
-      padding: var(--spacing-sm);
-      width: 48px;
-      margin: 2px auto;
-    }
-    
-    .desktop-sidebar.collapsed .mobile-drawer-footer {
-      padding: 6px 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-    }
-    
-    .desktop-sidebar.collapsed .mobile-drawer-nav {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    
     /* Show/hide appropriate versions based on collapsed state - Desktop only */
     /* Hide icon buttons when not collapsed */
     .desktop-sidebar .sidebar-icon-button.desktop-only {
@@ -488,13 +467,15 @@
       font-size: 12px;
     }
     
-    /* Increase gaps in sidebar for better spacing */
+    /* Consistent spacing for sidebar items */
     .desktop-sidebar .mobile-drawer-item {
       gap: var(--spacing-sm);
+      padding: var(--spacing-sm) var(--spacing-base);
+      margin: 2px var(--spacing-sm);
     }
     
     .desktop-sidebar .mobile-drawer-nav > div {
-      gap: var(--spacing-sm);
+      gap: var(--spacing-xs);
       padding-top: var(--spacing-sm);
     }
     
@@ -503,6 +484,20 @@
     }
     
     .desktop-sidebar .mobile-drawer-footer {
+      padding: var(--spacing-sm) 0;
+      gap: var(--spacing-xs);
+    }
+    
+    /* Collapsed state - same spacing */
+    .desktop-sidebar.collapsed .mobile-drawer-nav > div {
+      gap: var(--spacing-xs);
+    }
+    
+    .desktop-sidebar.collapsed .mobile-drawer-nav .space-y-1 {
+      gap: var(--spacing-xs);
+    }
+    
+    .desktop-sidebar.collapsed .mobile-drawer-footer {
       padding: var(--spacing-sm) 0;
       gap: var(--spacing-xs);
     }
@@ -612,26 +607,36 @@
       font-size: 12px;
     }
     
-    /* Icon-only buttons for collapsed state */
+    /* Icon-only buttons for collapsed state - match mobile-drawer-item dimensions exactly */
     .sidebar-icon-button {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 44px;
-      height: 44px;
-      padding: 0;
-      margin: 2px auto;
+      width: calc(100% - var(--spacing-base));
+      height: auto;
+      min-height: calc(var(--spacing-sm) * 2 + 18px); /* Match mobile-drawer-item: padding top/bottom + icon */
+      padding: var(--spacing-sm) var(--spacing-base);
+      margin: 2px var(--spacing-sm);
       background: transparent;
       border: none;
-      border-radius: 8px;
+      border-radius: 4px;
       color: var(--text-secondary);
       cursor: pointer;
       transition: all 0.2s ease;
+      box-sizing: border-box;
     }
     
-    .sidebar-icon-button .w-5 {
-      width: 18px;
-      height: 18px;
+    /* When collapsed, constrain width to fit sidebar */
+    .desktop-sidebar.collapsed .sidebar-icon-button {
+      width: calc(72px - var(--spacing-base));
+      max-width: calc(72px - var(--spacing-base));
+    }
+    
+    /* Ensure icons are same size in both states */
+    .sidebar-icon-button .w-5,
+    .sidebar-icon-button svg {
+      width: 18px !important;
+      height: 18px !important;
     }
     
     .sidebar-icon-button:hover {
@@ -718,7 +723,7 @@
   @media (min-width: 1024px) {
     .mobile-drawer-item {
       padding: var(--spacing-sm) var(--spacing-base);
-      margin: 1px var(--spacing-sm);
+      margin: 2px var(--spacing-sm);
       width: calc(100% - var(--spacing-base));
       font-size: 12px;
     }
@@ -747,8 +752,9 @@
   
   @media (min-width: 1024px) {
     .desktop-sidebar .mobile-drawer-icon {
-      width: 18px;
-      height: 18px;
+      width: 18px !important;
+      height: 18px !important;
+      flex-shrink: 0;
     }
   }
 
@@ -1175,41 +1181,9 @@
     }
   }
   
-  /* Desktop Post Detail Layout - Multi-column */
-  .desktop-post-detail-layout {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-lg);
-  }
-  
-  @media (min-width: 1024px) {
-    .desktop-post-detail-layout {
-      display: grid;
-      grid-template-columns: 70% 30%;
-      gap: var(--spacing-xl);
-      align-items: start;
-    }
-  }
-  
-  .desktop-post-main {
-    width: 100%;
-  }
-  
-  .desktop-comments-sidebar {
-    display: none;
-  }
-  
-  @media (min-width: 1024px) {
-    .desktop-comments-sidebar {
-      display: block;
-      position: sticky;
-      top: 80px;
-      max-height: calc(100vh - 100px);
-      overflow-y: auto;
-    }
-  }
-  
+  /* Comments section - visible on all screen sizes */
   .mobile-comments {
+    display: block;
     width: 100%;
   }
   

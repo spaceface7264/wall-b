@@ -730,7 +730,7 @@ export default function CommunityPage() {
                   isMember={isMember || isAdmin}
                 />
               ) : (
-                <div className="desktop-grid-2" style={{ marginLeft: 'var(--container-padding-mobile)', marginRight: 'var(--container-padding-mobile)' }}>
+                <div style={{ marginLeft: 'var(--container-padding-mobile)', marginRight: 'var(--container-padding-mobile)' }}>
                   {posts.map((post) => (
                   <PostCard
                     key={post.id}

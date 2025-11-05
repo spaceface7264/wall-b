@@ -848,7 +848,7 @@ export default function CommunitiesPage() {
               <EmptyCommunities onCreateClick={() => navigate('/community/new')} />
             ) : (
               <div className="-mx-4 md:-mx-6" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
-                <div className="desktop-grid-3 px-3">
+                <div className="px-3 desktop-grid-3">
                 {filteredCommunities.map((community) => {
                   // Check if user is a member
                   const isMember = myCommunities.some(c => c.id === community.id);
