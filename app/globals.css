@@ -2085,7 +2085,7 @@
     font-size: 18px;
     font-weight: 600;
     color: var(--text-primary);
-    margin: 0 0 8px 0;
+    margin: 6px 0 4px 0;
     line-height: 1.4;
     transition: color 0.3s ease;
   }
@@ -2198,7 +2198,7 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-xs);
     background: transparent;
     border: none;
     color: var(--text-muted);
@@ -2206,13 +2206,12 @@
     cursor: pointer;
     transition: all 0.2s ease, color 0.3s ease;
     border-radius: 6px;
-    min-height: var(--touch-target-sm);
   }
   
   @media (min-width: 1024px) {
     .post-action-btn {
-      gap: var(--spacing-sm);
-      padding: var(--spacing-md) var(--spacing-base);
+      gap: var(--spacing-xs);
+      padding: var(--spacing-xs) var(--spacing-xs);
       font-size: 14px;
     }
   }

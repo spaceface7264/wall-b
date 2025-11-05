@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import OnboardingSkeleton from '../components/OnboardingSkeleton';
-import { Users, MapPin, UsersRound, BookOpen, Share2, Calendar } from 'lucide-react';
+import { Users, MapPin, UsersRound, BookOpen, Share2, Calendar, Shield } from 'lucide-react';
+import { verifyAge } from '../../lib/age-verification';
 
 const HANDLE_REGEX = /^[A-Za-z0-9._-]{3,20}$/;
 
@@ -40,9 +41,12 @@ export default function OnboardingPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [userId, setUserId] = useState(null);
-  const [step, setStep] = useState('displayName'); // 'displayName' or 'purpose'
+  const [step, setStep] = useState('displayName'); // 'displayName', 'ageVerification', or 'purpose'
   const [nickname, setNickname] = useState('');
   const [selectedPurposes, setSelectedPurposes] = useState([]);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [useDOB, setUseDOB] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -59,17 +63,24 @@ export default function OnboardingPage() {
         .eq('id', user.id)
         .single();
 
-      // If profile is complete (has nickname, handle, and user_intent), go to home
-      if (profile?.nickname && profile?.handle && profile?.user_intent && profile.user_intent.length > 0) {
+      // If profile is complete (has nickname, handle, age_verified, and user_intent), go to home
+      if (profile?.nickname && profile?.handle && profile?.age_verified && profile?.user_intent && profile.user_intent.length > 0) {
         navigate('/home');
         return;
       }
 
-      // If has nickname and handle but no user_intent, go to purpose selection
-      if (profile?.nickname && profile?.handle) {
+      // Check which step to show
+      if (profile?.nickname && profile?.handle && profile?.age_verified) {
+        // Has name and age, but no purpose
         setStep('purpose');
         setNickname(profile.nickname);
+      } else if (profile?.nickname && profile?.handle) {
+        // Has name but no age verification
+        setStep('ageVerification');
+        setNickname(profile.nickname);
+        setAgeConfirmed(profile.age_verified || false);
       } else {
+        // Start with display name
         setNickname(profile?.nickname || '');
       }
 
@@ -140,8 +151,8 @@ export default function OnboardingPage() {
         setSaving(false);
         return;
       }
-      // Move to purpose selection step
-      setStep('purpose');
+      // Move to age verification step
+      setStep('ageVerification');
     } catch (err) {
       setError(err.message || 'Failed to save');
     } finally {
@@ -179,6 +190,56 @@ export default function OnboardingPage() {
     }
   };
 
+  const onSubmitAgeVerification = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!ageConfirmed) {
+      setError('You must confirm that you are 16 years or older to use this platform.');
+      return;
+    }
+
+    if (useDOB && !dateOfBirth) {
+      setError('Please enter your date of birth');
+      return;
+    }
+
+    // Validate date of birth if provided
+    if (useDOB && dateOfBirth) {
+      const birthDate = new Date(dateOfBirth);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      if (age < 16) {
+        setError('You must be 16 years or older. You are ' + age + ' years old.');
+        return;
+      }
+    }
+
+    try {
+      setSaving(true);
+      const dob = useDOB && dateOfBirth ? new Date(dateOfBirth) : null;
+      const result = await verifyAge(ageConfirmed, dob);
+
+      if (!result.success) {
+        setError(result.error || 'Failed to verify age');
+        setSaving(false);
+        return;
+      }
+
+      // Move to purpose selection step
+      setStep('purpose');
+    } catch (err) {
+      setError(err.message || 'Failed to verify age');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const togglePurpose = (purposeId) => {
     setSelectedPurposes(prev => 
       prev.includes(purposeId) 
@@ -200,6 +261,11 @@ export default function OnboardingPage() {
       </div>
     );
   }
+
+  // Calculate max date for date picker (must be at least 16 years ago)
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() - 16);
+  const maxDateString = maxDate.toISOString().split('T')[0];
 
   // Display name step
   if (step === 'displayName') {
@@ -233,6 +299,89 @@ export default function OnboardingPage() {
 
               <button type="submit" disabled={saving} className="mobile-btn-primary w-full justify-center">
                 {saving ? 'Saving…' : 'Next'}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Age verification step
+  if (step === 'ageVerification') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #1a1a1b 0%, #252526 100%)' }}>
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center mb-4">
+              <Shield className="w-12 h-12 text-[#087E8B]" />
+            </div>
+            <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Age Verification</h1>
+            <p className="mobile-text-sm" style={{ color: 'var(--text-muted)' }}>You must be 16 years or older to use this platform</p>
+          </div>
+          <div className="mobile-card">
+            <form onSubmit={onSubmitAgeVerification} className="space-y-4">
+              <div className="flex items-start gap-3 p-4 bg-gray-800/50 border border-gray-700 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="age-confirm"
+                  checked={ageConfirmed}
+                  onChange={(e) => {
+                    setAgeConfirmed(e.target.checked);
+                    if (error) setError('');
+                  }}
+                  disabled={saving}
+                  className="mt-1 w-4 h-4 rounded border-gray-600 bg-gray-800 text-[#087E8B] focus:ring-[#087E8B] focus:ring-offset-gray-900 disabled:opacity-50"
+                  required
+                />
+                <label htmlFor="age-confirm" className="text-sm text-gray-300 cursor-pointer">
+                  I confirm that I am 16 years of age or older
+                </label>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="use-dob"
+                    checked={useDOB}
+                    onChange={(e) => {
+                      setUseDOB(e.target.checked);
+                      if (!e.target.checked) setDateOfBirth('');
+                    }}
+                    disabled={saving}
+                    className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-[#087E8B] focus:ring-[#087E8B] focus:ring-offset-gray-900 disabled:opacity-50"
+                  />
+                  <label htmlFor="use-dob" className="text-sm text-gray-400 cursor-pointer">
+                    Optional: Enter date of birth for strict verification
+                  </label>
+                </div>
+
+                {useDOB && (
+                  <div>
+                    <input
+                      type="date"
+                      value={dateOfBirth}
+                      onChange={(e) => {
+                        setDateOfBirth(e.target.value);
+                        if (error) setError('');
+                      }}
+                      max={maxDateString}
+                      disabled={saving}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent disabled:opacity-50"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-900/20 border border-red-700 rounded-lg">
+                  <p className="text-red-300 text-sm">{error}</p>
+                </div>
+              )}
+
+              <button type="submit" disabled={saving || !ageConfirmed} className="mobile-btn-primary w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                {saving ? 'Verifying...' : 'Continue'}
               </button>
             </form>
           </div>

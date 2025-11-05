@@ -4,7 +4,11 @@ import { supabase } from '../../lib/supabase';
 import { Users, Shield, Settings, MapPin, Flag, CheckCircle, XCircle, Clock, Trash2, MessageSquare, FileText, Search, AlertCircle, MoreVertical, User, MessageCircle, Ban, ShieldCheck, ShieldOff, AlertTriangle, Edit, BarChart3, X, Download, Filter, Calendar, Activity, Star, Eye, EyeOff, ExternalLink, Sparkles, Lightbulb, Bug, ArrowRight } from 'lucide-react';
 import SidebarLayout from '../components/SidebarLayout';
 import ConfirmationModal from '../components/ConfirmationModal';
+import SuspendUserModal from '../components/SuspendUserModal';
+import ModerationQueue from '../components/ModerationQueue';
+import ModerationActionModal from '../components/ModerationActionModal';
 import { useToast } from '../providers/ToastProvider';
+import { checkSuspensionStatus } from '../../lib/suspension-utils';
 
 export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -19,8 +23,13 @@ export default function AdminPage() {
   const [commentReports, setCommentReports] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [userSearchQuery, setUserSearchQuery] = useState('');
-  const [moderationView, setModerationView] = useState('reports'); // 'reports', 'posts', 'comments'
+  const [moderationView, setModerationView] = useState('reports'); // 'reports', 'posts', 'comments', 'queue'
   const [activeTab, setActiveTab] = useState('overview');
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [suspendingUser, setSuspendingUser] = useState(null);
+  const [showModerationActionModal, setShowModerationActionModal] = useState(false);
+  const [selectedQueueItem, setSelectedQueueItem] = useState(null);
+  const [userSuspensions, setUserSuspensions] = useState({}); // Map of userId -> suspension status
   const [openMenuId, setOpenMenuId] = useState(null);
   const [openCommunityMenuId, setOpenCommunityMenuId] = useState(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0, flipUp: false });
@@ -490,6 +499,11 @@ export default function AdminPage() {
       icon: CheckCircle,
       confirmText: 'Unban User'
     });
+  };
+
+  const suspendUser = async (userId, userName) => {
+    setSuspendingUser({ id: userId, name: userName });
+    setShowSuspendModal(true);
   };
 
   const executeBanUser = async (userId) => {
@@ -3488,6 +3502,18 @@ export default function AdminPage() {
                                   </button>
                                 )}
                                 <div className="border-t border-gray-700/50 my-1" />
+                                <button
+                                  onClick={() => {
+                                    suspendUser(user.id, user.full_name || user.email || 'User');
+                                    setOpenMenuId(null);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-orange-400 hover:bg-gray-800 transition-colors flex items-center gap-2"
+                                  style={{ fontSize: '11px' }}
+                                >
+                                  <Clock className="w-3.5 h-3.5" />
+                                  Suspend User
+                                </button>
+                                <div className="border-t border-gray-700/50 my-1" />
                                 {user.is_admin ? (
                                   <button
                                     onClick={() => {
@@ -4687,6 +4713,18 @@ export default function AdminPage() {
                     <MessageSquare className="w-3 h-3 inline mr-1" />
                     All Comments ({filteredComments.length})
                   </button>
+                  <button
+                    onClick={() => setModerationView('queue')}
+                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                      moderationView === 'queue'
+                        ? 'bg-[#087E8B] text-white'
+                        : 'bg-gray-700/50 text-gray-400 hover:text-white'
+                    }`}
+                    style={{ borderRadius: 2 }}
+                  >
+                    <Clock className="w-3 h-3 inline mr-1" />
+                    Moderation Queue
+                  </button>
                 </div>
               </div>
 
@@ -4825,6 +4863,18 @@ export default function AdminPage() {
                       </div>
                     ))
                   )}
+                </div>
+              )}
+
+              {/* Moderation Queue View */}
+              {moderationView === 'queue' && (
+                <div className="p-4">
+                  <ModerationQueue
+                    onAction={(item) => {
+                      setSelectedQueueItem(item);
+                      setShowModerationActionModal(true);
+                    }}
+                  />
                 </div>
               )}
 
@@ -5279,6 +5329,36 @@ export default function AdminPage() {
         cancelText="Cancel"
         variant={confirmationModal.variant || 'default'}
         icon={confirmationModal.icon}
+      />
+
+      {/* Suspend User Modal */}
+      <SuspendUserModal
+        isOpen={showSuspendModal}
+        onClose={(success) => {
+          setShowSuspendModal(false);
+          setSuspendingUser(null);
+          if (success) {
+            loadData();
+          }
+        }}
+        userId={suspendingUser?.id}
+        userName={suspendingUser?.name}
+      />
+
+      {/* Moderation Action Modal */}
+      <ModerationActionModal
+        isOpen={showModerationActionModal}
+        onClose={(success) => {
+          setShowModerationActionModal(false);
+          setSelectedQueueItem(null);
+          if (success) {
+            // Reload data if needed
+          }
+        }}
+        queueItem={selectedQueueItem}
+        onResolved={() => {
+          // Reload moderation queue
+        }}
       />
 
       {/* Approve Options Modal */}

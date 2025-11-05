@@ -1,9 +1,10 @@
-import { Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal, Edit2, Trash2, Calendar, User, Users, MapPin, Ban, VolumeX } from 'lucide-react';
+import { Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal, Edit2, Trash2, Calendar, User, Users, MapPin, Ban, VolumeX, Flag } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ConfirmationModal from './ConfirmationModal';
 import BlockUserModal from './BlockUserModal';
 import MuteUserModal from './MuteUserModal';
+import ReportPostModal from './ReportPostModal';
 import NSFWWarning from './NSFWWarning';
 import { isUserBlocked, isUserMuted } from '../../lib/user-blocking';
 
@@ -29,6 +30,7 @@ export default function PostCard({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showMuteModal, setShowMuteModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const navigate = useNavigate();
@@ -36,7 +38,8 @@ export default function PostCard({
   const canEdit = showActions && isOwnPost; // Only owners can edit
   const canDelete = showActions && (isOwnPost || isAdmin); // Owners and admins can delete
   const canBlockMute = showActions && !isOwnPost && currentUserId; // Can block/mute if not own post
-  const canShowActions = canEdit || canDelete || canBlockMute; // Show menu if any action is available
+  const canReport = showActions && currentUserId && !isOwnPost; // Can report if not own post
+  const canShowActions = canEdit || canDelete || canBlockMute || canReport; // Show menu if any action is available
   const isPostLiked = liked || isLiked;
   const isPostLoading = loadingLike || isLiking;
 
@@ -55,6 +58,26 @@ export default function PostCard({
     };
     
     checkBlockStatus();
+    
+    // Listen for user block/unblock events
+    const handleUserBlockChange = (event) => {
+      const { userId } = event.detail;
+      if (userId === post.user_id) {
+        checkBlockStatus();
+      }
+    };
+    
+    window.addEventListener('userBlocked', handleUserBlockChange);
+    window.addEventListener('userUnblocked', handleUserBlockChange);
+    window.addEventListener('userMuted', handleUserBlockChange);
+    window.addEventListener('userUnmuted', handleUserBlockChange);
+    
+    return () => {
+      window.removeEventListener('userBlocked', handleUserBlockChange);
+      window.removeEventListener('userUnblocked', handleUserBlockChange);
+      window.removeEventListener('userMuted', handleUserBlockChange);
+      window.removeEventListener('userUnmuted', handleUserBlockChange);
+    };
   }, [currentUserId, post.user_id, isOwnPost]);
 
   const handleProfileClick = (e) => {
@@ -409,6 +432,22 @@ export default function PostCard({
                       </button>
                     </>
                   )}
+                  {canReport && (
+                    <>
+                      <div className="border-t border-gray-700 my-1"></div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowMenu(false);
+                          setShowReportModal(true);
+                        }}
+                        className="post-menu-item post-menu-item-danger"
+                      >
+                        <Flag className="w-4 h-4" />
+                        <span>Report Post</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </>
               )}
@@ -627,9 +666,7 @@ export default function PostCard({
         isOpen={showBlockModal}
         onClose={(success) => {
           setShowBlockModal(false);
-          if (success) {
-            setIsBlocked(true);
-          }
+          // Block status will be updated via event listener
         }}
         userId={post.user_id}
         userName={authorName}
@@ -640,12 +677,23 @@ export default function PostCard({
         isOpen={showMuteModal}
         onClose={(success) => {
           setShowMuteModal(false);
-          if (success) {
-            setIsMuted(true);
-          }
+          // Mute status will be updated via event listener
         }}
         userId={post.user_id}
         userName={authorName}
+      />
+
+      {/* Report Post Modal */}
+      <ReportPostModal
+        isOpen={showReportModal}
+        onClose={(success) => {
+          setShowReportModal(false);
+          if (success) {
+            // Report submitted successfully
+          }
+        }}
+        postId={post.id}
+        postTitle={post.title}
       />
     </div>
   );

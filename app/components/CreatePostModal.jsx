@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Send, Paperclip, Calendar } from 'lucide-react';
 import { useToast } from '../providers/ToastProvider';
 import { supabase } from '../../lib/supabase';
+import { validateContent } from '../../lib/content-filter';
+import { scanContentForNSFW, markContentAsNSFW } from '../../lib/nsfw-detection';
 
 export default function CreatePostModal({
   communityId,
@@ -25,6 +27,7 @@ export default function CreatePostModal({
   const [uploadProgress, setUploadProgress] = useState({}); // { fileName: percentage }
   const [uploadingFiles, setUploadingFiles] = useState([]); // Array of file objects being uploaded
   const [lastSaved, setLastSaved] = useState(null);
+  const [contentWarning, setContentWarning] = useState(null);
   
   // Refs for focus management
   const titleInputRef = useRef(null);
@@ -205,6 +208,8 @@ export default function CreatePostModal({
     } else {
       setShowEventPicker(false);
     }
+
+    // Blocked words checking is disabled
   };
 
   const handleEventSelect = (event) => {
@@ -263,6 +268,32 @@ export default function CreatePostModal({
       return;
     }
 
+    // Validate content before submission
+    const fullText = `${title} ${content}`.trim();
+    const validation = await validateContent(fullText, 'post');
+    
+    if (!validation.valid) {
+      showToast('error', 'Content Blocked', validation.error || 'Content cannot be posted.');
+      return;
+    }
+
+    // Scan for NSFW content - NSFW content is not allowed
+    const imageUrls = mediaFiles.map(f => f.url).filter(Boolean);
+    const nsfwResult = await scanContentForNSFW({
+      text: fullText,
+      images: imageUrls
+    });
+
+    console.log('NSFW scan result:', nsfwResult);
+
+    // If NSFW detected, block the post (lower threshold for URL detection)
+    // Block if: confidence > 0.5 OR if URL is detected (URL detection is very reliable)
+    if (nsfwResult.isNsfw && (nsfwResult.confidence > 0.5 || nsfwResult.urls?.length > 0)) {
+      showToast('error', 'Content Blocked', 'NSFW or inappropriate content is not allowed on this platform.');
+      console.log('Post blocked due to NSFW content:', nsfwResult);
+      return;
+    }
+
     // Clear draft on successful submit
     localStorage.removeItem(draftKey);
     setLastSaved(null);
@@ -276,10 +307,27 @@ export default function CreatePostModal({
         community_id: communityId,
         post_type: 'post',
         media_files: mediaFiles,
+        is_nsfw: false, // NSFW content is not allowed
       };
       
-      await onSubmit(postData);
-      showToast('success', 'Posted!', 'Your post is now live! 📝');
+      const result = await onSubmit(postData);
+      
+      // If post was created, log NSFW scan result (for monitoring)
+      if (result?.id && nsfwResult.isNsfw) {
+        await markContentAsNSFW(
+          result.id,
+          'post',
+          false, // Marked as false since NSFW is blocked
+          nsfwResult.confidence,
+          'auto-detected-blocked'
+        );
+      }
+
+      if (validation.warning) {
+        showToast('warning', 'Posted with Warning', validation.warning);
+      } else {
+        showToast('success', 'Posted!', 'Your post is now live! 📝');
+      }
       onClose();
     } catch (error) {
       console.error('Error submitting post:', error);
@@ -498,9 +546,18 @@ export default function CreatePostModal({
               maxLength={contentMaxLength}
               aria-label="Post content"
             />
-            {/* Character count - always visible */}
-            <div className="text-xs text-gray-500 mt-1 text-right">
-              {contentRemaining} remaining
+            {/* Character count and warnings */}
+            <div className="flex items-center justify-between mt-1">
+              <div className="text-xs">
+                {contentWarning && (
+                  <span className="text-yellow-400">
+                    {contentWarning}
+                  </span>
+                )}
+              </div>
+              <div className="text-xs text-gray-500">
+                {contentRemaining} remaining
+              </div>
             </div>
           </div>
 

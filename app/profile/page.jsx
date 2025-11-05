@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { User as UserIcon, Settings, Save, Camera, X, MapPin, Users, MessageCircle, Heart, Calendar as EventIcon, Edit2, Globe, MoreVertical, Eye, EyeOff, Building } from 'lucide-react';
+import { User as UserIcon, Settings, Save, Camera, X, MapPin, Users, MessageCircle, Heart, Calendar as EventIcon, Edit2, Globe, MoreVertical, Eye, EyeOff, Building, Ban, VolumeX } from 'lucide-react';
 import SidebarLayout from '../components/SidebarLayout';
 import { useToast } from '../providers/ToastProvider';
 import { enrichCommunitiesWithActualCounts } from '../../lib/community-utils';
 import ProfileSkeleton from '../components/ProfileSkeleton';
+import { getBlockedUsers, getMutedUsers, unblockUser, unmuteUser } from '../../lib/user-blocking';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -26,6 +27,10 @@ export default function Profile() {
   const gymMenuButtonRef = useRef(null);
   const [error, setError] = useState('');
   const isSavingRef = useRef(false);
+  const [blockedUsers, setBlockedUsers] = useState([]);
+  const [mutedUsers, setMutedUsers] = useState([]);
+  const [loadingBlockedUsers, setLoadingBlockedUsers] = useState(false);
+  const [activeTab, setActiveTab] = useState('blocked'); // 'blocked' or 'muted'
   
   const [profileData, setProfileData] = useState({
     nickname: '',
@@ -114,6 +119,9 @@ export default function Profile() {
 
           // Load favorite gyms
           await loadFavoriteGyms(user.id);
+          
+          // Load blocked and muted users
+          await loadBlockedAndMutedUsers();
         }
       } catch (err) {
         console.error('Error loading profile:', err);
@@ -125,6 +133,67 @@ export default function Profile() {
 
     loadProfile();
   }, [navigate]);
+  
+  const loadBlockedAndMutedUsers = async () => {
+    try {
+      setLoadingBlockedUsers(true);
+      const [blocked, muted] = await Promise.all([
+        getBlockedUsers(),
+        getMutedUsers()
+      ]);
+      console.log('Loaded blocked users:', blocked);
+      console.log('Loaded muted users:', muted);
+      setBlockedUsers(blocked);
+      setMutedUsers(muted);
+    } catch (error) {
+      console.error('Error loading blocked/muted users:', error);
+      showToast('error', 'Error', 'Failed to load blocked/muted users');
+    } finally {
+      setLoadingBlockedUsers(false);
+    }
+  };
+  
+  const handleUnblock = async (blockedUserId) => {
+    try {
+      const result = await unblockUser(blockedUserId);
+      if (!result.success) {
+        showToast('error', 'Error', result.error || 'Failed to unblock user');
+        return;
+      }
+      
+      // Remove from local state
+      setBlockedUsers(prev => prev.filter(b => b.blocked_id !== blockedUserId));
+      
+      // Dispatch event to notify all components
+      window.dispatchEvent(new CustomEvent('userUnblocked', { detail: { userId: blockedUserId } }));
+      
+      showToast('success', 'User Unblocked', 'User has been unblocked. Their content will now be visible.');
+    } catch (error) {
+      console.error('Error unblocking user:', error);
+      showToast('error', 'Error', 'Failed to unblock user');
+    }
+  };
+  
+  const handleUnmute = async (mutedUserId) => {
+    try {
+      const result = await unmuteUser(mutedUserId);
+      if (!result.success) {
+        showToast('error', 'Error', result.error || 'Failed to unmute user');
+        return;
+      }
+      
+      // Remove from local state
+      setMutedUsers(prev => prev.filter(m => m.muted_id !== mutedUserId));
+      
+      // Dispatch event to notify all components
+      window.dispatchEvent(new CustomEvent('userUnmuted', { detail: { userId: mutedUserId } }));
+      
+      showToast('success', 'User Unmuted', 'User has been unmuted. Their content will now be visible.');
+    } catch (error) {
+      console.error('Error unmuting user:', error);
+      showToast('error', 'Error', 'Failed to unmute user');
+    }
+  };
 
   const loadFavoriteGyms = async (userId) => {
     try {
@@ -1008,6 +1077,178 @@ export default function Profile() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Blocked & Muted Users */}
+          <div className="mobile-card animate-slide-up">
+            <h2 className="profile-section-header minimal-flex gap-2">
+              <Ban className="minimal-icon text-red-400" />
+              Blocked & Muted Users
+            </h2>
+            
+            {/* Tabs */}
+            <div className="flex gap-2 mb-4 border-b border-gray-700">
+              <button
+                onClick={() => setActiveTab('blocked')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === 'blocked'
+                    ? 'text-red-400 border-b-2 border-red-400'
+                    : 'text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                Blocked ({blockedUsers.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('muted')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === 'muted'
+                    ? 'text-orange-400 border-b-2 border-orange-400'
+                    : 'text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                Muted ({mutedUsers.length})
+              </button>
+            </div>
+              
+              {loadingBlockedUsers ? (
+                <div className="space-y-3">
+                  {[1, 2].map(i => (
+                    <div key={i} className="flex gap-3">
+                      <div className="w-10 h-10 bg-gray-800 rounded-full animate-pulse" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-800 rounded w-3/4 animate-pulse" />
+                        <div className="h-3 bg-gray-800 rounded w-1/2 animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : activeTab === 'blocked' ? (
+                blockedUsers.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Ban className="w-12 h-12 mx-auto mb-3 text-gray-600" />
+                    <p className="text-gray-400 text-sm">No blocked users</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {blockedUsers.map((block) => {
+                      const user = block.profiles;
+                      const displayName = user?.nickname || user?.full_name || `User ${block.blocked_id.slice(0, 8)}` || 'Unknown User';
+                      const avatar = user?.avatar_url;
+                      const initial = displayName.charAt(0).toUpperCase();
+                      
+                      console.log('Rendering blocked user:', { block, user, displayName });
+                      
+                      return (
+                        <div key={block.id} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            {avatar ? (
+                              <img
+                                src={avatar}
+                                alt={displayName}
+                                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  const fallback = e.target.nextSibling;
+                                  if (fallback) fallback.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer"
+                              style={{ display: avatar ? 'none' : 'flex' }}
+                              onClick={() => navigate(`/profile/${block.blocked_id}`)}
+                            >
+                              <span className="text-white font-semibold text-sm">{initial}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                                {displayName}
+                              </p>
+                              {block.reason && (
+                                <p className="text-xs text-gray-400 truncate">Reason: {block.reason}</p>
+                              )}
+                              <p className="text-xs text-gray-500">
+                                Blocked {new Date(block.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleUnblock(block.blocked_id)}
+                            className="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors flex items-center gap-2 flex-shrink-0"
+                          >
+                            <Ban className="w-4 h-4" />
+                            Unblock
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              ) : (
+                mutedUsers.length === 0 ? (
+                  <div className="text-center py-8">
+                    <VolumeX className="w-12 h-12 mx-auto mb-3 text-gray-600" />
+                    <p className="text-gray-400 text-sm">No muted users</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {mutedUsers.map((mute) => {
+                      const user = mute.profiles;
+                      const displayName = user?.nickname || user?.full_name || 'Unknown User';
+                      const avatar = user?.avatar_url;
+                      const initial = displayName.charAt(0).toUpperCase();
+                      const isExpired = mute.expires_at && new Date(mute.expires_at) <= new Date();
+                      
+                      return (
+                        <div key={mute.id} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            {avatar ? (
+                              <img
+                                src={avatar}
+                                alt={displayName}
+                                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer"
+                              style={{ display: avatar ? 'none' : 'flex' }}
+                              onClick={() => navigate(`/profile/${mute.muted_id}`)}
+                            >
+                              <span className="text-white font-semibold text-sm">{initial}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                                {displayName}
+                              </p>
+                              {mute.expires_at ? (
+                                <p className="text-xs text-gray-400">
+                                  {isExpired ? 'Expired' : `Expires ${new Date(mute.expires_at).toLocaleDateString()}`}
+                                </p>
+                              ) : (
+                                <p className="text-xs text-gray-400">Permanent</p>
+                              )}
+                              <p className="text-xs text-gray-500">
+                                Muted {new Date(mute.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleUnmute(mute.muted_id)}
+                            className="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors flex items-center gap-2 flex-shrink-0"
+                          >
+                            <VolumeX className="w-4 h-4" />
+                            Unmute
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              )}
           </div>
         </div>
       </div>

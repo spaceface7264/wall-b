@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Send } from 'lucide-react';
+import { validateContent } from '../../lib/content-filter';
+import { scanContentForNSFW, markContentAsNSFW } from '../../lib/nsfw-detection';
 
 export default function CommentInput({
   postId,
@@ -12,22 +14,62 @@ export default function CommentInput({
 }) {
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [contentWarning, setContentWarning] = useState(null);
   const maxLength = 500;
+
+  // Blocked words checking is disabled
 
   const handleSubmit = async () => {
     if (content.trim().length < 10) {
       return;
     }
 
+    // Validate content before submission
+    const validation = await validateContent(content, 'comment');
+    
+    if (!validation.valid) {
+      // Show error but don't submit
+      setContentWarning(validation.error || 'Content cannot be posted.');
+      return;
+    }
+
+    // Scan for NSFW content - NSFW content is not allowed
+    const nsfwResult = await scanContentForNSFW({
+      text: content.trim()
+    });
+
+    console.log('NSFW scan result for comment:', nsfwResult);
+
+    // If NSFW detected, block the comment (lower threshold for URL detection)
+    // Block if: confidence > 0.5 OR if URL is detected (URL detection is very reliable)
+    if (nsfwResult.isNsfw && (nsfwResult.confidence > 0.5 || nsfwResult.urls?.length > 0)) {
+      setContentWarning('NSFW or inappropriate content is not allowed on this platform.');
+      console.log('Comment blocked due to NSFW content:', nsfwResult);
+      return;
+    }
 
     setSubmitting(true);
     try {
-      await onSubmit({
+      const result = await onSubmit({
         postId,
         parentCommentId,
         content: content.trim(),
+        is_nsfw: false, // NSFW content is not allowed
       });
+      
+      // If comment was created, log NSFW scan result (for monitoring)
+      if (result?.id && nsfwResult.isNsfw) {
+        await markContentAsNSFW(
+          result.id,
+          'comment',
+          false, // Marked as false since NSFW is blocked
+          nsfwResult.confidence,
+          'auto-detected-blocked'
+        );
+      }
+      
       setContent('');
+      setContentWarning(null);
     } catch (error) {
       console.error('Error submitting comment:', error);
     } finally {
@@ -66,7 +108,10 @@ export default function CommentInput({
             />
             <button
               onClick={handleSubmit}
-              disabled={content.trim().length < 10 || submitting}
+              disabled={
+                content.trim().length < 10 || 
+                submitting
+              }
               className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-[#087E8B] hover:text-[#087E8B] disabled:text-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               type="button"
             >
@@ -78,8 +123,13 @@ export default function CommentInput({
             </button>
           </div>
         </div>
-        {(showCharCount || (content.length > 0 && content.length < 10)) && (
-          <div className="text-xs text-gray-400 flex items-center justify-end">
+        {(showCharCount || (content.length > 0 && content.length < 10) || contentWarning) && (
+          <div className="text-xs text-gray-400 flex items-center justify-end gap-2">
+            {contentWarning && (
+              <span className="text-yellow-400">
+                {contentWarning}
+              </span>
+            )}
             {showCharCount && (
               <span className={content.length >= maxLength ? 'text-red-400' : ''}>
                 {content.length}/{maxLength}
@@ -112,12 +162,17 @@ export default function CommentInput({
       
       <div className="minimal-flex justify-between items-center mt-2">
         <div className="mobile-text-xs text-gray-400">
-          {showCharCount && (
+          {contentWarning && (
+            <span className="text-yellow-400">
+              {contentWarning}
+            </span>
+          )}
+          {!contentWarning && showCharCount && (
             <span className={content.length >= maxLength ? 'text-red-400' : ''}>
               {content.length}/{maxLength}
             </span>
           )}
-          {!showCharCount && content.length > 0 && content.length < 10 && (
+          {!contentWarning && !showCharCount && content.length > 0 && content.length < 10 && (
             <span className="text-yellow-400">
               Minimum 10 characters
             </span>
@@ -136,7 +191,10 @@ export default function CommentInput({
           )}
           <button
             onClick={handleSubmit}
-            disabled={content.trim().length < 10 || submitting}
+            disabled={
+              content.trim().length < 10 || 
+              submitting
+            }
             className={`mobile-btn-primary minimal-flex gap-2 ${compact ? 'px-4 py-1.5 text-sm' : ''}`}
           >
             {submitting ? (
