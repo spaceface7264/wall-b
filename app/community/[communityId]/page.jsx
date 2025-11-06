@@ -179,8 +179,14 @@ export default function CommunityPage() {
         return;
       }
 
-      // Get actual member count to ensure accuracy
-      const actualMemberCount = await getActualMemberCount(communityData.id);
+      // Get actual member count to ensure accuracy (fallback to stored count if query fails)
+      let actualMemberCount = communityData.member_count || 0;
+      try {
+        const count = await getActualMemberCount(communityData.id);
+        actualMemberCount = count || communityData.member_count || 0;
+      } catch (error) {
+        console.warn('Could not fetch actual member count, using stored value:', error);
+      }
       setCommunity({ ...communityData, member_count: actualMemberCount });
       
       // Load creator (first member) - only if user is authenticated
