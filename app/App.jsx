@@ -25,9 +25,9 @@ import { LoginModalProvider } from './providers/LoginModalProvider.jsx'
 function App() {
   return (
     <ToastProvider>
-      <LoginModalProvider>
-        <Router>
-        <Routes>
+      <Router>
+        <LoginModalProvider>
+          <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -52,9 +52,9 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/:userId" element={<PublicProfile />} />
           <Route path="/admin" element={<AdminPage />} />
-        </Routes>
+          </Routes>
+        </LoginModalProvider>
       </Router>
-      </LoginModalProvider>
     </ToastProvider>
   );
 }
