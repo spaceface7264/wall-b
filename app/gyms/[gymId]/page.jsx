@@ -1281,17 +1281,22 @@ export default function GymDetail() {
                 <Users className="minimal-icon mr-2 text-[#087E8B]" />
                 Communities at this gym
               </h2>
-                <button 
-                className="inline-flex items-center gap-2 px-4 py-2 bg-[#087E8B] text-white rounded-full text-sm font-medium hover:bg-[#066a75] transition-colors"
-                  onClick={() => navigate(`/community/new?gym_id=${gym.id}`)}
-                >
-                <Plus className="w-4 h-4" />
-                Create
-                </button>
+                {user && (
+                  <button 
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#087E8B] text-white rounded-full text-sm font-medium hover:bg-[#066a75] transition-colors"
+                    onClick={() => navigate(`/community/new?gym_id=${gym.id}`)}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create
+                  </button>
+                )}
             </div>
             
             {communities.length === 0 ? (
-              <EmptyCommunities onCreateClick={() => navigate(`/community/new?gym_id=${gym.id}`)} />
+              <EmptyCommunities onCreateClick={user ? () => navigate(`/community/new?gym_id=${gym.id}`) : () => {
+                showToast('info', 'Sign in required', 'Please sign in to create communities');
+                navigate('/');
+              }} />
             ) : (
               <div style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
                 <div className="flex flex-col gap-3 px-3">

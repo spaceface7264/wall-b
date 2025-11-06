@@ -157,7 +157,14 @@ export default function PublicProfile() {
   }
 
   const handleSendMessage = async () => {
-    if (!currentUserId || !userId || sendingMessage) return;
+    if (!currentUserId) {
+      // Show login prompt for unauthenticated users
+      alert('Please sign in to send messages');
+      navigate('/');
+      return;
+    }
+    
+    if (!userId || sendingMessage) return;
     
     // Don't allow messaging yourself
     if (currentUserId === userId) {
