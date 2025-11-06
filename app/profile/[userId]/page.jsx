@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { User as UserIcon, MapPin, Users, MessageCircle, Heart, Calendar as EventIcon, ArrowLeft, Instagram, X } from 'lucide-react';
+import SidebarLayout from '../../components/SidebarLayout';
 import { useLoginModal } from '../../providers/LoginModalProvider';
 import ProfileSkeleton from '../../components/ProfileSkeleton';
 
 export default function PublicProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const { showLoginModal } = useLoginModal();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [communities, setCommunities] = useState([]);
