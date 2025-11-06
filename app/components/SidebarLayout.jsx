@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe, Sun, Moon, MessageSquare, MapPin, ChevronLeft } from 'lucide-react';
+import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe, MessageSquare, MapPin, ChevronLeft } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import BottomNav from './BottomNav';
 import FeedbackModal from './FeedbackModal';
@@ -19,11 +19,6 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
   const [communitiesLoading, setCommunitiesLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    // Initialize theme from localStorage or default to 'dark'
-    const savedTheme = localStorage.getItem('theme');
-    return savedTheme || 'dark';
-  });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     // Initialize sidebar state from localStorage or default to expanded
     const saved = localStorage.getItem('sidebarCollapsed');
@@ -112,32 +107,13 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     }
   };
 
-  // Theme management - Apply theme immediately on mount to prevent flash
+  // Ensure dark mode is always applied
   useEffect(() => {
     const root = document.documentElement;
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    if (savedTheme === 'light') {
-      root.setAttribute('data-theme', 'light');
-    } else {
-      root.removeAttribute('data-theme'); // Default is dark
-    }
+    root.removeAttribute('data-theme'); // Default is dark
+    // Clear any light theme from localStorage
+    localStorage.removeItem('theme');
   }, []); // Run only on mount
-
-  // Theme management - Apply theme to document when it changes
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'light') {
-      root.setAttribute('data-theme', 'light');
-    } else {
-      root.removeAttribute('data-theme'); // Default is dark
-    }
-    // Save to localStorage
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
-  };
 
   const toggleSidebar = () => {
     setSidebarCollapsed(prev => {
@@ -823,41 +799,6 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
             title="Send Feedback"
           >
             <MessageSquare className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => {
-              toggleTheme();
-              closeDrawer();
-            }}
-            onMouseDown={createRipple}
-            className="mobile-drawer-item ripple-effect"
-            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-          >
-            {theme === 'dark' ? (
-              <Sun className="mobile-drawer-icon" />
-            ) : (
-              <Moon className="mobile-drawer-icon" />
-            )}
-            <span className="mobile-drawer-text">
-              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-            </span>
-          </button>
-          {/* Desktop collapsed icon version */}
-          <button
-            onClick={() => {
-              toggleTheme();
-              closeDrawer();
-            }}
-            onMouseDown={createRipple}
-            className="sidebar-icon-button desktop-only"
-            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-            title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-          >
-            {theme === 'dark' ? (
-              <Sun className="w-5 h-5" />
-            ) : (
-              <Moon className="w-5 h-5" />
-            )}
           </button>
           <button
             onClick={handleLogout}

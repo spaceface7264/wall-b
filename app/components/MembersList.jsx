@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Search, Users, Crown, Shield, User } from 'lucide-react';
+import { Search, Users, Crown, Shield, User, UserPlus } from 'lucide-react';
 import { EmptyMembers, EmptySearch } from './EmptyState';
 import MembersListSkeleton from './MembersListSkeleton';
+import InviteMembersModal from './InviteMembersModal';
 
-export default function MembersList({ communityId, isAdmin = false }) {
+export default function MembersList({ communityId, isAdmin = false, userCommunityRole = null, communityName = 'Community' }) {
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,6 +21,14 @@ export default function MembersList({ communityId, isAdmin = false }) {
   const handleProfileClick = (userId) => {
     navigate(`/profile/${userId}`);
   };
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    getCurrentUser();
+  }, []);
 
   useEffect(() => {
     if (communityId) {
@@ -183,17 +194,29 @@ export default function MembersList({ communityId, isAdmin = false }) {
         />
       </div>
 
-      {/* Members Count */}
+      {/* Members Count and Invite Button */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <Users className="w-4 h-4" />
           <span>{totalMembers} member{totalMembers !== 1 ? 's' : ''}</span>
         </div>
-        {totalPages > 1 && (
-          <div className="text-sm text-gray-400">
-            Page {currentPage} of {totalPages}
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {totalPages > 1 && (
+            <div className="text-sm text-gray-400">
+              Page {currentPage} of {totalPages}
+            </div>
+          )}
+          {/* Invite Button - Show for community admins/moderators */}
+          {(userCommunityRole === 'admin' || userCommunityRole === 'moderator' || isAdmin) && (
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#087E8B] hover:bg-[#066a75] text-white rounded-lg transition-colors"
+            >
+              <UserPlus className="w-4 h-4" />
+              Invite
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Members List */}
@@ -324,6 +347,17 @@ export default function MembersList({ communityId, isAdmin = false }) {
             Next
           </button>
         </div>
+      )}
+
+      {/* Invite Members Modal */}
+      {showInviteModal && (
+        <InviteMembersModal
+          isOpen={showInviteModal}
+          onClose={() => setShowInviteModal(false)}
+          communityId={communityId}
+          communityName={communityName}
+          currentUserId={currentUserId}
+        />
       )}
     </div>
   );

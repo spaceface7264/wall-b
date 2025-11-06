@@ -45,7 +45,7 @@ export default function OnboardingPage() {
   const [step, setStep] = useState('displayName'); // 'displayName', 'ageVerification', or 'purpose'
   const [nickname, setNickname] = useState('');
   const [selectedPurposes, setSelectedPurposes] = useState([]);
-  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [age, setAge] = useState('');
 
   useEffect(() => {
     const init = async () => {
@@ -77,7 +77,17 @@ export default function OnboardingPage() {
         // Has name but no age verification
         setStep('ageVerification');
         setNickname(profile.nickname);
-        setDateOfBirth(profile.date_of_birth || '');
+        // Calculate age from date_of_birth if it exists
+        if (profile.date_of_birth) {
+          const birthDate = new Date(profile.date_of_birth);
+          const today = new Date();
+          let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            calculatedAge--;
+          }
+          setAge(calculatedAge.toString());
+        }
       } else {
         // Start with display name
         setNickname(profile?.nickname || '');
@@ -193,30 +203,32 @@ export default function OnboardingPage() {
     e.preventDefault();
     setError('');
 
-    if (!dateOfBirth) {
-      setError('Please enter your date of birth');
+    if (!age || age.trim() === '') {
+      setError('Please enter your age');
       return;
     }
 
-    // Validate date of birth - automatically check if user is 16+
-    const birthDate = new Date(dateOfBirth);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
+    const ageNum = parseInt(age, 10);
+    if (isNaN(ageNum) || ageNum < 1 || ageNum > 150) {
+      setError('Please enter a valid age');
+      return;
     }
 
-    if (age < 16) {
-      setError('You must be 16 years or older to use this platform. You are ' + age + ' years old.');
+    if (ageNum < 16) {
+      setError('You must be 16 years or older to use this platform.');
       return;
     }
 
     try {
       setSaving(true);
-      const dob = new Date(dateOfBirth);
-      // Pass true for ageConfirmed since we've validated the age from DOB
-      const result = await verifyAge(true, dob);
+      
+      // Calculate date of birth from age (using January 1st of birth year)
+      const today = new Date();
+      const birthYear = today.getFullYear() - ageNum;
+      const dateOfBirth = new Date(birthYear, 0, 1); // January 1st
+      
+      // Pass true for ageConfirmed since we've validated the age
+      const result = await verifyAge(true, dateOfBirth);
 
       if (!result.success) {
         setError(result.error || 'Failed to verify age');
@@ -255,11 +267,6 @@ export default function OnboardingPage() {
       </div>
     );
   }
-
-  // Calculate max date for date picker (must be at least 16 years ago)
-  const maxDate = new Date();
-  maxDate.setFullYear(maxDate.getFullYear() - 16);
-  const maxDateString = maxDate.toISOString().split('T')[0];
 
   // Display name step
   if (step === 'displayName') {
@@ -318,20 +325,21 @@ export default function OnboardingPage() {
           <div className="mobile-card">
             <form onSubmit={onSubmitAgeVerification} className="space-y-4">
               <div>
-                <label className="minimal-label mb-2">Date of Birth</label>
+                <label className="minimal-label mb-2">Age</label>
                 <input
-                  type="date"
-                  value={dateOfBirth}
+                  type="number"
+                  min="16"
+                  max="150"
+                  value={age}
                   onChange={(e) => {
-                    setDateOfBirth(e.target.value);
+                    setAge(e.target.value);
                     if (error) setError('');
                   }}
-                  max={maxDateString}
                   disabled={saving}
                   className="minimal-input w-full"
+                  placeholder="Enter your age"
                   required
                 />
-                <p className="mobile-text-xs text-gray-500 mt-1">You must be 16 years or older to use this platform.</p>
               </div>
 
               {error && (
@@ -340,7 +348,7 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              <button type="submit" disabled={saving || !dateOfBirth} className="mobile-btn-primary w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+              <button type="submit" disabled={saving || !age} className="mobile-btn-primary w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed">
                 {saving ? 'Verifying...' : 'Continue'}
               </button>
             </form>

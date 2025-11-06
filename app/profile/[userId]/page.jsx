@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
-import { User as UserIcon, MapPin, Users, MessageCircle, Heart, Calendar as EventIcon, ArrowLeft, Globe } from 'lucide-react';
+import { User as UserIcon, MapPin, Users, MessageCircle, Heart, Calendar as EventIcon, ArrowLeft, Instagram, X } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
-import CommunityCard from '../../components/CommunityCard';
 import ProfileSkeleton from '../../components/ProfileSkeleton';
 
 export default function PublicProfile() {
@@ -199,28 +198,26 @@ export default function PublicProfile() {
       <div className="mobile-container">
         <div className="mobile-section">
           {/* Profile Header */}
-          <div className="mobile-card animate-fade-in">
+          <div className="mobile-card animate-fade-in relative">
             <div className="minimal-flex gap-4 mb-4">
-              <div className="profile-avatar-container">
+              <div className="profile-avatar-container relative">
                 <div className="profile-avatar">
                   {profile.avatar_url ? (
                     <img 
                       src={profile.avatar_url} 
                       alt={displayName}
                       className="w-full h-full object-cover rounded-full"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'block';
+                      onError={() => {
+                        // Handle error silently
                       }}
                     />
-                  ) : null}
-                  {!profile.avatar_url && (
-                    <UserIcon className="w-8 h-8 text-gray-400" style={{ display: profile.avatar_url ? 'none' : 'block' }} />
+                  ) : (
+                    <UserIcon className="w-8 h-8 text-gray-400" />
                   )}
                 </div>
               </div>
               
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 pr-10">
                 <h2 className="mobile-card-title truncate mb-1">{displayName}</h2>
                 {profile.handle && (
                   <p className="mobile-text-xs text-gray-400 truncate mb-1">@{profile.handle}</p>
@@ -229,19 +226,48 @@ export default function PublicProfile() {
                   <p className="mobile-text-xs text-gray-400 truncate mb-1">{profile.email}</p>
                 )}
                 {location && (
-                  <p className="mobile-text-xs text-gray-400 truncate minimal-flex gap-1">
+                  <p className="mobile-text-xs text-gray-400 truncate minimal-flex gap-1 mb-3">
                     <MapPin className="w-3 h-3 flex-shrink-0" />
                     {location}
                   </p>
                 )}
                 {profile.company && (
-                  <p className="mobile-text-xs text-gray-400 truncate mt-1">{profile.company}</p>
+                  <p className="mobile-text-xs text-gray-400 truncate mb-3">{profile.company}</p>
+                )}
+                {profile.bio && (
+                  <p className="mobile-text text-gray-300 leading-relaxed text-left mb-3">
+                    {profile.bio}
+                  </p>
+                )}
+                {(profile.instagram_url || profile.twitter_url) && (
+                  <div className="flex items-center gap-3">
+                    {profile.instagram_url && (
+                      <a
+                        href={profile.instagram_url.startsWith('http') ? profile.instagram_url : `https://instagram.com/${profile.instagram_url.replace('@', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-300 hover:text-white transition-colors"
+                      >
+                        <Instagram className="w-5 h-5" />
+                      </a>
+                    )}
+                    {profile.twitter_url && (
+                      <a
+                        href={profile.twitter_url.startsWith('http') ? profile.twitter_url : `https://twitter.com/${profile.twitter_url.replace('@', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-300 hover:text-white transition-colors"
+                      >
+                        <X className="w-5 h-5" />
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 mt-4">
               <button
                 onClick={() => navigate(-1)}
                 className="mobile-btn-secondary minimal-flex gap-2 flex-1 justify-center"
@@ -264,7 +290,7 @@ export default function PublicProfile() {
 
           {/* Activity Stats */}
           {profile.show_activity !== false && (
-            <div className="mobile-card animate-slide-up">
+            <div className="pt-8 mt-8">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-400 font-medium">Activity:</span>
                 <div className="flex items-center gap-4">
@@ -285,76 +311,51 @@ export default function PublicProfile() {
             </div>
           )}
 
-          {/* Bio */}
-          {profile.bio && (
-            <div className="mobile-card animate-slide-up">
-              <h2 className="profile-section-header">About</h2>
-              <p className="mobile-text text-gray-300 leading-relaxed">{profile.bio}</p>
-            </div>
-          )}
-
           {/* Communities */}
-          {communities.length > 0 && (
-            <div className="mobile-card animate-slide-up">
-              <h2 className="profile-section-header minimal-flex gap-2">
-                <Users className="minimal-icon text-[#087E8B]" />
-                Communities ({communities.length})
-              </h2>
+          <div className="pt-8 mt-8">
+            <h2 className="profile-section-header minimal-flex gap-2 mb-4">
+              <Users className="minimal-icon text-[#087E8B]" />
+              Communities ({communities.length})
+            </h2>
+            
+            {communities.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
+                <p className="text-gray-400 text-sm mb-2">No communities yet</p>
+                <button
+                  onClick={() => navigate('/communities')}
+                  className="text-[#087E8B] text-sm hover:underline"
+                >
+                  Explore communities
+                </button>
+              </div>
+            ) : (
               <div className="space-y-2">
                 {communities.map((community) => (
-                  <CommunityCard
+                  <div
                     key={community.id}
-                    community={community}
-                    isMember={false}
-                    onLeave={() => {}}
-                    onOpen={() => navigate(`/community/${community.id}`)}
-                  />
+                    onClick={() => navigate(`/community/${community.id}`)}
+                    className="profile-community-item"
+                  >
+                    <div className="minimal-flex-between">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>{community.name}</h3>
+                        {community.gyms && (
+                          <p className="mobile-text-xs text-gray-400 truncate">
+                            {community.gyms.name} • {community.gyms.city}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-400 ml-2">
+                        <Users className="w-3 h-3" />
+                        {community.member_count || 0}
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* Social Links */}
-          {(profile.instagram_url || profile.twitter_url || profile.website_url) && (
-            <div className="mobile-card animate-slide-up">
-              <h2 className="profile-section-header minimal-flex gap-2">
-                <Globe className="minimal-icon text-[#087E8B]" />
-                Social Links
-              </h2>
-              <div className="space-y-2">
-                {profile.instagram_url && (
-                  <a
-                    href={profile.instagram_url.startsWith('http') ? profile.instagram_url : `https://instagram.com/${profile.instagram_url.replace('@', '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="profile-social-link"
-                  >
-                    📸 Instagram
-                  </a>
-                )}
-                {profile.twitter_url && (
-                  <a
-                    href={profile.twitter_url.startsWith('http') ? profile.twitter_url : `https://twitter.com/${profile.twitter_url.replace('@', '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="profile-social-link"
-                  >
-                    🐦 Twitter/X
-                  </a>
-                )}
-                {profile.website_url && (
-                  <a
-                    href={profile.website_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="profile-social-link"
-                  >
-                    🌐 Website
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </SidebarLayout>

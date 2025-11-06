@@ -1,17 +1,22 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, X } from 'lucide-react';
+import { Bell, X, Check, X as XIcon } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
+import { supabase } from '../../lib/supabase';
+import { useToast } from '../providers/ToastProvider';
 
 export default function NotificationBell({ userId }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [processingInvite, setProcessingInvite] = useState(null);
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { 
     notifications, 
     unreadCount, 
     loading, 
     markAsRead, 
-    markAllAsRead 
+    markAllAsRead,
+    refreshNotifications
   } = useNotifications(userId);
 
 
@@ -40,6 +45,7 @@ export default function NotificationBell({ userId }) {
       mention: '👤',
       direct_message: '💌',
       community_join: '👥',
+      community_invite: '✉️',
       event_rsvp: '✅',
       post_comment: '💭',
       system: '🔔'
@@ -58,6 +64,7 @@ export default function NotificationBell({ userId }) {
       mention: 'text-[#087E8B]',
       direct_message: 'text-pink-400',
       community_join: 'text-cyan-400',
+      community_invite: 'text-purple-400',
       event_rsvp: 'text-emerald-400',
       post_comment: 'text-[#087E8B]',
       system: 'text-gray-400'
@@ -109,8 +116,85 @@ export default function NotificationBell({ userId }) {
     return parts.length > 0 ? parts.join(' • ') : null;
   };
 
+  // Handle accepting community invite
+  const handleAcceptInvite = async (notification, e) => {
+    e.stopPropagation();
+    if (processingInvite) return;
+
+    const data = notification.data || {};
+    const communityId = data.community_id;
+
+    if (!communityId || !userId) return;
+
+    setProcessingInvite(notification.id);
+    try {
+      // Check if user is already a member
+      const { data: existingMember } = await supabase
+        .from('community_members')
+        .select('id')
+        .eq('community_id', communityId)
+        .eq('user_id', userId)
+        .single();
+
+      if (existingMember) {
+        showToast('info', 'Already a Member', 'You are already a member of this community');
+        markAsRead(notification.id);
+        refreshNotifications();
+        return;
+      }
+
+      // Join the community
+      const { error } = await supabase
+        .from('community_members')
+        .insert({
+          community_id: communityId,
+          user_id: userId
+        });
+
+      if (error) {
+        console.error('Error accepting invite:', error);
+        showToast('error', 'Error', 'Failed to join community');
+        return;
+      }
+
+      showToast('success', 'Joined!', `You've joined ${data.community_name || 'the community'}`);
+      markAsRead(notification.id);
+      refreshNotifications();
+      
+      // Navigate to the community
+      navigate(`/community/${communityId}`);
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Error accepting invite:', error);
+      showToast('error', 'Error', 'Something went wrong');
+    } finally {
+      setProcessingInvite(null);
+    }
+  };
+
+  // Handle declining community invite
+  const handleDeclineInvite = async (notification, e) => {
+    e.stopPropagation();
+    if (processingInvite) return;
+
+    setProcessingInvite(notification.id);
+    try {
+      markAsRead(notification.id);
+      refreshNotifications();
+    } catch (error) {
+      console.error('Error declining invite:', error);
+    } finally {
+      setProcessingInvite(null);
+    }
+  };
+
   // Handle notification click with navigation
   const handleNotificationClick = (notification) => {
+    // Don't navigate if it's a community invite (user should use buttons)
+    if (notification.type === 'community_invite') {
+      return;
+    }
+
     markAsRead(notification.id);
     
     // Navigate based on notification type and data
@@ -124,6 +208,9 @@ export default function NotificationBell({ userId }) {
       if (data.community_id) {
         navigate(`/community/${data.community_id}/post/${data.post_id}`);
       }
+    } else if (data.community_id && notification.type === 'community_join') {
+      // Navigate to community
+      navigate(`/community/${data.community_id}`);
     }
     
     setIsOpen(false);
@@ -231,6 +318,38 @@ export default function NotificationBell({ userId }) {
                                     )}
                                   </div>
                                 </>
+                              ) : notification.type === 'community_invite' ? (
+                                <>
+                                  <div className="mt-0.5">
+                                    <span className="text-[#087E8B]" style={{ fontSize: '11px' }}>
+                                      {getActorName(notification)}
+                                    </span>
+                                    <span className="text-gray-400 ml-1" style={{ fontSize: '11px' }}>
+                                      invited you to join
+                                    </span>
+                                  </div>
+                                  <p className="text-gray-300 mt-0.5 line-clamp-2" style={{ fontSize: '11px' }}>
+                                    {notification.data?.community_name || 'a community'}
+                                  </p>
+                                  <div className="flex gap-2 mt-2">
+                                    <button
+                                      onClick={(e) => handleAcceptInvite(notification, e)}
+                                      disabled={processingInvite === notification.id}
+                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-[#087E8B] hover:bg-[#066a75] text-white rounded text-xs transition-colors disabled:opacity-50"
+                                    >
+                                      <Check className="w-3 h-3" />
+                                      Accept
+                                    </button>
+                                    <button
+                                      onClick={(e) => handleDeclineInvite(notification, e)}
+                                      disabled={processingInvite === notification.id}
+                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors disabled:opacity-50"
+                                    >
+                                      <XIcon className="w-3 h-3" />
+                                      Decline
+                                    </button>
+                                  </div>
+                                </>
                               ) : (
                                 <p className="text-gray-300 mt-0.5 line-clamp-2" style={{ fontSize: '11px' }}>
                                   {notification.message}
@@ -238,7 +357,7 @@ export default function NotificationBell({ userId }) {
                               )}
                               
                               {/* Show actor name for other notification types */}
-                              {!['event_rsvp', 'event_invite', 'event_reminder'].includes(notification.type) && notification.actor_profile && (
+                              {!['event_rsvp', 'event_invite', 'event_reminder', 'community_invite'].includes(notification.type) && notification.actor_profile && (
                                 <p className="text-[#087E8B] mt-0.5" style={{ fontSize: '10px' }}>
                                   {getActorName(notification)}
                                 </p>

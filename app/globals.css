@@ -767,6 +767,15 @@
     .mobile-drawer-text {
       font-size: 12px;
     }
+
+      /* Mobile Content Area */
+  .mobile-content {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-top: 12px; /* Account for mobile header */
+    padding-bottom: 80px; /* Space for bottom nav */
+  }
   }
 
   /* Mobile Content Area */
@@ -774,8 +783,8 @@
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding-top: 56px; /* Account for mobile header */
-    padding-bottom: 80px; /* Space for bottom nav */
+    padding-top: 12px; /* Account for mobile header */
+    padding-bottom: 0px; /* Space for bottom nav */
   }
   
   @media (min-width: 1024px) {
@@ -786,7 +795,7 @@
     
     /* Desktop Content - Add left margin for sidebar */
     .desktop-content {
-      margin-left: 280px; /* Sidebar width */
+      margin-left: 200px; /* Sidebar width */
       transition: margin-left 0.3s ease;
     }
     
@@ -816,6 +825,9 @@
     .mobile-container {
       padding: 0 var(--container-padding-desktop);
       max-width: 1200px;
+      width: 100%;
+      margin-left: auto;
+      margin-right: auto;
     }
   }
 
@@ -1530,6 +1542,19 @@
   @media (min-width: 1024px) {
     .gap-section {
       gap: var(--spacing-xl);
+    }
+  }
+
+  /* Desktop margin utilities */
+  .desktop-mx {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  
+  @media (min-width: 1024px) {
+    .desktop-mx {
+      margin-left: calc(var(--spacing-2xl) * 2);
+      margin-right: calc(var(--spacing-2xl) * 2);
     }
   }
 

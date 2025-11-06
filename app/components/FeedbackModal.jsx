@@ -150,19 +150,20 @@ export default function FeedbackModal({ isOpen, onClose }) {
                     onClick={() => setType(feedbackType.value)}
                     disabled={submitting}
                     className={`
-                      p-4 rounded-lg border-2 transition-all
+                      p-4 rounded-xl border-2 transition-all duration-200
+                      flex flex-col items-center text-center
                       ${isSelected
-                        ? 'border-[#087E8B] bg-[#087E8B]/10'
-                        : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+                        ? 'border-[#087E8B] bg-[#087E8B]/15 shadow-lg shadow-[#087E8B]/20'
+                        : 'border-gray-700/50 bg-gray-800/40 hover:border-gray-600 hover:bg-gray-800/60 active:scale-[0.98]'
                       }
-                      disabled:opacity-50 disabled:cursor-not-allowed
+                      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-700/50 disabled:hover:bg-gray-800/40
                     `}
                   >
-                    <Icon className={`w-6 h-6 mb-2 ${isSelected ? 'text-[#087E8B]' : 'text-gray-400'}`} />
-                    <div className="text-sm font-medium text-white mb-1">
+                    <Icon className={`w-6 h-6 mb-2 transition-colors duration-200 ${isSelected ? 'text-[#087E8B]' : 'text-gray-400'}`} />
+                    <div className={`text-sm font-semibold mb-1 transition-colors duration-200 ${isSelected ? 'text-white' : 'text-gray-300'}`}>
                       {feedbackType.label}
                     </div>
-                    <div className="text-xs text-gray-400">
+                    <div className={`text-xs transition-colors duration-200 ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
                       {feedbackType.description}
                     </div>
                   </button>

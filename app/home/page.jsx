@@ -6,7 +6,7 @@ import { getRecommendedCommunities, getRecommendedGyms } from '../../lib/recomme
 import CommunityCard from '../components/CommunityCard';
 import GymCard from '../components/GymCard';
 import ListSkeleton from '../components/ListSkeleton';
-import { Users, MapPin, ArrowRight, Sparkles } from 'lucide-react';
+import { Users, MapPin, ArrowRight, Sparkles, PlusCircle } from 'lucide-react';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -17,6 +17,7 @@ export default function HomePage() {
   const [loadingCommunities, setLoadingCommunities] = useState(true);
   const [loadingGyms, setLoadingGyms] = useState(true);
   const [isFirstVisit, setIsFirstVisit] = useState(false);
+  const [loginCount, setLoginCount] = useState(0);
 
   const { location, requestLocation, isSupported: geolocationSupported } = useGeolocation();
 
@@ -27,6 +28,21 @@ export default function HomePage() {
         setUser(currentUser);
 
         if (currentUser) {
+          // Check login count for welcome message (show for first 5 logins)
+          const userVisitKey = `home_login_count_${currentUser.id}`;
+          const savedCount = localStorage.getItem(userVisitKey);
+          const currentCount = savedCount ? parseInt(savedCount, 10) : 0;
+          const newCount = currentCount + 1;
+          
+          setLoginCount(newCount);
+          setIsFirstVisit(newCount <= 5);
+          
+          localStorage.setItem(userVisitKey, newCount.toString());
+          
+          if (newCount <= 5) {
+            console.log(`Welcome message shown (login ${newCount}/5) for user:`, currentUser.id);
+          }
+
           // Get user profile with intent
           const { data: profile } = await supabase
             .from('profiles')
@@ -36,13 +52,6 @@ export default function HomePage() {
 
           if (profile) {
             setUserIntent(profile.user_intent || []);
-
-            // Check if this is user's first visit after onboarding
-            const lastHomeVisit = localStorage.getItem('home_last_visit');
-            if (!lastHomeVisit) {
-              setIsFirstVisit(true);
-              localStorage.setItem('home_last_visit', new Date().toISOString());
-            }
           }
         }
       } catch (error) {
@@ -120,20 +129,31 @@ export default function HomePage() {
 
   return (
     <div className="mobile-container">
-      {/* Welcome Message */}
+      {/* Welcome Message - First 5 Logins */}
       {isFirstVisit && (
         <div className="mobile-section mb-6">
-          <div className="mobile-card p-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-600/30">
-            <div className="flex items-center gap-3">
-              <Sparkles className="w-5 h-5 text-blue-400" />
-              <div>
-                <h2 className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  Welcome to Send Train!
-                </h2>
-                <p className="mobile-text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-                  We've personalized your feed based on your interests. Check out these recommendations below.
+          <div className="mobile-card p-6">
+            <div className="space-y-4">
+              <div className="mb-2">
+                <div className="flex items-center gap-3 mb-2">
+                  <Sparkles className="w-6 h-6 text-blue-400" />
+                  <h3 className="mobile-heading text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    Welcome to Send Train!
+                  </h3>
+                </div>
+                <p className="mobile-text-sm ml-9" style={{ color: 'var(--text-muted)' }}>
+                  Your new climbing community hub
                 </p>
               </div>
+              <p className="mobile-text text-left" style={{ color: 'var(--text-muted)' }}>
+                Connecting you with communities in local climbing gyms and around the world.
+              </p>
+              <p className="mobile-text text-left" style={{ color: 'var(--text-muted)' }}>
+                <strong style={{ color: 'var(--text-primary)' }}>How it works:</strong> Join communities around your favorite gyms or interests, share your sends, ask questions, share beta, and training tips, discover events, and connect with climbers who share your passion.
+              </p>
+              <p className="mobile-text text-left" style={{ color: 'var(--text-muted)' }}>
+                No communities match your interests yet? No problem! Be a trailblazer and create your own community where climbers can come together. Create the community and be the first to rally your crew. Every great climbing community starts with someone taking the first step.
+              </p>
             </div>
           </div>
         </div>
@@ -161,14 +181,24 @@ export default function HomePage() {
           <div className="mobile-card p-8 text-center">
             <Users className="w-12 h-12 mx-auto mb-4 text-gray-500" />
             <p className="mobile-text" style={{ color: 'var(--text-muted)' }}>
-              No communities to recommend right now. Check out all communities to discover more.
+              No communities to recommend right now. We're still building the network!
             </p>
-            <button
-              onClick={() => navigate('/communities')}
-              className="mobile-btn-primary mt-4"
-            >
-              Explore Communities
-            </button>
+            <div className="flex flex-row gap-3 mt-4 desktop-mx">
+              <button
+                onClick={() => navigate('/communities')}
+                className="mobile-btn-primary flex-1 flex items-center justify-center gap-2"
+              >
+                <ArrowRight className="w-4 h-4" />
+                Explore Communities
+              </button>
+              <button
+                onClick={() => navigate('/community/new')}
+                className="mobile-btn-primary flex-1 flex items-center justify-center gap-2"
+              >
+                <PlusCircle className="w-4 h-4" />
+                Create Community
+              </button>
+            </div>
           </div>
         ) : (
           <div style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>

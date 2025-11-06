@@ -760,7 +760,12 @@ export default function CommunityPage() {
       case 'members':
         return (
           <div className="space-y-4">
-            <MembersList communityId={communityId} isAdmin={isAdmin} />
+            <MembersList 
+              communityId={communityId} 
+              isAdmin={isAdmin}
+              userCommunityRole={userCommunityRole}
+              communityName={community?.name || 'Community'}
+            />
           </div>
         );
 

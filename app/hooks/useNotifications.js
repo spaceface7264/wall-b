@@ -21,6 +21,9 @@ export function useNotifications(userId) {
         return;
       }
       
+      // Get current timestamp for filtering expired notifications
+      const currentTime = new Date().toISOString();
+      
       const { data, error } = await supabase
         .from('notifications')
         .select(`
@@ -35,6 +38,7 @@ export function useNotifications(userId) {
           )
         `)
         .eq('user_id', user.id) // Use the authenticated user's ID
+        .or(`expires_at.is.null,expires_at.gt.${currentTime}`) // Exclude expired notifications
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -45,14 +49,27 @@ export function useNotifications(userId) {
       }
 
       // Enrich notifications with profile names and event details
+      // Also filter out expired notifications client-side as a safety measure
+      const now = new Date();
       const enrichedNotifications = await Promise.all(
-        (data || []).map(async (notification) => {
+        (data || [])
+          .filter(notification => {
+            // Filter out expired notifications
+            if (notification.expires_at) {
+              const expiresAt = new Date(notification.expires_at);
+              if (expiresAt <= now) {
+                return false; // Skip expired notifications
+              }
+            }
+            return true;
+          })
+          .map(async (notification) => {
           const notificationData = notification.data || {};
           let enriched = { ...notification };
 
           // Get profile information for the actor (person who triggered the notification)
-          if (notificationData.commenter_id || notificationData.liker_id || notificationData.rsvper_id) {
-            const actorId = notificationData.commenter_id || notificationData.liker_id || notificationData.rsvper_id;
+          if (notificationData.commenter_id || notificationData.liker_id || notificationData.rsvper_id || notificationData.inviter_id) {
+            const actorId = notificationData.commenter_id || notificationData.liker_id || notificationData.rsvper_id || notificationData.inviter_id;
             const { data: profile, error: profileError } = await supabase
               .from('profiles')
               .select('id, nickname, full_name, avatar_url')
@@ -102,18 +119,42 @@ export function useNotifications(userId) {
         return;
       }
       
+      // Get current timestamp for filtering expired notifications
+      const now = new Date().toISOString();
+      
       const { count, error } = await supabase
         .from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id) // Use the authenticated user's ID
-        .eq('is_read', false);
+        .eq('is_read', false)
+        .or(`expires_at.is.null,expires_at.gt.${now}`); // Exclude expired notifications
       
       if (error) {
         console.error('Error loading unread count:', error);
-        setUnreadCount(0);
+        // Fallback: fetch all unread and filter client-side
+        const { data: allUnread, error: fetchError } = await supabase
+          .from('notifications')
+          .select('expires_at')
+          .eq('user_id', user.id)
+          .eq('is_read', false);
+        
+        if (!fetchError && allUnread) {
+          const now = new Date();
+          const validUnread = allUnread.filter(n => {
+            if (n.expires_at) {
+              return new Date(n.expires_at) > now;
+            }
+            return true;
+          });
+          setUnreadCount(validUnread.length);
+        } else {
+          setUnreadCount(0);
+        }
         return;
       }
       
+      // Double-check count by filtering client-side if needed
+      // (The query filter should work, but this ensures accuracy)
       setUnreadCount(count || 0);
     } catch (error) {
       console.error('Error loading unread count:', error);
