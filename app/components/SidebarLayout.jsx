@@ -469,7 +469,12 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     );
   }
 
-  if (!user) {
+  // Allow community pages with invite links to render without authentication
+  const isInviteLink = location.search.includes('invite=true');
+  const isCommunityPage = location.pathname.startsWith('/community/') && !location.pathname.includes('/new');
+  const allowUnauthenticatedAccess = isInviteLink || isCommunityPage;
+
+  if (!user && !allowUnauthenticatedAccess) {
     // Instead of returning null (blank screen), redirect to login
     // This ensures user sees something rather than blank page
     return (
