@@ -1296,8 +1296,7 @@ export default function GymDetail() {
             
             {communities.length === 0 ? (
               <EmptyCommunities onCreateClick={user ? () => navigate(`/community/new?gym_id=${gym.id}`) : () => {
-                showToast('info', 'Sign in required', 'Please sign in to create communities');
-                navigate('/');
+                showLoginModal({ subtitle: 'Sign in to create communities' });
               }} />
             ) : (
               <div style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
