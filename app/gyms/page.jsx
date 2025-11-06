@@ -81,11 +81,15 @@ export default function Gyms() {
   useEffect(() => {
     getUser();
     loadSavedFilters();
+    // Load gyms immediately, don't wait for admin status
+    fetchGyms();
   }, []);
 
-  // Fetch gyms when admin status is determined
+  // Re-fetch gyms when admin status changes (to show/hide hidden gyms)
   useEffect(() => {
-    fetchGyms();
+    if (user !== null) { // Only refetch if user state has been determined
+      fetchGyms();
+    }
   }, [isAdmin]);
 
   // Debounce search input
