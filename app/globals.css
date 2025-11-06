@@ -808,6 +808,7 @@
     width: 100%;
     max-width: 100%;
     margin: 0 auto;
+    margin-bottom: 100px;
     padding: 0 var(--container-padding-mobile);
   }
   
