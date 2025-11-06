@@ -290,14 +290,18 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     }
 
     const timer = setTimeout(() => {
-      if (!loading && !user) {
+      // Allow viewing community pages with invite links without authentication
+      const isInviteLink = location.search.includes('invite=true');
+      const isCommunityPage = location.pathname.startsWith('/community/') && !location.pathname.includes('/new');
+      
+      if (!loading && !user && !isInviteLink && !isCommunityPage) {
         console.log('🔒 No authenticated user, redirecting to login...');
         navigate('/');
       }
     }, 500); // Increased delay to allow auth state to settle
 
     return () => clearTimeout(timer);
-  }, [loading, user, navigate, location.pathname]);
+  }, [loading, user, navigate, location.pathname, location.search]);
 
   // Memoize community IDs to avoid unnecessary subscription recreations
   const communityIdsString = communities.map(c => c.id).filter(Boolean).sort().join(',');
