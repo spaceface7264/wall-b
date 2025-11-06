@@ -183,7 +183,7 @@ export default function HomePage() {
             <p className="mobile-text" style={{ color: 'var(--text-muted)' }}>
               No communities to recommend right now. We're still building the network!
             </p>
-            <div className="flex flex-row gap-3 mt-4 desktop-mx">
+            <div className="flex flex-col md:flex-row gap-3 mt-4 desktop-mx">
               <button
                 onClick={() => navigate('/communities')}
                 className="mobile-btn-primary flex-1 flex items-center justify-center gap-2"

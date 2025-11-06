@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Search, Users, Crown, Shield, User, UserPlus } from 'lucide-react';
+import { Search, Users, Crown, Shield, User, UserPlus, Share2 } from 'lucide-react';
 import { EmptyMembers, EmptySearch } from './EmptyState';
 import MembersListSkeleton from './MembersListSkeleton';
 import InviteMembersModal from './InviteMembersModal';
+import ShareInviteModal from './ShareInviteModal';
 
 export default function MembersList({ communityId, isAdmin = false, userCommunityRole = null, communityName = 'Community' }) {
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -208,13 +210,23 @@ export default function MembersList({ communityId, isAdmin = false, userCommunit
           )}
           {/* Invite Button - Show for community admins/moderators */}
           {(userCommunityRole === 'admin' || userCommunityRole === 'moderator' || isAdmin) && (
-            <button
-              onClick={() => setShowInviteModal(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#087E8B] hover:bg-[#066a75] text-white rounded-lg transition-colors"
-            >
-              <UserPlus className="w-4 h-4" />
-              Invite
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                title="Share invite link"
+              >
+                <Share2 className="w-4 h-4" />
+                Share Link
+              </button>
+              <button
+                onClick={() => setShowInviteModal(true)}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#087E8B] hover:bg-[#066a75] text-white rounded-lg transition-colors"
+              >
+                <UserPlus className="w-4 h-4" />
+                Invite
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -357,6 +369,16 @@ export default function MembersList({ communityId, isAdmin = false, userCommunit
           communityId={communityId}
           communityName={communityName}
           currentUserId={currentUserId}
+        />
+      )}
+
+      {/* Share Invite Modal */}
+      {showShareModal && (
+        <ShareInviteModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          communityId={communityId}
+          communityName={communityName}
         />
       )}
     </div>

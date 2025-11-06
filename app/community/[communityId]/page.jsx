@@ -13,7 +13,7 @@ import CreatePostModal from '../../components/CreatePostModal';
 import CreateEventModal from '../../components/CreateEventModal';
 import MembersList from '../../components/MembersList';
 import CalendarView from '../../components/CalendarView';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getActualMemberCount, updateLastViewedAt } from '../../../lib/community-utils';
 import { useToast } from '../../providers/ToastProvider';
 import ListSkeleton from '../../components/ListSkeleton';
@@ -54,6 +54,7 @@ export default function CommunityPage() {
   const menuButtonRef = useRef(null);
   const navigate = useNavigate();
   const params = useParams();
+  const [searchParams] = useSearchParams();
   const { showToast } = useToast();
   const communityId = params.communityId;
 
@@ -95,6 +96,17 @@ export default function CommunityPage() {
       updateLastViewedAt(communityId, user.id);
     }
   }, [communityId, user?.id]);
+
+  // Handle invite link parameter
+  useEffect(() => {
+    const inviteParam = searchParams.get('invite');
+    if (inviteParam === 'true' && user && !isMember && !loading && community) {
+      // Show a toast encouraging them to join
+      showToast('info', 'You\'re Invited!', `Join ${community.name} to connect with other climbers`);
+      // Remove the invite parameter from URL
+      navigate(`/community/${communityId}`, { replace: true });
+    }
+  }, [searchParams, user, isMember, loading, community, showToast, navigate, communityId]);
 
   // Close menu when clicking outside
   useEffect(() => {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
-import { Users, MapPin, Info, ArrowLeft, CheckCircle, AlertCircle, Building, ChevronDown } from 'lucide-react';
+import { Users, MapPin, Info, ArrowLeft, CheckCircle, AlertCircle, Building, ChevronDown, Lock, Globe } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
 import FormSkeleton from '../../components/FormSkeleton';
 import GymSelectorModal from '../../components/GymSelectorModal';
@@ -24,7 +24,8 @@ export default function CreateCommunityPage() {
     description: '',
     community_type: 'gym',
     gym_id: '',
-    rules: ''
+    rules: '',
+    is_private: false
   });
 
   const [errors, setErrors] = useState({});
@@ -163,7 +164,8 @@ export default function CreateCommunityPage() {
         name: formData.name.trim(),
         description: formData.description.trim(),
         community_type: formData.community_type,
-        rules: formData.rules.trim() || null
+        rules: formData.rules.trim() || null,
+        is_private: formData.is_private
       };
 
       // Only add gym_id if it's a gym community
@@ -253,7 +255,8 @@ export default function CreateCommunityPage() {
                           description: '',
                           community_type: 'gym',
                           gym_id: '',
-                          rules: ''
+                          rules: '',
+                          is_private: false
                         });
                         setErrors({});
                       }}
@@ -276,19 +279,10 @@ export default function CreateCommunityPage() {
       <div className="mobile-container">
         <div className="mobile-section">
           {/* Header */}
-          <div className="mobile-card animate-fade-in mb-6">
-            <div className="minimal-flex-between items-center mb-4">
-              <button
-                onClick={() => navigate(-1)}
-                className="mobile-btn-secondary minimal-flex gap-2"
-              >
-                <ArrowLeft className="minimal-icon" />
-                Back
-              </button>
-            </div>
-            
-            <div className="text-center">
-              <p className="mobile-text-sm text-gray-300">
+          <div className="mb-6">
+            <div className="text-center mb-2">
+              <h1 className="minimal-heading text-2xl mb-2">Create Community</h1>
+              <p className="mobile-text-sm text-gray-400">
                 Start a new community for climbers to connect and share experiences
               </p>
             </div>
@@ -304,7 +298,7 @@ export default function CreateCommunityPage() {
                   Community Type
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <label className={`relative cursor-pointer ${formData.community_type === 'gym' ? 'border-2 border-[#087E8B]' : ''}`}>
+                  <label className="relative cursor-pointer group">
                     <input
                       type="radio"
                       name="community_type"
@@ -313,22 +307,32 @@ export default function CreateCommunityPage() {
                       onChange={handleInputChange}
                       className="sr-only"
                     />
-                    <div className={`p-4 rounded border transition-colors ${
+                    <div className={`p-4 rounded-xl border-2 transition-all duration-200 ${
                       formData.community_type === 'gym' 
-                        ? 'bg-[#087E8B]/10 border-[#087E8B] text-[#087E8B]' 
-                        : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                        ? 'bg-[#087E8B]/15 border-[#087E8B] shadow-lg shadow-[#087E8B]/20' 
+                        : 'bg-gray-800/40 border-gray-700/50 text-gray-300 hover:border-gray-600 hover:bg-gray-800/60 active:scale-[0.98]'
                     }`}>
                       <div className="flex items-center gap-3">
-                        <Building className="w-5 h-5" />
-                        <div>
-                          <div className="font-medium">Gym Community</div>
-                          <div className="text-sm opacity-75">Connected to a specific gym</div>
+                        <Building className={`w-5 h-5 transition-colors duration-200 ${
+                          formData.community_type === 'gym' ? 'text-[#087E8B]' : 'text-gray-400'
+                        }`} />
+                        <div className="flex-1">
+                          <div className={`font-semibold mb-1 transition-colors duration-200 ${
+                            formData.community_type === 'gym' ? 'text-white' : 'text-gray-300'
+                          }`}>
+                            Gym Community
+                          </div>
+                          <div className={`text-xs transition-colors duration-200 ${
+                            formData.community_type === 'gym' ? 'text-gray-300' : 'text-gray-500'
+                          }`}>
+                            Connected to a specific gym
+                          </div>
                         </div>
                       </div>
                     </div>
                   </label>
 
-                  <label className={`relative cursor-pointer ${formData.community_type === 'general' ? 'border-2 border-[#087E8B]' : ''}`}>
+                  <label className="relative cursor-pointer group">
                     <input
                       type="radio"
                       name="community_type"
@@ -337,16 +341,26 @@ export default function CreateCommunityPage() {
                       onChange={handleInputChange}
                       className="sr-only"
                     />
-                    <div className={`p-4 rounded border transition-colors ${
+                    <div className={`p-4 rounded-xl border-2 transition-all duration-200 ${
                       formData.community_type === 'general' 
-                        ? 'bg-[#087E8B]/10 border-[#087E8B] text-[#087E8B]' 
-                        : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                        ? 'bg-[#087E8B]/15 border-[#087E8B] shadow-lg shadow-[#087E8B]/20' 
+                        : 'bg-gray-800/40 border-gray-700/50 text-gray-300 hover:border-gray-600 hover:bg-gray-800/60 active:scale-[0.98]'
                     }`}>
                       <div className="flex items-center gap-3">
-                        <Users className="w-5 h-5" />
-                        <div>
-                          <div className="font-medium">General Community</div>
-                          <div className="text-sm opacity-75">Open to all climbers</div>
+                        <Users className={`w-5 h-5 transition-colors duration-200 ${
+                          formData.community_type === 'general' ? 'text-[#087E8B]' : 'text-gray-400'
+                        }`} />
+                        <div className="flex-1">
+                          <div className={`font-semibold mb-1 transition-colors duration-200 ${
+                            formData.community_type === 'general' ? 'text-white' : 'text-gray-300'
+                          }`}>
+                            General Community
+                          </div>
+                          <div className={`text-xs transition-colors duration-200 ${
+                            formData.community_type === 'general' ? 'text-gray-300' : 'text-gray-500'
+                          }`}>
+                            Not connected to a specific gym
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -364,16 +378,18 @@ export default function CreateCommunityPage() {
                   <button
                     type="button"
                     onClick={() => setShowGymSelector(true)}
-                    className={`minimal-input w-full text-left flex items-center justify-between ${
+                    className={`minimal-input w-full text-left flex items-center justify-between transition-all duration-200 hover:border-gray-600 ${
                       errors.gym_id ? 'border-red-500' : ''
-                    } ${selectedGym ? '' : 'text-gray-500'}`}
+                    } ${selectedGym ? 'text-white' : 'text-gray-500'}`}
                   >
-                    <span>
+                    <span className="truncate flex-1 mr-2">
                       {selectedGym 
                         ? `${selectedGym.name} - ${selectedGym.city}, ${selectedGym.country}`
                         : 'Choose a gym'}
                     </span>
-                    <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${
+                      showGymSelector ? 'rotate-180' : ''
+                    } ${errors.gym_id ? 'text-red-400' : 'text-gray-400'}`} />
                   </button>
                   {errors.gym_id && (
                     <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
@@ -388,7 +404,7 @@ export default function CreateCommunityPage() {
                         setSelectedGym(null);
                         setFormData(prev => ({ ...prev, gym_id: '' }));
                       }}
-                      className="text-xs text-gray-400 hover:text-gray-300 mt-1"
+                      className="text-xs text-gray-400 hover:text-gray-300 mt-2 transition-colors duration-200"
                     >
                       Clear selection
                     </button>
@@ -407,15 +423,27 @@ export default function CreateCommunityPage() {
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  placeholder="Enter community name"
-                  className={`minimal-input w-full ${errors.name ? 'border-red-500' : ''}`}
+                  placeholder="Name your community"
+                  maxLength={50}
+                  className={`minimal-input w-full transition-all duration-200 ${
+                    errors.name ? 'border-red-500 focus:border-red-500' : 'focus:border-[#087E8B]'
+                  }`}
                 />
-                {errors.name && (
-                  <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.name}
-                  </p>
-                )}
+                <div className="flex items-center justify-between mt-1">
+                  {errors.name ? (
+                    <p className="text-red-400 text-sm flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" />
+                      {errors.name}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500">
+                      Choose a clear, descriptive name
+                    </p>
+                  )}
+                  <span className="text-xs text-gray-500 ml-auto">
+                    {formData.name.length}/50
+                  </span>
+                </div>
               </div>
 
               {/* Description */}
@@ -428,32 +456,134 @@ export default function CreateCommunityPage() {
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  placeholder="Describe what this community is about..."
-                  rows={4}
-                  className={`minimal-input w-full resize-none ${errors.description ? 'border-red-500' : ''}`}
+                  placeholder="Describe what this community is about and why you're here"
+                  rows={5}
+                  maxLength={500}
+                  className={`minimal-input w-full resize-none transition-all duration-200 ${
+                    errors.description ? 'border-red-500 focus:border-red-500' : 'focus:border-[#087E8B]'
+                  }`}
                 />
-                {errors.description && (
-                  <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.description}
-                  </p>
-                )}
+                <div className="flex items-center justify-between mt-1">
+                  {errors.description ? (
+                    <p className="text-red-400 text-sm flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" />
+                      {errors.description}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500">
+
+                    </p>
+                  )}
+                  <span className="text-xs text-gray-500 ml-auto">
+                    {formData.description.length}/500
+                  </span>
+                </div>
               </div>
 
               {/* Community Rules */}
               <div>
                 <label className="minimal-label flex items-center gap-2 mb-2">
                   <Info className="w-4 h-4" />
-                  Community Rules
+                  Community Rules <span className="text-gray-500 text-xs font-normal">(optional)</span>
                 </label>
                 <textarea
                   name="rules"
                   value={formData.rules}
                   onChange={handleInputChange}
-                  placeholder="Set guidelines for community members (optional)"
-                  rows={3}
-                  className="minimal-input w-full resize-none"
+                  placeholder="Set guidelines for community members."
+                  rows={4}
+                  maxLength={1000}
+                  className="minimal-input w-full resize-none transition-all duration-200 focus:border-[#087E8B]"
                 />
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs text-gray-500">
+
+                  </p>
+                  <span className="text-xs text-gray-500 ml-auto">
+                    {formData.rules.length}/1000
+                  </span>
+                </div>
+              </div>
+
+              {/* Privacy Setting */}
+              <div>
+                <label className="minimal-label flex items-center gap-2 mb-3">
+                  <Lock className="w-4 h-4" />
+                  Privacy Setting
+                </label>
+                <div className="space-y-3">
+                  <label className="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:border-gray-600 bg-gray-800/40 border-gray-700/50">
+                    <input
+                      type="radio"
+                      name="is_private"
+                      checked={!formData.is_private}
+                      onChange={() => setFormData(prev => ({ ...prev, is_private: false }))}
+                      className="sr-only"
+                    />
+                    <div className={`p-2 rounded-lg transition-colors duration-200 ${
+                      !formData.is_private ? 'bg-[#087E8B]/20' : 'bg-gray-700/50'
+                    }`}>
+                      <Globe className={`w-5 h-5 transition-colors duration-200 ${
+                        !formData.is_private ? 'text-[#087E8B]' : 'text-gray-400'
+                      }`} />
+                    </div>
+                    <div className="flex-1">
+                      <div className={`font-semibold mb-1 transition-colors duration-200 ${
+                        !formData.is_private ? 'text-white' : 'text-gray-300'
+                      }`}>
+                        Public Community
+                      </div>
+                      <div className={`text-xs transition-colors duration-200 ${
+                        !formData.is_private ? 'text-gray-300' : 'text-gray-500'
+                      }`}>
+                        Anyone can find and join this community
+                      </div>
+                    </div>
+                    {!formData.is_private && (
+                      <div className="flex-shrink-0">
+                        <div className="w-5 h-5 rounded-full bg-[#087E8B] flex items-center justify-center">
+                          <CheckCircle className="w-3 h-3 text-white" />
+                        </div>
+                      </div>
+                    )}
+                  </label>
+
+                  <label className="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:border-gray-600 bg-gray-800/40 border-gray-700/50">
+                    <input
+                      type="radio"
+                      name="is_private"
+                      checked={formData.is_private}
+                      onChange={() => setFormData(prev => ({ ...prev, is_private: true }))}
+                      className="sr-only"
+                    />
+                    <div className={`p-2 rounded-lg transition-colors duration-200 ${
+                      formData.is_private ? 'bg-[#087E8B]/20' : 'bg-gray-700/50'
+                    }`}>
+                      <Lock className={`w-5 h-5 transition-colors duration-200 ${
+                        formData.is_private ? 'text-[#087E8B]' : 'text-gray-400'
+                      }`} />
+                    </div>
+                    <div className="flex-1">
+                      <div className={`font-semibold mb-1 transition-colors duration-200 ${
+                        formData.is_private ? 'text-white' : 'text-gray-300'
+                      }`}>
+                        Private Community
+                      </div>
+                      <div className={`text-xs transition-colors duration-200 ${
+                        formData.is_private ? 'text-gray-300' : 'text-gray-500'
+                      }`}>
+                        Only members can see and access this community. You can invite members manually.
+                      </div>
+                    </div>
+                    {formData.is_private && (
+                      <div className="flex-shrink-0">
+                        <div className="w-5 h-5 rounded-full bg-[#087E8B] flex items-center justify-center">
+                          <CheckCircle className="w-3 h-3 text-white" />
+                        </div>
+                      </div>
+                    )}
+                  </label>
+                </div>
               </div>
 
               {/* Submit Button */}
@@ -480,16 +610,30 @@ export default function CreateCommunityPage() {
           </div>
 
           {/* Info Card */}
-          <div className="mobile-card-flat p-4 mt-6">
+          <div className="mobile-card p-5 mt-6 bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-gray-700/50">
             <div className="flex items-start gap-3">
-              <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-medium text-white mb-1">Community Guidelines</h4>
-                <ul className="text-sm text-gray-300 space-y-1">
-                  <li>• Be respectful and inclusive to all members</li>
-                  <li>• Keep discussions relevant to climbing and the community</li>
-                  <li>• No spam or self-promotion without permission</li>
-                  <li>• You will be the admin and can moderate content</li>
+              <div className="p-2 rounded-lg bg-[#087E8B]/20 flex-shrink-0">
+                <Info className="w-5 h-5 text-[#087E8B]" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-white mb-2">Tips for Creating a Great Community</h4>
+                <ul className="text-sm text-gray-300 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-[#087E8B] mt-0.5">•</span>
+                    <span>Choose a clear, descriptive name that reflects your community's purpose</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-[#087E8B] mt-0.5">•</span>
+                    <span>Write a detailed description to help members understand what to expect</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-[#087E8B] mt-0.5">•</span>
+                    <span>Set clear rules to maintain a positive environment</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-[#087E8B] mt-0.5">•</span>
+                    <span>As the admin, you can moderate content and manage members</span>
+                  </li>
                 </ul>
               </div>
             </div>

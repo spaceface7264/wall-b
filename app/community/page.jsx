@@ -688,6 +688,17 @@ export default function CommunitiesPage() {
             </div>
           </div>
 
+          {/* Create Community Button */}
+          <div className="animate-slide-up mb-4">
+            <button
+              onClick={() => navigate('/community/new')}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#087E8B] hover:bg-[#066a75] text-white rounded-lg transition-colors font-medium"
+            >
+              <Plus className="w-5 h-5" />
+              Create Community
+            </button>
+          </div>
+
           {/* Filter and Sort Controls */}
           <div className="animate-slide-up mb-4 flex items-center gap-2 flex-wrap">
             <button
