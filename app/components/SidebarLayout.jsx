@@ -469,14 +469,20 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     );
   }
 
-  // Allow community pages with invite links to render without authentication
-  const isInviteLink = location.search.includes('invite=true');
-  const isCommunityPage = location.pathname.startsWith('/community/') && !location.pathname.includes('/new');
-  const allowUnauthenticatedAccess = isInviteLink || isCommunityPage;
+  // Allow read-only browsing for unauthenticated users
+  // They can view: communities, community pages, gyms, profiles, posts
+  // But cannot: join, post, comment, like, message, etc.
+  const isPublicReadOnlyPage = 
+    location.pathname.startsWith('/communities') ||
+    location.pathname.startsWith('/community/') && !location.pathname.includes('/new') && !location.pathname.includes('/settings') ||
+    location.pathname.startsWith('/gyms/') ||
+    location.pathname === '/gyms' ||
+    location.pathname.startsWith('/profile/') ||
+    location.pathname === '/home' ||
+    location.pathname === '/search';
 
-  if (!user && !allowUnauthenticatedAccess) {
-    // Instead of returning null (blank screen), redirect to login
-    // This ensures user sees something rather than blank page
+  if (!user && !isPublicReadOnlyPage) {
+    // Block access to pages that require authentication (chat, create community, etc.)
     return (
       <div className="mobile-app mobile-safe-area flex items-center justify-center animate-fade-in" style={{ backgroundColor: '#252526' }}>
         <div className="text-center">
@@ -511,7 +517,16 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
         <h1 className="mobile-header-title capitalize">{pageTitle || currentPage}</h1>
         
         <div className="mobile-header-actions">
-          <NotificationBell userId={user?.id} />
+          {user ? (
+            <NotificationBell userId={user.id} />
+          ) : (
+            <button
+              onClick={() => navigate('/')}
+              className="mobile-btn-secondary text-sm px-3 py-1.5"
+            >
+              Sign In
+            </button>
+          )}
         </div>
       </div>
 
@@ -599,37 +614,55 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
         {/* Communities Section */}
         <div className="mobile-drawer-nav">
           <div className="flex flex-col h-full">
-            {/* Create Community Button - Always at top */}
-            <button
-              onClick={() => {
-                navigate('/community/new');
-                closeDrawer();
-              }}
-              onMouseDown={createRipple}
-              className={`mobile-drawer-item ripple-effect w-full flex-shrink-0 ${
-                location.pathname === '/community/new'
-                  ? 'active'
-                  : ''
-              }`}
-            >
-              <PlusCircle className="mobile-drawer-icon" />
-              <span className="mobile-drawer-text">Create Community</span>
-            </button>
-            
-            {/* Desktop collapsed icon version */}
-            <button
-              onClick={() => {
-                navigate('/community/new');
-                closeDrawer();
-              }}
-              onMouseDown={createRipple}
-              className={`sidebar-icon-button desktop-only ${location.pathname === '/community/new' ? 'active' : ''}`}
-              title="Create Community"
-            >
-              <PlusCircle className="w-5 h-5" />
-            </button>
+            {!user ? (
+              /* Login Prompt for Unauthenticated Users */
+              <div className="p-4 mb-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                <p className="text-sm text-gray-300 mb-3">Sign in to join communities, create posts, and connect with climbers</p>
+                <button
+                  onClick={() => {
+                    navigate('/');
+                    closeDrawer();
+                  }}
+                  className="mobile-btn-primary w-full"
+                >
+                  Sign In
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Create Community Button - Always at top */}
+                <button
+                  onClick={() => {
+                    navigate('/community/new');
+                    closeDrawer();
+                  }}
+                  onMouseDown={createRipple}
+                  className={`mobile-drawer-item ripple-effect w-full flex-shrink-0 ${
+                    location.pathname === '/community/new'
+                      ? 'active'
+                      : ''
+                  }`}
+                >
+                  <PlusCircle className="mobile-drawer-icon" />
+                  <span className="mobile-drawer-text">Create Community</span>
+                </button>
+                
+                {/* Desktop collapsed icon version */}
+                <button
+                  onClick={() => {
+                    navigate('/community/new');
+                    closeDrawer();
+                  }}
+                  onMouseDown={createRipple}
+                  className={`sidebar-icon-button desktop-only ${location.pathname === '/community/new' ? 'active' : ''}`}
+                  title="Create Community"
+                >
+                  <PlusCircle className="w-5 h-5" />
+                </button>
+              </>
+            )}
 
-            {/* Explore Communities Button */}
+            {/* Explore Communities Button - Available to all */}
             <button
               onClick={navigateToJoinCommunity}
               onMouseDown={createRipple}
@@ -653,7 +686,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               <Compass className="w-5 h-5" />
             </button>
 
-            {/* Find Gyms Button */}
+            {/* Find Gyms Button - Available to all */}
             <button
               onClick={() => {
                 navigate('/gyms');
@@ -683,8 +716,9 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               <MapPin className="w-5 h-5" />
             </button>
 
-            {/* Communities List - Takes remaining space */}
-            <div className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 ${sidebarCollapsed ? 'collapsed' : ''}`}>
+            {/* Communities List - Only show if user is authenticated */}
+            {user && (
+              <div className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 ${sidebarCollapsed ? 'collapsed' : ''}`}>
               {communitiesLoading ? (
                 <ListSkeleton variant="community" count={3} />
               ) : communities.length > 0 ? (
@@ -754,14 +788,22 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                   })}
                 </div>
               ) : null}
-            </div>
+              </div>
+            )}
+
+            {/* Empty state for unauthenticated users */}
+            {!user && (
+              <div className="flex-1 flex items-center justify-center p-4">
+                <p className="text-sm text-gray-400 text-center">Sign in to see your communities</p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Drawer Footer */}
         <div className={`mobile-drawer-footer ${sidebarCollapsed ? 'collapsed' : ''}`}>
           {/* Admin Panel - Only show if user is admin */}
-          {isAdmin && (
+          {user && isAdmin && (
             <>
             <button
               onClick={() => navigateToPage('admin')}
@@ -786,46 +828,50 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               </button>
             </>
           )}
-          <button
-            onClick={() => {
-              setFeedbackModalOpen(true);
-              closeDrawer();
-            }}
-            onMouseDown={createRipple}
-            className="mobile-drawer-item ripple-effect"
-          >
-            <MessageSquare className="mobile-drawer-icon" />
-            <span className="mobile-drawer-text">Send Feedback</span>
-          </button>
-          {/* Desktop collapsed icon version */}
-          <button
-            onClick={() => {
-              setFeedbackModalOpen(true);
-              closeDrawer();
-            }}
-            onMouseDown={createRipple}
-            className="sidebar-icon-button desktop-only"
-            title="Send Feedback"
-          >
-            <MessageSquare className="w-5 h-5" />
-          </button>
-          <button
-            onClick={handleLogout}
-            onMouseDown={createRipple}
-            className="mobile-drawer-item ripple-effect text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-200"
-          >
-            <LogOut className="mobile-drawer-icon" />
-            <span className="mobile-drawer-text">Logout</span>
-          </button>
-          {/* Desktop collapsed icon version */}
-          <button
-            onClick={handleLogout}
-            onMouseDown={createRipple}
-            className="sidebar-icon-button desktop-only text-red-400 hover:bg-red-500/10 hover:text-red-300"
-            title="Logout"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
+          {user && (
+            <>
+              <button
+                onClick={() => {
+                  setFeedbackModalOpen(true);
+                  closeDrawer();
+                }}
+                onMouseDown={createRipple}
+                className="mobile-drawer-item ripple-effect"
+              >
+                <MessageSquare className="mobile-drawer-icon" />
+                <span className="mobile-drawer-text">Send Feedback</span>
+              </button>
+              {/* Desktop collapsed icon version */}
+              <button
+                onClick={() => {
+                  setFeedbackModalOpen(true);
+                  closeDrawer();
+                }}
+                onMouseDown={createRipple}
+                className="sidebar-icon-button desktop-only"
+                title="Send Feedback"
+              >
+                <MessageSquare className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleLogout}
+                onMouseDown={createRipple}
+                className="mobile-drawer-item ripple-effect text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-200"
+              >
+                <LogOut className="mobile-drawer-icon" />
+                <span className="mobile-drawer-text">Logout</span>
+              </button>
+              {/* Desktop collapsed icon version */}
+              <button
+                onClick={handleLogout}
+                onMouseDown={createRipple}
+                className="sidebar-icon-button desktop-only text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                title="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </>
+          )}
         </div>
       </div>
 

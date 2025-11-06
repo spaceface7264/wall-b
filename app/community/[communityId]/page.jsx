@@ -435,7 +435,11 @@ export default function CommunityPage() {
   };
 
   const handleJoinCommunity = async () => {
-    if (!user) return;
+    if (!user) {
+      showToast('info', 'Sign in required', 'Please sign in to join communities');
+      navigate('/');
+      return;
+    }
 
     setJoining(true);
     try {
@@ -757,7 +761,20 @@ export default function CommunityPage() {
             {/* Posts Feed */}
             <div className="post-feed" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
               {/* Create Post Button */}
-              {(isMember || isAdmin) && (
+              {!user ? (
+                <div style={{ marginLeft: 'var(--container-padding-mobile)', marginRight: 'var(--container-padding-mobile)', marginBottom: '12px' }}>
+                  <button
+                    onClick={() => {
+                      showToast('info', 'Sign in required', 'Please sign in to create posts');
+                      navigate('/');
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-full text-gray-300 hover:bg-gray-800 hover:border-gray-600 hover:text-white transition-all duration-200"
+                  >
+                    <Plus className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-xs font-medium">Create post</span>
+                  </button>
+                </div>
+              ) : (isMember || isAdmin) && (
                 <div style={{ marginLeft: 'var(--container-padding-mobile)', marginRight: 'var(--container-padding-mobile)', marginBottom: '12px' }}>
                   <button
                     onClick={() => setShowNewPostModal(true)}
@@ -1073,7 +1090,17 @@ export default function CommunityPage() {
             {/* Tab Buttons, Join/Joined Button and Menu */}
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1">
               {/* Join/Leave Button */}
-              {!isMember ? (
+              {!user ? (
+                <button
+                  onClick={() => {
+                    showToast('info', 'Sign in required', 'Please sign in to join communities');
+                    navigate('/');
+                  }}
+                  className="px-2.5 py-1 text-sm rounded-full border-2 border-[#FF5A5F] text-[#FF5A5F] hover:bg-[#FF5A5F] hover:text-white transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                >
+                  Join
+                </button>
+              ) : !isMember ? (
                 <button
                   onClick={handleJoinCommunity}
                   disabled={joining}
