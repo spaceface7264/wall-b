@@ -13,6 +13,7 @@ import CreatePostModal from '../../components/CreatePostModal';
 import CreateEventModal from '../../components/CreateEventModal';
 import MembersList from '../../components/MembersList';
 import CalendarView from '../../components/CalendarView';
+import LoginOverlay from '../../components/LoginOverlay';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getActualMemberCount, updateLastViewedAt } from '../../../lib/community-utils';
 import { useToast } from '../../providers/ToastProvider';
@@ -50,6 +51,7 @@ export default function CommunityPage() {
   const [userCommunityRole, setUserCommunityRole] = useState(null); // 'member', 'moderator', 'admin', or null
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
+  const [showLoginOverlay, setShowLoginOverlay] = useState(false);
   const menuRef = useRef(null);
   const menuButtonRef = useRef(null);
   const navigate = useNavigate();
@@ -100,11 +102,16 @@ export default function CommunityPage() {
   // Handle invite link parameter
   useEffect(() => {
     const inviteParam = searchParams.get('invite');
-    if (inviteParam === 'true' && user && !isMember && !loading && community) {
-      // Show a toast encouraging them to join
-      showToast('info', 'You\'re Invited!', `Join ${community.name} to connect with other climbers`);
-      // Remove the invite parameter from URL
-      navigate(`/community/${communityId}`, { replace: true });
+    if (inviteParam === 'true') {
+      if (!user && !loading && community) {
+        // Show login overlay for non-logged-in users
+        setShowLoginOverlay(true);
+      } else if (user && !isMember && !loading && community) {
+        // Show a toast encouraging logged-in users to join
+        showToast('info', 'You\'re Invited!', `Join ${community.name} to connect with other climbers`);
+        // Remove the invite parameter from URL
+        navigate(`/community/${communityId}`, { replace: true });
+      }
     }
   }, [searchParams, user, isMember, loading, community, showToast, navigate, communityId]);
 
@@ -968,8 +975,11 @@ export default function CommunityPage() {
 
   return (
     <SidebarLayout currentPage="community">
-      <div className="mobile-container">
-        <div className="mobile-section">
+      <div className={`mobile-container relative ${showLoginOverlay ? 'overflow-hidden' : ''}`}>
+        {showLoginOverlay && (
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-md z-10 pointer-events-none" />
+        )}
+        <div className={`mobile-section ${showLoginOverlay ? 'blur-sm' : ''}`} style={{ filter: showLoginOverlay ? 'blur(8px)' : 'none', pointerEvents: showLoginOverlay ? 'none' : 'auto' }}>
           {/* Community Header */}
           <div className="mb-1 animate-fade-in pt-4">
             <div className="flex items-start justify-between gap-4 mb-3">
@@ -1395,6 +1405,20 @@ export default function CommunityPage() {
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Login Overlay for Invite Links */}
+      {showLoginOverlay && (
+        <LoginOverlay
+          isOpen={showLoginOverlay}
+          onClose={() => {
+            setShowLoginOverlay(false);
+            // Remove invite parameter and navigate to clean URL
+            navigate(`/community/${communityId}`, { replace: true });
+          }}
+          communityName={community?.name || 'this community'}
+          redirectTo={`/community/${communityId}?invite=true`}
+        />
       )}
     </SidebarLayout>
   );
