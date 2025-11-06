@@ -183,37 +183,42 @@ export default function CommunityPage() {
       const actualMemberCount = await getActualMemberCount(communityData.id);
       setCommunity({ ...communityData, member_count: actualMemberCount });
       
-      // Load creator (first member)
-      try {
-        const { data: membersData } = await supabase
-          .from('community_members')
-          .select('user_id, joined_at, role')
-          .eq('community_id', communityData.id)
-          .order('joined_at', { ascending: true })
-          .limit(1);
-        
-        if (membersData && membersData.length > 0) {
-          const firstMember = membersData[0];
-          // Fetch profile separately to avoid RLS issues
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, nickname')
-            .eq('id', firstMember.user_id)
-            .single();
+      // Load creator (first member) - only if user is authenticated
+      if (user) {
+        try {
+          const { data: membersData } = await supabase
+            .from('community_members')
+            .select('user_id, joined_at, role')
+            .eq('community_id', communityData.id)
+            .order('joined_at', { ascending: true })
+            .limit(1);
           
-          setCreator({
-            name: profile?.nickname || profile?.full_name || 'Unknown',
-            joinedAt: firstMember.joined_at,
-            userId: firstMember.user_id
-          });
+          if (membersData && membersData.length > 0) {
+            const firstMember = membersData[0];
+            // Fetch profile separately to avoid RLS issues
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('full_name, nickname')
+              .eq('id', firstMember.user_id)
+              .single();
+            
+            setCreator({
+              name: profile?.nickname || profile?.full_name || 'Unknown',
+              joinedAt: firstMember.joined_at,
+              userId: firstMember.user_id
+            });
+          }
+        } catch (error) {
+          console.error('Error loading creator:', error);
         }
-      } catch (error) {
-        console.error('Error loading creator:', error);
       }
       
       loadPosts(communityData.id);
       loadEvents(communityData.id);
-      loadModerators(communityData.id);
+      // Only load moderators if user is authenticated (requires profile access)
+      if (user) {
+        loadModerators(communityData.id);
+      }
       
       // Update last_viewed_at when community loads successfully
       if (user?.id) {
@@ -339,6 +344,12 @@ export default function CommunityPage() {
   };
 
   const loadModerators = async (commId) => {
+    // Only load moderators if user is authenticated
+    if (!user) {
+      setModerators([]);
+      return;
+    }
+
     try {
       const { data: membersData, error } = await supabase
         .from('community_members')
@@ -357,12 +368,14 @@ export default function CommunityPage() {
 
       if (error) {
         console.error('Error loading moderators:', error);
+        setModerators([]);
         return;
       }
 
       setModerators(membersData || []);
     } catch (error) {
       console.error('Error loading moderators:', error);
+      setModerators([]);
     }
   };
 
