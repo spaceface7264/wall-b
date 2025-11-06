@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { User as UserIcon, Settings, Save, Camera, X, MapPin, Users, MessageCircle, Heart, Calendar as EventIcon, Edit2, Globe, MoreVertical, Eye, EyeOff, Building, Ban, VolumeX } from 'lucide-react';
+import { User as UserIcon, Settings, Save, Camera, X, MapPin, Users, MessageCircle, Heart, Calendar as EventIcon, Edit2, Globe, MoreVertical, Eye, EyeOff, Building, Ban, VolumeX, Instagram } from 'lucide-react';
 import SidebarLayout from '../components/SidebarLayout';
 import { useToast } from '../providers/ToastProvider';
 import { enrichCommunitiesWithActualCounts } from '../../lib/community-utils';
@@ -112,8 +112,10 @@ export default function Profile() {
 
           if (communityData) {
             const communitiesList = communityData.map(item => item.communities).filter(Boolean);
+            // Filter out suspended communities (is_active = false)
+            const activeCommunities = communitiesList.filter(c => c.is_active !== false);
             // Enrich with actual member counts.supabase
-            const enrichedCommunities = await enrichCommunitiesWithActualCounts(communitiesList);
+            const enrichedCommunities = await enrichCommunitiesWithActualCounts(activeCommunities);
             setCommunities(enrichedCommunities);
           }
 
@@ -453,7 +455,18 @@ export default function Profile() {
       <div className="mobile-container">
         <div className="mobile-section">
           {/* Profile Header */}
-          <div className="mobile-card animate-fade-in">
+          <div className="mobile-card animate-fade-in relative">
+            {/* Edit Button - Top Right */}
+            {!isEditing && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="absolute top-4 right-4 p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                title="Edit Profile"
+              >
+                <Edit2 className="w-3 h-3 text-gray-400 hover:text-gray-300" />
+              </button>
+            )}
+            
             <div className="minimal-flex gap-4 mb-4">
               <div className="profile-avatar-container relative">
                 <div className="profile-avatar">
@@ -481,15 +494,42 @@ export default function Profile() {
                 )}
               </div>
               
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 pr-10">
                 {!isEditing ? (
                   <>
                     <h2 className="mobile-card-title truncate mb-1">{displayName}</h2>
-                {location && (
-                      <p className="mobile-text-xs text-gray-400 truncate minimal-flex gap-1">
+                    {location && (
+                      <p className="mobile-text-xs text-gray-400 truncate minimal-flex gap-1 mb-3">
                         <MapPin className="w-3 h-3 flex-shrink-0" />
-                    {location}
-                  </p>
+                        {location}
+                      </p>
+                    )}
+                    <p className="mobile-text text-gray-300 leading-relaxed text-left mb-3">
+                      {profileData.bio || 'No bio yet. Add one to tell others about yourself!'}
+                    </p>
+                    {(profileData.instagram_url || profileData.twitter_url) && (
+                      <div className="flex items-center gap-3">
+                        {profileData.instagram_url && (
+                          <a
+                            href={profileData.instagram_url.startsWith('http') ? profileData.instagram_url : `https://instagram.com/${profileData.instagram_url.replace('@', '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-gray-300 hover:text-white transition-colors"
+                          >
+                            <Instagram className="w-5 h-5" />
+                          </a>
+                        )}
+                        {profileData.twitter_url && (
+                          <a
+                            href={profileData.twitter_url.startsWith('http') ? profileData.twitter_url : `https://twitter.com/${profileData.twitter_url.replace('@', '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-gray-300 hover:text-white transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </a>
+                        )}
+                      </div>
                     )}
                   </>
                 ) : (
@@ -508,32 +548,57 @@ export default function Profile() {
                       disabled
                       className="minimal-input opacity-50 cursor-not-allowed mb-2"
                     />
+                    <textarea
+                      name="bio"
+                      value={profileData.bio}
+                      onChange={handleInputChange}
+                      className="minimal-input w-full resize-none mb-2"
+                      rows={4}
+                      placeholder="Tell us about yourself..."
+                      maxLength={500}
+                    />
+                    <div className="w-full space-y-3">
+                      <div className="profile-field">
+                        <label className="minimal-label">Instagram</label>
+                        <input
+                          type="text"
+                          name="instagram_url"
+                          value={profileData.instagram_url}
+                          onChange={handleInputChange}
+                          className="minimal-input"
+                          placeholder="@username or URL"
+                        />
+                      </div>
+                      <div className="profile-field">
+                        <label className="minimal-label">X (Twitter)</label>
+                        <input
+                          type="text"
+                          name="twitter_url"
+                          value={profileData.twitter_url}
+                          onChange={handleInputChange}
+                          className="minimal-input"
+                          placeholder="@username or URL"
+                        />
+                      </div>
+                    </div>
                   </>
                 )}
               </div>
             </div>
 
-            {/* Edit Button */}
-                {!isEditing ? (
-                  <button
-                    onClick={() => setIsEditing(true)}
-                className="mobile-btn-secondary minimal-flex gap-2 w-full justify-center"
-                  >
-                <Edit2 className="minimal-icon" />
-                    Edit Profile
-                  </button>
-                ) : (
-              <div className="minimal-flex gap-2">
-                  <button
+            {/* Save/Cancel Buttons - Only show when editing */}
+            {isEditing && (
+              <div className="minimal-flex gap-2 mt-4">
+                <button
                   onClick={() => {
                     setIsEditing(false);
                     setError('');
                   }}
                   className="mobile-btn-secondary flex-1"
-                    disabled={isSaving}
-                  >
-                    Cancel
-                  </button>
+                  disabled={isSaving}
+                >
+                  Cancel
+                </button>
                 <button
                   onClick={handleSave}
                   disabled={isSaving}
@@ -603,218 +668,55 @@ export default function Profile() {
             </div>
           )}
 
-          {/* Bio */}
-          <div className="mobile-card animate-slide-up">
-            <h2 className="profile-section-header">About</h2>
-            {!isEditing ? (
-              <p className="mobile-text text-gray-300 leading-relaxed">
-                {profileData.bio || 'No bio yet. Add one to tell others about yourself!'}
-              </p>
-            ) : (
-              <textarea
-                name="bio"
-                value={profileData.bio}
-                onChange={handleInputChange}
-                className="minimal-input w-full resize-none"
-                rows={4}
-                placeholder="Tell us about yourself..."
-                maxLength={500}
-              />
-            )}
-          </div>
-
-          {/* Additional Info */}
-          <div className="mobile-card animate-slide-up">
-            <h2 className="profile-section-header">Additional Information</h2>
-            <div className="mobile-grid-3">
-              <div className="profile-field">
-                <label className="minimal-label">Company</label>
-                {!isEditing ? (
-                  <p className="profile-info-value">{profileData.company || 'Not set'}</p>
-                ) : (
-                <input
-                  type="text"
-                    name="company"
-                    value={profileData.company}
-                  onChange={handleInputChange}
-                    className="minimal-input"
-                    placeholder="Your company/organization"
-                />
-                )}
-              </div>
-
-              <div className="profile-field">
-                <label className="minimal-label">Country</label>
-                {!isEditing ? (
-                  <p className="profile-info-value">{profileData.country || 'Not set'}</p>
-                ) : (
-                <select
-                  name="country"
-                  value={profileData.country}
-                  onChange={handleInputChange}
-                    className="minimal-input"
-                >
-                  <option value="">Select country</option>
-                  <option value="Denmark">🇩🇰 Denmark</option>
-                  <option value="Sweden">🇸🇪 Sweden</option>
-                  <option value="Norway">🇳🇴 Norway</option>
-                  <option value="Germany">🇩🇪 Germany</option>
-                  <option value="Netherlands">🇳🇱 Netherlands</option>
-                  <option value="United Kingdom">🇬🇧 United Kingdom</option>
-                  <option value="United States">🇺🇸 United States</option>
-                  <option value="Canada">🇨🇦 Canada</option>
-                  <option value="France">🇫🇷 France</option>
-                  <option value="Spain">🇪🇸 Spain</option>
-                  <option value="Italy">🇮🇹 Italy</option>
-                  <option value="Other">🌍 Other</option>
-                </select>
-                )}
-              </div>
-
-              <div className="profile-field">
-                <label className="minimal-label">City</label>
-                {!isEditing ? (
-                  <p className="profile-info-value">{profileData.city || 'Not set'}</p>
-                ) : (
-                <input
-                  type="text"
-                  name="city"
-                  value={profileData.city}
-                  onChange={handleInputChange}
-                    className="minimal-input"
-                  placeholder="Your city"
-                />
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Social Links */}
-          {(isEditing || profileData.instagram_url || profileData.twitter_url || profileData.website_url) && (
-            <div className="mobile-card animate-slide-up">
-              <h2 className="profile-section-header">Social Links</h2>
-              <div className="space-y-3">
-                <div className="profile-field">
-                  <label className="minimal-label">Instagram</label>
-                  {!isEditing ? (
-                    profileData.instagram_url ? (
-                      <a
-                        href={profileData.instagram_url.startsWith('http') ? profileData.instagram_url : `https://instagram.com/${profileData.instagram_url.replace('@', '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#087E8B] hover:text-[#087E8B]"
-                      >
-                        {profileData.instagram_url}
-                      </a>
-                    ) : (
-                      <p className="profile-info-value">Not set</p>
-                    )
-                  ) : (
-                    <input
-                      type="text"
-                      name="instagram_url"
-                      value={profileData.instagram_url}
-                      onChange={handleInputChange}
-                      className="minimal-input"
-                      placeholder="@username or URL"
-                    />
-                  )}
-            </div>
-
-                <div className="profile-field">
-                  <label className="minimal-label">Twitter/X</label>
-                  {!isEditing ? (
-                    profileData.twitter_url ? (
-                      <a
-                        href={profileData.twitter_url.startsWith('http') ? profileData.twitter_url : `https://twitter.com/${profileData.twitter_url.replace('@', '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#087E8B] hover:text-[#087E8B]"
-                      >
-                        {profileData.twitter_url}
-                      </a>
-                    ) : (
-                      <p className="profile-info-value">Not set</p>
-                    )
-                  ) : (
-                    <input
-                      type="text"
-                      name="twitter_url"
-                      value={profileData.twitter_url}
-                      onChange={handleInputChange}
-                      className="minimal-input"
-                      placeholder="@username or URL"
-                    />
-                  )}
-                </div>
-                
-                <div className="profile-field">
-                  <label className="minimal-label">Website</label>
-                  {!isEditing ? (
-                    profileData.website_url ? (
-                      <a
-                        href={profileData.website_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#087E8B] hover:text-[#087E8B]"
-                      >
-                        {profileData.website_url}
-                      </a>
-                    ) : (
-                      <p className="profile-info-value">Not set</p>
-                    )
-                  ) : (
-                    <input
-                      type="url"
-                      name="website_url"
-                      value={profileData.website_url}
-                      onChange={handleInputChange}
-                      className="minimal-input"
-                      placeholder="https://..."
-                    />
-                  )}
-                </div>
-              </div>
-              </div>
-            )}
-
           {/* Communities */}
-          {communities.length > 0 && (
-            <div className="mobile-card animate-slide-up">
-              <h2 className="profile-section-header minimal-flex gap-2">
-                <Users className="minimal-icon text-[#087E8B]" />
-                Communities ({communities.length})
-              </h2>
+          <div className="pt-8 mt-8">
+            <h2 className="profile-section-header minimal-flex gap-2 mb-4">
+              <Users className="minimal-icon text-[#087E8B]" />
+              Communities ({communities.length})
+            </h2>
+            
+            {communities.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
+                <p className="text-gray-400 text-sm mb-2">No communities yet</p>
+                <button
+                  onClick={() => navigate('/communities')}
+                  className="text-[#087E8B] text-sm hover:underline"
+                >
+                  Explore communities
+                </button>
+              </div>
+            ) : (
               <div className="space-y-2">
-                  {communities.map((community) => (
-                    <div
-                      key={community.id}
-                      onClick={() => navigate(`/community/${community.id}`)}
+                {communities.map((community) => (
+                  <div
+                    key={community.id}
+                    onClick={() => navigate(`/community/${community.id}`)}
                     className="profile-community-item"
-                    >
-                      <div className="minimal-flex-between">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>{community.name}</h3>
-                          {community.gyms && (
-                            <p className="mobile-text-xs text-gray-400 truncate">
-                              {community.gyms.name} • {community.gyms.city}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-400 ml-2">
-                          <Users className="w-3 h-3" />
-                          {community.member_count || 0}
-                        </div>
+                  >
+                    <div className="minimal-flex-between">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>{community.name}</h3>
+                        {community.gyms && (
+                          <p className="mobile-text-xs text-gray-400 truncate">
+                            {community.gyms.name} • {community.gyms.city}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-400 ml-2">
+                        <Users className="w-3 h-3" />
+                        {community.member_count || 0}
                       </div>
                     </div>
-                  ))}
-                </div>
-            </div>
-          )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Favorite Gyms */}
-          <div className="mobile-card animate-slide-up">
-            <h2 className="profile-section-header minimal-flex gap-2">
+          <div className="pt-8 mt-8">
+            <h2 className="profile-section-header minimal-flex gap-2 mb-4">
               <Building className="minimal-icon text-[#087E8B]" />
               Favorite Gyms ({favoriteGyms.filter(g => !g.hidden).length})
               {favoriteGyms.filter(g => g.hidden).length > 0 && (
@@ -1080,8 +982,8 @@ export default function Profile() {
           </div>
 
           {/* Blocked & Muted Users */}
-          <div className="mobile-card animate-slide-up">
-            <h2 className="profile-section-header minimal-flex gap-2">
+          <div className="pt-8 mt-8">
+            <h2 className="profile-section-header minimal-flex gap-2 mb-4">
               <Ban className="minimal-icon text-red-400" />
               Blocked & Muted Users
             </h2>

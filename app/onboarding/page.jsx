@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import OnboardingSkeleton from '../components/OnboardingSkeleton';
 import { Users, MapPin, UsersRound, BookOpen, Share2, Calendar, Shield } from 'lucide-react';
 import { verifyAge } from '../../lib/age-verification';
+import StarfieldBackground from '../components/StarfieldBackground';
 
 const HANDLE_REGEX = /^[A-Za-z0-9._-]{3,20}$/;
 
@@ -44,9 +45,7 @@ export default function OnboardingPage() {
   const [step, setStep] = useState('displayName'); // 'displayName', 'ageVerification', or 'purpose'
   const [nickname, setNickname] = useState('');
   const [selectedPurposes, setSelectedPurposes] = useState([]);
-  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [dateOfBirth, setDateOfBirth] = useState('');
-  const [useDOB, setUseDOB] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -78,7 +77,7 @@ export default function OnboardingPage() {
         // Has name but no age verification
         setStep('ageVerification');
         setNickname(profile.nickname);
-        setAgeConfirmed(profile.age_verified || false);
+        setDateOfBirth(profile.date_of_birth || '');
       } else {
         // Start with display name
         setNickname(profile?.nickname || '');
@@ -194,36 +193,30 @@ export default function OnboardingPage() {
     e.preventDefault();
     setError('');
 
-    if (!ageConfirmed) {
-      setError('You must confirm that you are 16 years or older to use this platform.');
-      return;
-    }
-
-    if (useDOB && !dateOfBirth) {
+    if (!dateOfBirth) {
       setError('Please enter your date of birth');
       return;
     }
 
-    // Validate date of birth if provided
-    if (useDOB && dateOfBirth) {
-      const birthDate = new Date(dateOfBirth);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
+    // Validate date of birth - automatically check if user is 16+
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
 
-      if (age < 16) {
-        setError('You must be 16 years or older. You are ' + age + ' years old.');
-        return;
-      }
+    if (age < 16) {
+      setError('You must be 16 years or older to use this platform. You are ' + age + ' years old.');
+      return;
     }
 
     try {
       setSaving(true);
-      const dob = useDOB && dateOfBirth ? new Date(dateOfBirth) : null;
-      const result = await verifyAge(ageConfirmed, dob);
+      const dob = new Date(dateOfBirth);
+      // Pass true for ageConfirmed since we've validated the age from DOB
+      const result = await verifyAge(true, dob);
 
       if (!result.success) {
         setError(result.error || 'Failed to verify age');
@@ -251,8 +244,9 @@ export default function OnboardingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #1a1a1b 0%, #252526 100%)' }}>
-        <div className="mobile-card">
+      <div className="min-h-screen flex items-center justify-center p-4 relative">
+        <StarfieldBackground />
+        <div className="mobile-card relative z-10">
           <div className="minimal-flex-center py-8">
             <div className="minimal-spinner"></div>
             <p className="minimal-text ml-3">Preparing onboarding…</p>
@@ -270,8 +264,9 @@ export default function OnboardingPage() {
   // Display name step
   if (step === 'displayName') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #1a1a1b 0%, #252526 100%)' }}>
-        <div className="w-full max-w-sm">
+      <div className="min-h-screen flex items-center justify-center p-4 relative">
+        <StarfieldBackground />
+        <div className="w-full max-w-sm relative z-10">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Welcome</h1>
             <p className="mobile-text-sm" style={{ color: 'var(--text-muted)' }}>Choose how your name appears</p>
@@ -310,8 +305,9 @@ export default function OnboardingPage() {
   // Age verification step
   if (step === 'ageVerification') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #1a1a1b 0%, #252526 100%)' }}>
-        <div className="w-full max-w-sm">
+      <div className="min-h-screen flex items-center justify-center p-4 relative">
+        <StarfieldBackground />
+        <div className="w-full max-w-sm relative z-10">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
               <Shield className="w-12 h-12 text-[#087E8B]" />
@@ -321,57 +317,21 @@ export default function OnboardingPage() {
           </div>
           <div className="mobile-card">
             <form onSubmit={onSubmitAgeVerification} className="space-y-4">
-              <div className="flex items-start gap-3 p-4 bg-gray-800/50 border border-gray-700 rounded-lg">
+              <div>
+                <label className="minimal-label mb-2">Date of Birth</label>
                 <input
-                  type="checkbox"
-                  id="age-confirm"
-                  checked={ageConfirmed}
+                  type="date"
+                  value={dateOfBirth}
                   onChange={(e) => {
-                    setAgeConfirmed(e.target.checked);
+                    setDateOfBirth(e.target.value);
                     if (error) setError('');
                   }}
+                  max={maxDateString}
                   disabled={saving}
-                  className="mt-1 w-4 h-4 rounded border-gray-600 bg-gray-800 text-[#087E8B] focus:ring-[#087E8B] focus:ring-offset-gray-900 disabled:opacity-50"
+                  className="minimal-input w-full"
                   required
                 />
-                <label htmlFor="age-confirm" className="text-sm text-gray-300 cursor-pointer">
-                  I confirm that I am 16 years of age or older
-                </label>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="use-dob"
-                    checked={useDOB}
-                    onChange={(e) => {
-                      setUseDOB(e.target.checked);
-                      if (!e.target.checked) setDateOfBirth('');
-                    }}
-                    disabled={saving}
-                    className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-[#087E8B] focus:ring-[#087E8B] focus:ring-offset-gray-900 disabled:opacity-50"
-                  />
-                  <label htmlFor="use-dob" className="text-sm text-gray-400 cursor-pointer">
-                    Optional: Enter date of birth for strict verification
-                  </label>
-                </div>
-
-                {useDOB && (
-                  <div>
-                    <input
-                      type="date"
-                      value={dateOfBirth}
-                      onChange={(e) => {
-                        setDateOfBirth(e.target.value);
-                        if (error) setError('');
-                      }}
-                      max={maxDateString}
-                      disabled={saving}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent disabled:opacity-50"
-                    />
-                  </div>
-                )}
+                <p className="mobile-text-xs text-gray-500 mt-1">You must be 16 years or older to use this platform.</p>
               </div>
 
               {error && (
@@ -380,7 +340,7 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              <button type="submit" disabled={saving || !ageConfirmed} className="mobile-btn-primary w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+              <button type="submit" disabled={saving || !dateOfBirth} className="mobile-btn-primary w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed">
                 {saving ? 'Verifying...' : 'Continue'}
               </button>
             </form>
@@ -392,8 +352,9 @@ export default function OnboardingPage() {
 
   // Purpose selection step
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #1a1a1b 0%, #252526 100%)' }}>
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <StarfieldBackground />
+      <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>What brings you here?</h1>
           <p className="mobile-text-sm" style={{ color: 'var(--text-muted)' }}>Select what you're looking for (you can choose multiple)</p>

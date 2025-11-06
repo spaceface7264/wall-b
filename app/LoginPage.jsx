@@ -138,7 +138,7 @@ export default function LoginPage() {
         
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Rocha</h1>
+          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Send Train</h1>
           <p className="mobile-text-sm font-bold mb-6 " style={{ color: 'var(--text-secondary)' }}>
             Bouldering Community
           </p>

@@ -1,5 +1,5 @@
 {
-  "name": "wall-b",
+  "name": "send-train",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,6 +14,7 @@
     "lint:fix": "eslint . --ext js,jsx,ts,tsx --fix",
     "validate-uuids": "node lib/validate-uuids.js",
     "check-ids": "node lib/validate-uuids.js",
+    "find-gyms": "node scripts/find-gyms.js",
     "test:local": "npm run dev",
     "test:preview": "npm run build && npm run preview",
     "check:build": "npm run lint && npm run build",

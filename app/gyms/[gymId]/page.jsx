@@ -434,7 +434,8 @@ export default function GymDetail() {
         .from('communities')
         .select('*')
         .eq('gym_id', gymId)
-        .eq('community_type', 'gym');
+        .eq('community_type', 'gym')
+        .eq('is_active', true);
 
       if (error) {
         console.log('Error loading communities, showing empty state');
@@ -442,8 +443,11 @@ export default function GymDetail() {
         return;
       }
 
+      // Filter out suspended communities (is_active = false or null)
+      const activeCommunities = (data || []).filter(c => c.is_active !== false);
+
       // Enrich communities with actual member counts
-      const enrichedCommunities = await enrichCommunitiesWithActualCounts(data || []);
+      const enrichedCommunities = await enrichCommunitiesWithActualCounts(activeCommunities);
       setCommunities(enrichedCommunities);
     } catch (error) {
       console.log('Error loading communities, showing empty state');
@@ -453,11 +457,12 @@ export default function GymDetail() {
 
   const loadEvents = async (gymId) => {
     try {
-      // First, get communities for this gym
+      // First, get active communities for this gym (exclude suspended)
       const { data: communities, error: communitiesError } = await supabase
         .from('communities')
         .select('id')
-        .eq('gym_id', gymId);
+        .eq('gym_id', gymId)
+        .eq('is_active', true);
 
       if (communitiesError) {
         console.error('Error loading communities for events:', communitiesError);
@@ -465,13 +470,16 @@ export default function GymDetail() {
         return;
       }
 
-      if (!communities || communities.length === 0) {
+      // Filter out suspended communities (is_active = false or null)
+      const activeCommunities = (communities || []).filter(c => c.is_active !== false);
+
+      if (!activeCommunities || activeCommunities.length === 0) {
         setEvents([]);
         return;
       }
 
-      // Then get events for those communities
-      const communityIds = communities.map(c => c.id);
+      // Then get events for those active communities
+      const communityIds = activeCommunities.map(c => c.id);
       const { data, error } = await supabase
         .from('events')
         .select('*')

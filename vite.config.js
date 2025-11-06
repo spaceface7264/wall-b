@@ -21,6 +21,13 @@ export default defineConfig({
     hmr: {
       overlay: true, // Show error overlay in browser
     },
+    watch: {
+      // Improve file watching for CSS changes
+      ignored: ['**/node_modules/**', '**/.git/**'],
+    },
+  },
+  css: {
+    devSourcemap: true,
   },
   preview: {
     port: 4173,

@@ -87,7 +87,9 @@ export default function PublicProfile() {
           console.error('Error fetching communities:', communityError);
         } else {
           const communitiesList = communityData?.map(item => item.communities).filter(Boolean) || [];
-          setCommunities(communitiesList);
+          // Filter out suspended communities (is_active = false)
+          const activeCommunities = communitiesList.filter(c => c.is_active !== false);
+          setCommunities(activeCommunities);
         }
       } catch (err) {
         console.error('Error fetching profile:', err);

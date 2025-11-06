@@ -409,7 +409,7 @@
       z-index: 1000;
       padding-top: calc(env(safe-area-inset-top, 0px) + var(--spacing-sm) + 1px);
       transition: width 0.3s ease;
-      width: 280px;
+      width: 200px;
       top: 0; /* Start at top of page */
       height: 100vh; /* Full viewport height */
     }

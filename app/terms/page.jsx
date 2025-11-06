@@ -10,7 +10,7 @@ export default function TermsPage() {
           <h1 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Terms & Conditions</h1>
           <div className="space-y-4 text-gray-300 mobile-text-sm">
             <p>
-              Welcome to Wall-B. By accessing or using the Service, you agree to be bound by these Terms & Conditions. Please read them carefully.
+              Welcome to Send Train. By accessing or using the Service, you agree to be bound by these Terms & Conditions. Please read them carefully.
             </p>
 
             <section>
@@ -44,7 +44,7 @@ export default function TermsPage() {
             <section>
               <h2 className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>5. Disclaimers and Liability</h2>
               <p>
-                The Service is provided "as is" without warranties. To the maximum extent permitted by law, Wall-B is not liable for any damages arising from your use of the Service.
+                The Service is provided "as is" without warranties. To the maximum extent permitted by law, Send Train is not liable for any damages arising from your use of the Service.
               </p>
             </section>
 

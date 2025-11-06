@@ -128,7 +128,7 @@ export default function HomePage() {
               <Sparkles className="w-5 h-5 text-blue-400" />
               <div>
                 <h2 className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  Welcome to Rocha!
+                  Welcome to Send Train!
                 </h2>
                 <p className="mobile-text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
                   We've personalized your feed based on your interests. Check out these recommendations below.

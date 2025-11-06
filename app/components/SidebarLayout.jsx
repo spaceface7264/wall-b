@@ -462,16 +462,18 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     setIsSearchActive(false);
   };
 
-  const handleSearchAllCommunities = () => {
+  const handleUniversalSearch = () => {
     if (searchQuery.trim()) {
-      navigate(`/communities?search=${encodeURIComponent(searchQuery.trim())}`);
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       closeDrawer();
+      setSearchQuery('');
+      setIsSearchActive(false);
     }
   };
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
-      handleSearchAllCommunities();
+      handleUniversalSearch();
     }
   };
 
@@ -481,7 +483,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       <div className="mobile-app mobile-safe-area flex items-center justify-center animate-fade-in" style={{ backgroundColor: '#252526' }}>
         <div className="text-center animate-bounce-in">
           <div className="w-8 h-8 border-4 border-[#087E8B] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="minimal-text">Loading Rocha...</p>
+          <p className="minimal-text">Loading Send Train...</p>
         </div>
       </div>
     );
@@ -552,11 +554,11 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
         <div className="sidebar-logo-section desktop-only">
           {!sidebarCollapsed ? (
             <div className="sidebar-logo-full">
-              <h1 className="sidebar-logo-text">Rocha</h1>
+              <h1 className="sidebar-logo-text">Send Train</h1>
             </div>
           ) : (
             <div className="sidebar-logo-icon">
-              <span className="sidebar-logo-letter">R</span>
+              <span className="sidebar-logo-letter">S</span>
             </div>
           )}
         </div>
@@ -572,7 +574,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               value={searchQuery}
               onChange={handleSearchChange}
               onKeyPress={handleKeyPress}
-              placeholder="Search communities..."
+              placeholder="Search everything..."
               className="minimal-input w-full pl-10 pr-10"
             />
             {searchQuery && (
@@ -588,22 +590,22 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
             )}
           </div>
           
-          {/* Search All Communities Button - Only show when search is active */}
+          {/* Universal Search Button - Only show when search is active */}
           {isSearchActive && (
             <button
-              onClick={handleSearchAllCommunities}
+              onClick={handleUniversalSearch}
               className="mobile-btn-primary w-full mt-3 flex items-center justify-center gap-2"
             >
               <Search className="w-4 h-4" />
-              <span className="font-medium">Search all communities</span>
+              <span className="font-medium">Search everything</span>
             </button>
           )}
           
           {/* Desktop collapsed search icon - hidden on mobile and when not collapsed */}
           <button
-            onClick={handleSearchAllCommunities}
+            onClick={handleUniversalSearch}
             className="sidebar-icon-button desktop-only"
-            title="Search communities"
+            title="Search everything"
           >
             <Search className="w-5 h-5" />
           </button>
@@ -766,12 +768,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                     );
                   })}
                 </div>
-              ) : (
-                <div className="text-center py-4">
-                  <Users className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--text-muted)' }} />
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No communities yet</p>
-                </div>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
