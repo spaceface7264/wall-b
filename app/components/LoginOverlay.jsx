@@ -69,6 +69,9 @@ export default function LoginOverlay({ isOpen, onClose, communityName, redirectT
         setIsLoading(false);
         await new Promise(resolve => setTimeout(resolve, 100));
 
+        // Close the overlay before navigating
+        onClose();
+
         // Redirect to the community page or onboarding
         if (profileError || !profile || !profile.nickname || !profile.handle) {
           navigate('/onboarding');

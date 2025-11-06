@@ -107,8 +107,14 @@ export default function CommunityPage() {
         // Show login overlay for non-logged-in users
         setShowLoginOverlay(true);
       } else if (user && !isMember && !loading && community) {
-        // Show a toast encouraging logged-in users to join
+        // User logged in - close overlay and show toast
+        setShowLoginOverlay(false);
         showToast('info', 'You\'re Invited!', `Join ${community.name} to connect with other climbers`);
+        // Remove the invite parameter from URL
+        navigate(`/community/${communityId}`, { replace: true });
+      } else if (user && isMember) {
+        // User is already a member - close overlay
+        setShowLoginOverlay(false);
         // Remove the invite parameter from URL
         navigate(`/community/${communityId}`, { replace: true });
       }
