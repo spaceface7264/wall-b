@@ -10,6 +10,7 @@ import { EmptyCommunities } from '../../components/EmptyState';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import FocalPointSelector from '../../components/FocalPointSelector';
 import { useToast } from '../../providers/ToastProvider';
+import { useLoginModal } from '../../providers/LoginModalProvider';
 import { enrichCommunitiesWithActualCounts } from '../../../lib/community-utils';
 import GymDetailSkeleton from '../../components/GymDetailSkeleton';
 
@@ -69,6 +70,7 @@ export default function GymDetail() {
   const params = useParams();
   const [searchParams] = useSearchParams();
   const { showToast } = useToast();
+  const { showLoginModal } = useLoginModal();
 
   const tabs = [
     { id: 'communities', label: 'Communities', icon: Users },

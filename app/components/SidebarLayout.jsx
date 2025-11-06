@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe, MessageSquare, MapPin, ChevronLeft } from 'lucide-react';
 import NotificationBell from './NotificationBell';
+import { useLoginModal } from '../providers/LoginModalProvider';
+import { useToast } from '../providers/ToastProvider';
 import BottomNav from './BottomNav';
 import FeedbackModal from './FeedbackModal';
 import { enrichCommunitiesWithActualCounts, checkForNewPosts, updateLastViewedAt } from '../../lib/community-utils';
@@ -26,6 +28,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
   });
   const navigate = useNavigate();
   const location = useLocation();
+  const { showLoginModal } = useLoginModal();
 
   // Define loadUserCommunities BEFORE useEffect to avoid ReferenceError
   // (const functions are NOT hoisted in JavaScript)
@@ -294,10 +297,8 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       const isInviteLink = location.search.includes('invite=true');
       const isCommunityPage = location.pathname.startsWith('/community/') && !location.pathname.includes('/new');
       
-      if (!loading && !user && !isInviteLink && !isCommunityPage) {
-        console.log('🔒 No authenticated user, redirecting to login...');
-        navigate('/');
-      }
+      // Removed redirect - let users browse read-only pages
+      // Only block access to pages that truly require auth (chat, create community, etc.)
     }, 500); // Increased delay to allow auth state to settle
 
     return () => clearTimeout(timer);
@@ -488,10 +489,10 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
         <div className="text-center">
           <p className="minimal-text mb-4">Please log in to continue</p>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => showLoginModal()}
             className="mobile-btn-primary"
           >
-            Go to Login
+            Sign In
           </button>
         </div>
       </div>
@@ -520,12 +521,12 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           {user ? (
             <NotificationBell userId={user.id} />
           ) : (
-            <button
-              onClick={() => navigate('/')}
-              className="mobile-btn-secondary text-sm px-3 py-1.5"
-            >
-              Sign In
-            </button>
+          <button
+            onClick={() => showLoginModal()}
+            className="mobile-btn-secondary text-sm px-3 py-1.5"
+          >
+            Sign In
+          </button>
           )}
         </div>
       </div>
@@ -620,7 +621,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                 <p className="text-sm text-gray-300 mb-3">Sign in to join communities, create posts, and connect with climbers</p>
                 <button
                   onClick={() => {
-                    navigate('/');
+                    showLoginModal();
                     closeDrawer();
                   }}
                   className="mobile-btn-primary w-full"

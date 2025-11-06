@@ -20,11 +20,13 @@ import HomePage from './home/page.jsx'
 import SearchPage from './search/page.jsx'
 import SidebarLayout from './components/SidebarLayout.jsx'
 import { ToastProvider } from './providers/ToastProvider.jsx'
+import { LoginModalProvider } from './providers/LoginModalProvider.jsx'
 
 function App() {
   return (
     <ToastProvider>
-      <Router>
+      <LoginModalProvider>
+        <Router>
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -52,8 +54,9 @@ function App() {
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </Router>
+      </LoginModalProvider>
     </ToastProvider>
-  )
+  );
 }
 
 export default App

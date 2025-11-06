@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { User as UserIcon, MapPin, Users, MessageCircle, Heart, Calendar as EventIcon, ArrowLeft, Instagram, X } from 'lucide-react';
-import SidebarLayout from '../../components/SidebarLayout';
+import { useLoginModal } from '../../providers/LoginModalProvider';
 import ProfileSkeleton from '../../components/ProfileSkeleton';
 
 export default function PublicProfile() {
@@ -159,8 +159,7 @@ export default function PublicProfile() {
   const handleSendMessage = async () => {
     if (!currentUserId) {
       // Show login prompt for unauthenticated users
-      alert('Please sign in to send messages');
-      navigate('/');
+      showLoginModal({ subtitle: 'Sign in to send messages' });
       return;
     }
     

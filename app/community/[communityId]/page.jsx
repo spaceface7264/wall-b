@@ -17,6 +17,7 @@ import LoginOverlay from '../../components/LoginOverlay';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getActualMemberCount, updateLastViewedAt } from '../../../lib/community-utils';
 import { useToast } from '../../providers/ToastProvider';
+import { useLoginModal } from '../../providers/LoginModalProvider';
 import ListSkeleton from '../../components/ListSkeleton';
 
 export default function CommunityPage() {
@@ -58,6 +59,7 @@ export default function CommunityPage() {
   const params = useParams();
   const [searchParams] = useSearchParams();
   const { showToast } = useToast();
+  const { showLoginModal } = useLoginModal();
   const communityId = params.communityId;
 
   const tabs = [
@@ -436,8 +438,7 @@ export default function CommunityPage() {
 
   const handleJoinCommunity = async () => {
     if (!user) {
-      showToast('info', 'Sign in required', 'Please sign in to join communities');
-      navigate('/');
+      showLoginModal({ subtitle: 'Sign in to join communities' });
       return;
     }
 
@@ -765,8 +766,7 @@ export default function CommunityPage() {
                 <div style={{ marginLeft: 'var(--container-padding-mobile)', marginRight: 'var(--container-padding-mobile)', marginBottom: '12px' }}>
                   <button
                     onClick={() => {
-                      showToast('info', 'Sign in required', 'Please sign in to create posts');
-                      navigate('/');
+                      showLoginModal({ subtitle: 'Sign in to create posts' });
                     }}
                     className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-full text-gray-300 hover:bg-gray-800 hover:border-gray-600 hover:text-white transition-all duration-200"
                   >
@@ -1093,8 +1093,7 @@ export default function CommunityPage() {
               {!user ? (
                 <button
                   onClick={() => {
-                    showToast('info', 'Sign in required', 'Please sign in to join communities');
-                    navigate('/');
+                    showLoginModal({ subtitle: 'Sign in to join communities' });
                   }}
                   className="px-2.5 py-1 text-sm rounded-full border-2 border-[#FF5A5F] text-[#FF5A5F] hover:bg-[#FF5A5F] hover:text-white transition-all duration-200 whitespace-nowrap flex-shrink-0"
                 >
