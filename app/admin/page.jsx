@@ -2516,78 +2516,42 @@ export default function AdminPage() {
 
   const executeBulkDelete = async (userIds) => {
     try {
-      // Verify admin status
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        showToast('error', 'Error', 'You must be logged in');
-        return;
-      }
+      // Delete from auth.users (cascades to profiles)
+      const results = {
+        successful: [],
+        failed: []
+      };
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single();
-
-      if (!profile?.is_admin) {
-        showToast('error', 'Permission Denied', 'You must be an admin to delete users');
-        return;
-      }
-
-      // Call Edge Function using Supabase client
-      const { data, error } = await supabase.functions.invoke('delete-users', {
-        body: { userIds }
-      });
-
-      if (error) {
-        console.error('Edge Function error:', error);
-        const errorMsg = error.message || error.toString() || '';
-        
-        if (errorMsg.includes('Failed to send') || 
-            errorMsg.includes('Failed to fetch') || 
-            errorMsg.includes('NetworkError') ||
-            errorMsg.includes('not found') ||
-            errorMsg.includes('404')) {
-          showToast('error', 'Function Not Deployed', 
-            'The delete-users Edge Function is not deployed. ' +
-            'Deploy it with: supabase functions deploy delete-users');
-        } else {
-          showToast('error', 'Error', errorMsg || 'Failed to delete users');
+      for (const userId of userIds) {
+        try {
+          const { error } = await supabase.auth.admin.deleteUser(userId);
+          if (error) {
+            console.error(`Error deleting user ${userId}:`, error);
+            results.failed.push({ userId, error: error.message || 'Unknown error' });
+          } else {
+            results.successful.push(userId);
+          }
+        } catch (err) {
+          console.error(`Exception deleting user ${userId}:`, err);
+          results.failed.push({ userId, error: err.message || 'Unknown error' });
         }
-        return;
       }
 
-      if (!data) {
-        showToast('error', 'Error', 'No response from server');
-        return;
-      }
-
-      // Handle response
-      const { results } = data;
-      const { successful = [], failed = [] } = results || {};
-      
-      if (failed.length > 0 && successful.length === 0) {
-        showToast('error', 'Deletion Failed', failed[0]?.error || 'Failed to delete users');
-      } else if (failed.length > 0) {
-        showToast('warning', 'Partial Success', `Deleted ${successful.length} user(s), ${failed.length} failed`);
+      // Show appropriate message based on results
+      if (results.failed.length > 0 && results.successful.length === 0) {
+        showToast('error', 'Deletion Failed', results.failed[0]?.error || 'Failed to delete users');
+      } else if (results.failed.length > 0) {
+        showToast('warning', 'Partial Success', `Deleted ${results.successful.length} user(s), ${results.failed.length} failed`);
         setSelectedUsers(new Set());
         loadData();
       } else {
-        showToast('success', 'Users Deleted', `Successfully deleted ${successful.length} user(s)`);
+        showToast('success', 'Users Deleted', `Successfully deleted ${results.successful.length} user(s)`);
         setSelectedUsers(new Set());
         loadData();
       }
     } catch (error) {
-      console.error('Error deleting users:', error);
-      const errorMsg = error.message || error.toString() || '';
-      
-      if (errorMsg.includes('Failed to send') || errorMsg.includes('Failed to fetch')) {
-        showToast('error', 'Function Not Deployed', 
-          'The delete-users Edge Function is not deployed. ' +
-          'Deploy it with: supabase functions deploy delete-users');
-      } else {
-        showToast('error', 'Error', errorMsg || 'Failed to delete users');
-      }
+      console.error('Error bulk deleting users:', error);
+      showToast('error', 'Error', error.message || 'Failed to delete users.');
     }
   };
 
