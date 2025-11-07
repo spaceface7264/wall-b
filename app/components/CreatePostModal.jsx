@@ -454,7 +454,7 @@ export default function CreatePostModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3"
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 md:p-4"
       onClick={handleClose}
       role="dialog"
       aria-modal="true"
@@ -462,9 +462,8 @@ export default function CreatePostModal({
     >
       <div
         ref={modalRef}
-        className="bg-[#252526] rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col shadow-xl"
+        className="bg-[#252526] rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col shadow-xl my-8 md:my-4"
         onClick={(e) => e.stopPropagation()}
-        style={{ margin: '12px' }}
       >
         {/* Header - Who is posting where */}
         <div className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">

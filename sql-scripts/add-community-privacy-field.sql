@@ -16,3 +16,4 @@ CREATE INDEX IF NOT EXISTS communities_is_private_idx ON communities(is_private)
 SELECT 'Privacy field added successfully!' as status;
 SELECT 'is_private column added with default FALSE (public)' as info;
 
+

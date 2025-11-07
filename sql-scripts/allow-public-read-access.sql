@@ -163,3 +163,4 @@ CREATE POLICY "Allow public to read reactions" ON reactions
 -- ❌ Creating communities
 -- ❌ Any write operations
 
+
