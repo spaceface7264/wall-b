@@ -2534,36 +2534,29 @@ export default function AdminPage() {
         return;
       }
 
-      // Get session for Edge Function
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        showToast('error', 'Error', 'No active session');
+      // Call Edge Function using Supabase client
+      const { data, error } = await supabase.functions.invoke('delete-users', {
+        body: { userIds }
+      });
+
+      if (error) {
+        console.error('Edge Function error:', error);
+        if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+          showToast('error', 'Connection Error', 'Could not connect to delete function. Make sure the Edge Function is deployed.');
+        } else {
+          showToast('error', 'Error', error.message || 'Failed to delete users');
+        }
         return;
       }
 
-      // Call Edge Function (deployed only)
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const response = await fetch(`${supabaseUrl}/functions/v1/delete-users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-        },
-        body: JSON.stringify({ userIds })
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-        if (response.status === 404) {
-          showToast('error', 'Not Available', 'User deletion requires the Edge Function to be deployed. This feature only works in production.');
-          return;
-        }
-        throw new Error(error.error || 'Failed to delete users');
+      if (!data) {
+        showToast('error', 'Error', 'No response from server');
+        return;
       }
 
-      const { results } = await response.json();
-      const { successful, failed } = results || { successful: [], failed: [] };
+      // Handle response
+      const { results } = data;
+      const { successful = [], failed = [] } = results || {};
       
       if (failed.length > 0 && successful.length === 0) {
         showToast('error', 'Deletion Failed', failed[0]?.error || 'Failed to delete users');
