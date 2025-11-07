@@ -108,7 +108,7 @@ export default function MuteUserModal({ isOpen, onClose, userId, userName }) {
             <select
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00d4ff] focus:border-transparent"
               disabled={submitting}
             >
               <option value="permanent">Permanent (until you unmute)</option>

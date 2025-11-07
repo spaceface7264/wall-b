@@ -51,7 +51,7 @@ export default function Chat() {
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center space-y-4 max-w-sm px-4">
           <div className="bg-slate-800/50 rounded-full w-20 h-20 flex items-center justify-center mx-auto">
-            <MessageCircle className="w-10 h-10 text-[#2663EB]" />
+            <MessageCircle className="w-10 h-10 text-[#00d4ff]" />
           </div>
           <div className="space-y-2">
             <h3 className="text-lg font-semibold text-slate-200">Connect with the Community</h3>

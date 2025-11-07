@@ -97,7 +97,7 @@ export default function FocalPointSelector({
                   transform: 'translate(-50%, -50%)',
                   width: '40px',
                   height: '40px',
-                  border: '3px solid #2663EB',
+                  border: '3px solid #00d4ff',
                   borderRadius: '50%',
                   backgroundColor: 'rgba(8, 126, 139, 0.3)',
                   boxShadow: '0 0 0 2px rgba(0, 0, 0, 0.5)'
@@ -107,7 +107,7 @@ export default function FocalPointSelector({
                   className="absolute inset-0"
                   style={{
                     borderRadius: '50%',
-                    backgroundColor: '#2663EB',
+                    backgroundColor: '#00d4ff',
                     width: '12px',
                     height: '12px',
                     top: '50%',
@@ -182,7 +182,7 @@ export default function FocalPointSelector({
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 px-4 py-2 bg-[#2663EB] text-white rounded hover:bg-[#1e4fd4] transition-colors"
+            className="flex-1 px-4 py-2 bg-[#00d4ff] text-white rounded hover:bg-[#00b8e6] transition-colors"
           >
             Save Focal Point
           </button>

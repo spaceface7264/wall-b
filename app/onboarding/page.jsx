@@ -331,7 +331,7 @@ export default function OnboardingPage() {
         <div className="w-full max-w-sm relative z-10">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
-              <Shield className="w-12 h-12 text-[#2663EB]" />
+              <Shield className="w-12 h-12 text-[#00d4ff]" />
             </div>
             <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Age Verification</h1>
             <p className="mobile-text-sm" style={{ color: 'var(--text-muted)' }}>You must be 16 years or older to use this platform</p>

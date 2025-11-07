@@ -826,6 +826,7 @@ export default function CommunityPage() {
               isAdmin={isAdmin}
               userCommunityRole={userCommunityRole}
               communityName={community?.name || 'Community'}
+              isMember={isMember}
             />
           </div>
         );
@@ -842,7 +843,7 @@ export default function CommunityPage() {
                   placeholder="Search events..."
                   value={eventSearchTerm}
                   onChange={(e) => setEventSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-[#2663EB]"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-[#00d4ff]"
                 />
                 <div className="absolute left-3 top-1/2 -translate-y-1/2">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
@@ -880,7 +881,7 @@ export default function CommunityPage() {
             {/* Description */}
             <div className="animate-slide-up">
               <h4 className="minimal-heading mb-3 minimal-flex">
-                <Info className="minimal-icon mr-2 text-[#2663EB]" />
+                <Info className="minimal-icon mr-2 text-[#00d4ff]" />
                 About This Community
               </h4>
               <p className="mobile-text-sm text-gray-300 leading-relaxed mb-4">
@@ -907,7 +908,7 @@ export default function CommunityPage() {
               return gym ? (
                 <div className="animate-slide-up">
                   <h4 className="minimal-heading mb-3 minimal-flex">
-                    <MapPin className="minimal-icon mr-2 text-[#2663EB]" />
+                    <MapPin className="minimal-icon mr-2 text-[#00d4ff]" />
                     Location
                   </h4>
                   <div className="space-y-2">
@@ -927,7 +928,7 @@ export default function CommunityPage() {
             {/* Moderators List */}
             <div className="animate-slide-up">
               <h4 className="minimal-heading mb-4 minimal-flex">
-                <Shield className="minimal-icon mr-2 text-[#2663EB]" />
+                <Shield className="minimal-icon mr-2 text-[#00d4ff]" />
                 Moderators
               </h4>
               {moderators.length === 0 ? (
@@ -949,7 +950,7 @@ export default function CommunityPage() {
                             className="w-10 h-10 rounded-full object-cover"
                           />
                         ) : (
-                          <div className="w-10 h-10 bg-[#2663EB] rounded-full flex items-center justify-center text-white font-medium text-sm">
+                          <div className="w-10 h-10 bg-[#00d4ff] rounded-full flex items-center justify-center text-white font-medium text-sm">
                             {displayName.charAt(0).toUpperCase()}
                           </div>
                         )}
@@ -1128,7 +1129,7 @@ export default function CommunityPage() {
                       className={`
                         flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-all duration-200
                         ${activeTab === tab.id
-                          ? 'bg-[#2663EB] text-white'
+                          ? 'bg-[#00d4ff] text-white'
                           : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'
                         }
                       `}
@@ -1345,7 +1346,7 @@ export default function CommunityPage() {
             <div className="p-6">
               {/* Welcome Header */}
               <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-[#2663EB] rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-[#00d4ff] rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="w-8 h-8 text-white" />
                 </div>
                 <h2 className="text-1xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
@@ -1367,7 +1368,7 @@ export default function CommunityPage() {
                     setShowWelcomeModal(false);
                     setShowNewPostModal(true);
                   }}
-                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#2663EB] hover:bg-[#1e4fd4] text-white rounded-xl transition-colors font-medium"
+                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#00d4ff] hover:bg-[#00b8e6] text-white rounded-xl transition-colors font-medium"
                 >
                   <MessageSquare className="w-5 h-5" />
                   Create post
@@ -1413,7 +1414,7 @@ export default function CommunityPage() {
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#2663EB] rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-[#00d4ff] rounded-lg flex items-center justify-center">
                     <Shield className="w-5 h-5 text-white" />
                   </div>
                   <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -1449,7 +1450,7 @@ export default function CommunityPage() {
               <div className="mt-6 pt-4 border-t border-slate-700">
                 <button
                   onClick={() => setShowRulesModal(false)}
-                  className="w-full px-4 py-2 bg-[#2663EB] hover:bg-[#1e4fd4] text-white rounded-lg transition-colors font-medium"
+                  className="w-full px-4 py-2 bg-[#00d4ff] hover:bg-[#00b8e6] text-white rounded-lg transition-colors font-medium"
                 >
                   Got it
                 </button>

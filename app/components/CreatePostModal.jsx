@@ -515,7 +515,7 @@ export default function CreatePostModal({
         {/* Header - Who is posting where */}
         <div className="flex items-center justify-between p-4 md:p-4 border-b border-gray-700 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#2663EB] rounded-full flex items-center justify-center text-white font-medium text-sm">
+            <div className="w-8 h-8 bg-[#00d4ff] rounded-full flex items-center justify-center text-white font-medium text-sm">
               {userName.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -631,7 +631,7 @@ export default function CreatePostModal({
                         onClick={() => handleEventSelect(event)}
                         className={`w-full text-left p-2 rounded text-sm transition-colors ${
                           index === selectedEventIndex
-                            ? 'bg-[#2663EB] text-white'
+                            ? 'bg-[#00d4ff] text-white'
                             : 'text-gray-300 hover:bg-gray-700'
                         }`}
                       >
@@ -661,7 +661,7 @@ export default function CreatePostModal({
                     {file.fileName && uploadProgress[file.fileName] !== undefined && (
                       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-800 rounded-b-lg overflow-hidden">
                         <div
-                          className="h-full bg-[#2663EB] transition-all duration-300"
+                          className="h-full bg-[#00d4ff] transition-all duration-300"
                           style={{ width: `${uploadProgress[file.fileName]}%` }}
                         />
                       </div>
@@ -748,7 +748,7 @@ export default function CreatePostModal({
                 content.trim().length < 10 ||
                 submitting
               }
-              className="bg-[#2663EB] hover:bg-[#1e4fd4] disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+              className="bg-[#00d4ff] hover:bg-[#00b8e6] disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
               aria-label={editMode ? 'Save post' : 'Post'}
             >
               {submitting ? (

@@ -40,13 +40,15 @@ export default function InviteMembersModal({ isOpen, onClose, communityId, commu
       
       // Get all users except current user
       // Include users with null last_active_at (new users) or active within last 6 months
+      // Exclude banned users and ensure email exists (to filter out deleted users)
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, nickname, handle, avatar_url, email, last_active_at')
+        .select('id, full_name, nickname, handle, avatar_url, email, last_active_at, is_banned')
         .neq('id', currentUserId)
+        .not('email', 'is', null) // Exclude users without email (likely deleted)
         .or(`last_active_at.is.null,last_active_at.gte.${sixMonthsAgo.toISOString()}`)
         .order('full_name', { ascending: true })
-        .limit(200); // Increased limit since we're filtering more aggressively
+        .limit(200);
       
       if (error) {
         console.error('Error loading users:', error);
@@ -54,10 +56,16 @@ export default function InviteMembersModal({ isOpen, onClose, communityId, commu
         return;
       }
 
-      // Filter out suspended users and mock/test users
+      // Filter out suspended users, banned users, deleted users, and mock/test users
       const validUsers = (data || []).filter(user => {
         // Exclude suspended users
         if (suspendedUserIds.has(user.id)) return false;
+        
+        // Exclude banned users
+        if (user.is_banned) return false;
+        
+        // Exclude users without email (deleted users)
+        if (!user.email || user.email.trim() === '') return false;
         
         // Exclude mock/test users by email pattern
         const email = (user.email || '').toLowerCase();
@@ -201,30 +209,32 @@ export default function InviteMembersModal({ isOpen, onClose, communityId, commu
 
   const modalContent = (
     <div 
-      className="fixed inset-0 bg-black/60 z-[9999] flex items-start md:items-center justify-center md:p-4"
+      className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div 
-        className="bg-[#252526] w-full h-full md:h-auto md:rounded-lg md:max-w-md md:max-h-[90vh] flex flex-col shadow-xl"
+        className="bg-[#252526] w-full max-w-md max-h-[90vh] rounded-lg flex flex-col shadow-xl border border-gray-700"
+        style={{ backgroundColor: 'var(--bg-surface)' }}
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-4 md:p-4 border-b border-gray-700 flex-shrink-0">
+        <div className="flex justify-between items-center p-6 border-b border-gray-700 flex-shrink-0" style={{ borderColor: 'var(--border-color)' }}>
           <div>
-            <h2 className="text-xl font-bold text-white">Invite Members</h2>
-            <p className="text-sm text-gray-400 mt-1">to {communityName}</p>
+            <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Invite Members</h2>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>to {communityName}</p>
           </div>
           <button 
             onClick={onClose} 
             className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-700"
+            aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
         
         {/* Content */}
-        <div className="flex-1 p-6 md:p-4 flex flex-col min-h-0 overflow-y-auto">
+        <div className="flex-1 p-6 flex flex-col min-h-0 overflow-y-auto">
           {/* Search Bar */}
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -233,7 +243,12 @@ export default function InviteMembersModal({ isOpen, onClose, communityId, commu
               placeholder="Search users to invite..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent transition-all"
+              style={{ 
+                backgroundColor: 'var(--bg-primary)',
+                borderColor: 'var(--border-color)',
+                color: 'var(--text-primary)'
+              }}
             />
           </div>
 
@@ -242,11 +257,11 @@ export default function InviteMembersModal({ isOpen, onClose, communityId, commu
             <UserListSkeleton count={6} />
           ) : filteredUsers.length === 0 ? (
             <div className="text-center py-12">
-              <Users className="w-16 h-16 text-gray-500 mx-auto mb-4 opacity-50" />
-              <p className="text-gray-300 mb-2 font-medium">
+              <Users className="w-16 h-16 mx-auto mb-4 opacity-50" style={{ color: 'var(--text-muted)' }} />
+              <p className="mb-2 font-medium" style={{ color: 'var(--text-primary)' }}>
                 {debouncedSearchTerm ? 'No users found' : 'No users available to invite'}
               </p>
-              <p className="text-gray-500 text-sm">
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 {debouncedSearchTerm ? 'Try a different search term' : 'All users are already members of this community'}
               </p>
             </div>
@@ -260,7 +275,11 @@ export default function InviteMembersModal({ isOpen, onClose, communityId, commu
                 return (
                   <div
                     key={user.id}
-                    className="flex items-center gap-3 p-3 bg-gray-700/50 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700/50"
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700/50 transition-colors border"
+                    style={{ 
+                      backgroundColor: 'var(--bg-primary)',
+                      borderColor: 'var(--border-color)'
+                    }}
                   >
                     {/* Avatar */}
                     <div className="relative flex-shrink-0">
@@ -271,7 +290,7 @@ export default function InviteMembersModal({ isOpen, onClose, communityId, commu
                           className="w-11 h-11 rounded-full object-cover border-2 border-gray-600"
                         />
                       ) : (
-                        <div className="w-11 h-11 bg-[#2663EB] rounded-full flex items-center justify-center text-white font-medium text-sm border-2 border-gray-600">
+                        <div className="w-11 h-11 bg-[#00d4ff] rounded-full flex items-center justify-center text-white font-medium text-sm border-2 border-gray-600">
                           {getInitials(displayName)}
                         </div>
                       )}
@@ -279,11 +298,11 @@ export default function InviteMembersModal({ isOpen, onClose, communityId, commu
 
                     {/* User Info */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-white truncate text-base">
+                      <h3 className="font-medium truncate text-base" style={{ color: 'var(--text-primary)' }}>
                         {displayName}
                       </h3>
                       {user.handle && (
-                        <p className="text-sm text-gray-400 truncate">
+                        <p className="text-sm truncate" style={{ color: 'var(--text-muted)' }}>
                           @{user.handle}
                         </p>
                       )}
@@ -298,7 +317,7 @@ export default function InviteMembersModal({ isOpen, onClose, communityId, commu
                           ? 'bg-gray-600 text-gray-300 cursor-not-allowed' 
                           : isInviting
                           ? 'bg-[#2663EB] text-white cursor-wait'
-                          : 'bg-[#2663EB] hover:bg-[#1e4fd4] text-white'
+                          : 'bg-[#2663EB] hover:bg-[#1e4fc7] text-white'
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {isInviting ? (

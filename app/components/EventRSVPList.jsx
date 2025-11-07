@@ -95,7 +95,7 @@ export default function EventRSVPList({ eventId, isOpen, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-[#2663EB]" />
+            <Users className="w-5 h-5 text-[#00d4ff]" />
             <h3 className="text-lg font-semibold text-white">RSVPs</h3>
           </div>
           <button
@@ -126,7 +126,7 @@ export default function EventRSVPList({ eventId, isOpen, onClose }) {
                   <div className="space-y-2">
                     {groupedRSVPs.going.map(rsvp => (
                       <div key={rsvp.id} className="flex items-center gap-3 p-2 rounded-lg bg-gray-800">
-                        <div className="w-8 h-8 bg-[#2663EB] rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-[#00d4ff] rounded-full flex items-center justify-center">
                           {rsvp.profiles?.avatar_url ? (
                             <img
                               src={rsvp.profiles.avatar_url}
@@ -163,7 +163,7 @@ export default function EventRSVPList({ eventId, isOpen, onClose }) {
                   <div className="space-y-2">
                     {groupedRSVPs.interested.map(rsvp => (
                       <div key={rsvp.id} className="flex items-center gap-3 p-2 rounded-lg bg-gray-800">
-                        <div className="w-8 h-8 bg-[#2663EB] rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-[#00d4ff] rounded-full flex items-center justify-center">
                           {rsvp.profiles?.avatar_url ? (
                             <img
                               src={rsvp.profiles.avatar_url}
@@ -200,7 +200,7 @@ export default function EventRSVPList({ eventId, isOpen, onClose }) {
                   <div className="space-y-2">
                     {groupedRSVPs.cant_go.map(rsvp => (
                       <div key={rsvp.id} className="flex items-center gap-3 p-2 rounded-lg bg-gray-800">
-                        <div className="w-8 h-8 bg-[#2663EB] rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-[#00d4ff] rounded-full flex items-center justify-center">
                           {rsvp.profiles?.avatar_url ? (
                             <img
                               src={rsvp.profiles.avatar_url}

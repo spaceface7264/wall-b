@@ -27,7 +27,7 @@ export default function SimpleEventCard({ event, onRSVP, rsvpStatus = null }) {
     const colors = {
       meetup: '#3b82f6',
       competition: '#ef4444',
-      training: '#2663EB',
+      training: '#00d4ff',
       social: '#ec4899'
     };
     return colors[type] || '#6b7280';
@@ -68,7 +68,7 @@ export default function SimpleEventCard({ event, onRSVP, rsvpStatus = null }) {
       case 'cant_go':
         return 'bg-red-600 hover:bg-red-700 text-white';
       default:
-        return 'bg-[#2663EB] hover:bg-[#1e4fd4] text-white';
+        return 'bg-[#00d4ff] hover:bg-[#00b8e6] text-white';
     }
   };
 
@@ -78,7 +78,7 @@ export default function SimpleEventCard({ event, onRSVP, rsvpStatus = null }) {
   };
 
   return (
-    <div className="mobile-card cursor-pointer hover:border-[#2663EB]/50 transition-all duration-200">
+    <div className="mobile-card cursor-pointer hover:border-[#00d4ff]/50 transition-all duration-200">
       {/* Header - Always Visible */}
       <div 
         className="flex items-center justify-between"
@@ -169,7 +169,7 @@ export default function SimpleEventCard({ event, onRSVP, rsvpStatus = null }) {
             {/* Full Date/Time */}
             <div className="bg-gray-800/50 rounded-lg p-3">
               <div className="flex items-center space-x-2 text-sm">
-                <Clock className="text-[#2663EB]" size={16} />
+                <Clock className="text-[#00d4ff]" size={16} />
                 <span className="text-gray-300">Full Details:</span>
               </div>
               <p className="text-sm text-gray-400 mt-1">

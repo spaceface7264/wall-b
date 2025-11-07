@@ -68,7 +68,7 @@ export default function ReactionPicker({
             className={`reaction-picker button ${isSelected ? 'selected' : ''}`}
             title={reaction.label}
             style={{
-              backgroundColor: isSelected ? '#2663EB' : '#374151',
+              backgroundColor: isSelected ? '#00d4ff' : '#374151',
               transform: isSelected ? 'scale(1.1)' : 'scale(1)',
               position: 'relative'
             }}

@@ -26,7 +26,7 @@ export default function CreateEventModal({
   const eventTypes = [
     { value: 'meetup', label: 'Meetup', icon: '📅', color: '#3b82f6' },
     { value: 'competition', label: 'Competition', icon: '🏆', color: '#ef4444' },
-    { value: 'training', label: 'Training', icon: '💪', color: '#2663EB' },
+    { value: 'training', label: 'Training', icon: '💪', color: '#00d4ff' },
     { value: 'social', label: 'Social', icon: '🎉', color: '#ec4899' },
   ];
 
