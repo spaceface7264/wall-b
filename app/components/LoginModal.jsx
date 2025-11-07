@@ -142,7 +142,7 @@ export default function LoginModal({ isOpen, onClose, title = "Sign In", subtitl
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
-                className="w-full px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
+                className="w-full px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent"
                 required
               />
             </div>
@@ -158,7 +158,7 @@ export default function LoginModal({ isOpen, onClose, title = "Sign In", subtitl
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-2.5 pr-10 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
+                  className="w-full px-4 py-2.5 pr-10 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent"
                   required
                   minLength={6}
                 />
@@ -183,11 +183,11 @@ export default function LoginModal({ isOpen, onClose, title = "Sign In", subtitl
                   id="terms"
                   checked={acceptedTerms}
                   onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="mt-1 w-4 h-4 text-[#087E8B] bg-gray-700 border-gray-600 rounded focus:ring-[#087E8B]"
+                  className="mt-1 w-4 h-4 text-[#2663EB] bg-gray-700 border-gray-600 rounded focus:ring-[#2663EB]"
                 />
                 <label htmlFor="terms" className="text-sm text-gray-300">
                   I accept the{' '}
-                  <a href="/terms" target="_blank" className="text-[#087E8B] hover:underline">
+                  <a href="/terms" target="_blank" className="text-[#2663EB] hover:underline">
                     Terms & Conditions
                   </a>
                 </label>
@@ -203,7 +203,7 @@ export default function LoginModal({ isOpen, onClose, title = "Sign In", subtitl
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full px-4 py-3 bg-[#087E8B] hover:bg-[#066a75] text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3 bg-[#2663EB] hover:bg-[#1e4fd4] text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
             </button>
@@ -212,7 +212,7 @@ export default function LoginModal({ isOpen, onClose, title = "Sign In", subtitl
               <button
                 type="button"
                 onClick={() => setIsSignUp(!isSignUp)}
-                className="text-sm text-[#087E8B] hover:underline"
+                className="text-sm text-[#2663EB] hover:underline"
               >
                 {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
               </button>

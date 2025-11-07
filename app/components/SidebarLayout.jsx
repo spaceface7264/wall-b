@@ -523,7 +523,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           ) : (
           <button
             onClick={() => showLoginModal()}
-            className="mobile-btn-secondary text-xs px-3 py-1.5 whitespace-nowrap"
+            className="mobile-btn-secondary text-xs px-1 py-1.5 whitespace-nowrap"
           >
             Sign In
           </button>
@@ -615,21 +615,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
         {/* Communities Section */}
         <div className="mobile-drawer-nav">
           <div className="flex flex-col h-full">
-            {!user ? (
-              /* Login Prompt for Unauthenticated Users */
-              <div className="p-4 mb-4 bg-gray-800/50 rounded-lg border border-gray-700">
-                <p className="text-sm text-gray-300 mb-3">Sign in to join communities, create posts, and connect with climbers</p>
-                <button
-                  onClick={() => {
-                    showLoginModal();
-                    closeDrawer();
-                  }}
-                  className="mobile-btn-primary w-full"
-                >
-                  Sign In
-                </button>
-              </div>
-            ) : (
+            {!user ? null : (
               <>
                 {/* Create Community Button - Always at top */}
                 <button
