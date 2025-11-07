@@ -50,7 +50,13 @@ export default function LoginPage() {
         return;
       }
       const result = isSignUp 
-        ? await supabase.auth.signUp({ email, password })
+        ? await supabase.auth.signUp({ 
+            email, 
+            password,
+            options: {
+              emailRedirectTo: `${window.location.origin}/login`
+            }
+          })
         : await supabase.auth.signInWithPassword({ email, password });
 
       if (result.error) {

@@ -523,7 +523,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           ) : (
           <button
             onClick={() => showLoginModal()}
-            className="mobile-btn-secondary text-sm px-3 py-1.5"
+            className="mobile-btn-secondary text-xs px-3 py-1.5 whitespace-nowrap"
           >
             Sign In
           </button>

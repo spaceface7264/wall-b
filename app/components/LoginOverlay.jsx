@@ -26,7 +26,13 @@ export default function LoginOverlay({ isOpen, onClose, communityName, redirectT
       }
 
       const result = isSignUp 
-        ? await supabase.auth.signUp({ email, password })
+        ? await supabase.auth.signUp({ 
+            email, 
+            password,
+            options: {
+              emailRedirectTo: `${window.location.origin}/login`
+            }
+          })
         : await supabase.auth.signInWithPassword({ email, password });
 
       if (result.error) {
