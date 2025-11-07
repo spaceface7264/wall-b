@@ -160,6 +160,21 @@
     width: auto;
     max-width: none;
   }
+
+  /* Prevent iOS auto-zoom on input focus - ensure all inputs have minimum 16px font-size on mobile */
+  @media (max-width: 1023px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="search"],
+    input[type="tel"],
+    input[type="url"],
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
 }
 
 /* ============================================
@@ -1383,7 +1398,7 @@
     border: 1px solid var(--border-color);
     border-radius: 4px;
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: 16px; /* Minimum 16px to prevent iOS auto-zoom */
     transition: border-color 0.2s ease, background-color 0.3s ease, color 0.3s ease, box-shadow 0.2s ease;
     font-family: inherit;
     min-height: var(--touch-target);
@@ -2019,7 +2034,7 @@
     border: 1px solid var(--border-color);
     border-radius: 4px;
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: 16px; /* Minimum 16px to prevent iOS auto-zoom */
     font-family: inherit;
     cursor: pointer;
     transition: border-color 0.2s ease, background-color 0.3s ease, color 0.3s ease, box-shadow 0.2s ease;
@@ -2064,7 +2079,7 @@
     border: 1px solid var(--border-color);
     border-radius: 4px;
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: 16px; /* Minimum 16px to prevent iOS auto-zoom */
     font-family: inherit;
     resize: vertical;
     transition: border-color 0.2s ease, background-color 0.3s ease, color 0.3s ease, box-shadow 0.2s ease;
