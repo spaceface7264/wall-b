@@ -243,7 +243,7 @@ export default function CommentThread({
               />
             ) : null}
             <div 
-              className="w-9 h-9 bg-gradient-to-br from-[#087E8B] to-[#087E8B] rounded-full minimal-flex-center flex-shrink-0 cursor-pointer"
+              className="w-9 h-9 bg-gradient-to-br from-[#2663EB] to-[#2663EB] rounded-full minimal-flex-center flex-shrink-0 cursor-pointer"
               style={{ display: comment.profiles?.avatar_url ? 'none' : 'flex' }}
               onClick={(e) => handleProfileClick(e, comment.user_id)}
             >
@@ -254,7 +254,7 @@ export default function CommentThread({
             <div>
               <button
                 onClick={(e) => handleProfileClick(e, comment.user_id)}
-                className="mobile-text-sm font-semibold text-[#087E8B] hover:text-[#066a75] transition-colors text-left"
+                className="mobile-text-sm font-semibold text-[#2663EB] hover:text-[#1e4fd4] transition-colors text-left"
                 style={{ fontSize: '14px' }}
               >
                 {comment.profiles?.nickname || comment.profiles?.full_name || comment.user_name || 'Anonymous'}
@@ -389,7 +389,7 @@ export default function CommentThread({
             {canReply && (
               <button
                 onClick={handleReply}
-                className="icon-button minimal-flex gap-1 text-white hover:text-[#087E8B]"
+                className="icon-button minimal-flex gap-1 text-white hover:text-[#2663EB]"
               >
                 <Reply className="w-4 h-4 stroke-current" />
                 <span className="mobile-text-xs">Reply</span>
@@ -399,7 +399,7 @@ export default function CommentThread({
             {hasReplies && (
               <button
                 onClick={() => setShowReplies(!showReplies)}
-                className="minimal-flex gap-1 text-gray-400 hover:text-[#087E8B]"
+                className="minimal-flex gap-1 text-gray-400 hover:text-[#2663EB]"
               >
                 {showReplies ? (
                   <ChevronUp className="w-4 h-4" />
@@ -433,8 +433,8 @@ export default function CommentThread({
           <div className="mt-4 pt-4">
             <div className="space-y-3">
             {replies.map((reply) => (
-              <div key={reply.id} className="ml-6 pl-4 border-l-2 border-[#087E8B]/30 relative">
-                <div className="absolute -left-1 top-0 w-2 h-2 bg-[#087E8B] rounded-full"></div>
+              <div key={reply.id} className="ml-6 pl-4 border-l-2 border-[#2663EB]/30 relative">
+                <div className="absolute -left-1 top-0 w-2 h-2 bg-[#2663EB] rounded-full"></div>
                 
                 {/* Reply Content - No card styling */}
                 <div className="ml-2 py-2">
@@ -454,7 +454,7 @@ export default function CommentThread({
                           />
                         ) : null}
                         <div 
-                          className="w-9 h-9 bg-gradient-to-br from-[#087E8B] to-[#087E8B] rounded-full minimal-flex-center flex-shrink-0 cursor-pointer"
+                          className="w-9 h-9 bg-gradient-to-br from-[#2663EB] to-[#2663EB] rounded-full minimal-flex-center flex-shrink-0 cursor-pointer"
                           style={{ display: reply.profiles?.avatar_url ? 'none' : 'flex' }}
                           onClick={(e) => handleProfileClick(e, reply.user_id)}
                         >
@@ -465,7 +465,7 @@ export default function CommentThread({
                         <div>
                           <button
                             onClick={(e) => handleProfileClick(e, reply.user_id)}
-                            className="mobile-text-sm font-semibold text-[#087E8B] hover:text-[#066a75] transition-colors text-left"
+                            className="mobile-text-sm font-semibold text-[#2663EB] hover:text-[#1e4fd4] transition-colors text-left"
                             style={{ fontSize: '14px' }}
                           >
                             {reply.profiles?.nickname || reply.profiles?.full_name || reply.user_name || 'Anonymous'}

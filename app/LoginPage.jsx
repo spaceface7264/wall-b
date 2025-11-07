@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import StarfieldBackground from './components/StarfieldBackground';
 
 export default function LoginPage() {
@@ -280,8 +280,17 @@ export default function LoginPage() {
           </form>
         </div>
 
-        {/* Footer Link */}
-        {/* Footer link removed to avoid duplicate Sign Up/Sign In toggle (tab switcher covers it) */}
+        {/* Continue without login */}
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={() => navigate('/communities')}
+            className="flex items-center justify-center gap-2 text-gray-400 hover:text-gray-300 mobile-text-sm transition-colors mx-auto"
+          >
+            Continue without login
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

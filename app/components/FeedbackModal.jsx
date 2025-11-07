@@ -153,13 +153,13 @@ export default function FeedbackModal({ isOpen, onClose }) {
                       p-4 rounded-xl border-2 transition-all duration-200
                       flex flex-col items-center text-center
                       ${isSelected
-                        ? 'border-[#087E8B] bg-[#087E8B]/15 shadow-lg shadow-[#087E8B]/20'
+                        ? 'border-[#2663EB] bg-[#2663EB]/15 shadow-lg shadow-[#2663EB]/20'
                         : 'border-gray-700/50 bg-gray-800/40 hover:border-gray-600 hover:bg-gray-800/60 active:scale-[0.98]'
                       }
                       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-700/50 disabled:hover:bg-gray-800/40
                     `}
                   >
-                    <Icon className={`w-6 h-6 mb-2 transition-colors duration-200 ${isSelected ? 'text-[#087E8B]' : 'text-gray-400'}`} />
+                    <Icon className={`w-6 h-6 mb-2 transition-colors duration-200 ${isSelected ? 'text-[#2663EB]' : 'text-gray-400'}`} />
                     <div className={`text-sm font-semibold mb-1 transition-colors duration-200 ${isSelected ? 'text-white' : 'text-gray-300'}`}>
                       {feedbackType.label}
                     </div>
@@ -231,7 +231,7 @@ export default function FeedbackModal({ isOpen, onClose }) {
             <button
               onClick={handleSubmit}
               disabled={title.trim().length < 5 || description.trim().length < 10 || submitting}
-              className="flex-1 px-4 py-2 bg-[#087E8B] hover:bg-[#066a75] text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-[#2663EB] hover:bg-[#1e4fd4] text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>

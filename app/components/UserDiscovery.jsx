@@ -115,7 +115,7 @@ export default function UserDiscovery({ isOpen, onClose, onStartConversation, cu
               placeholder="Search users..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent"
             />
           </div>
 
@@ -142,7 +142,7 @@ export default function UserDiscovery({ isOpen, onClose, onStartConversation, cu
                 >
                   <div className="flex items-center gap-3">
                     {/* Avatar */}
-                    <div className="w-10 h-10 bg-[#087E8B] rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 bg-[#2663EB] rounded-full flex items-center justify-center flex-shrink-0">
                       {user.avatar_url ? (
                         <img
                           src={user.avatar_url}
@@ -167,7 +167,7 @@ export default function UserDiscovery({ isOpen, onClose, onStartConversation, cu
                     </div>
 
                     {/* Start Chat Button */}
-                    <div className="p-2 text-[#087E8B] hover:text-[#087E8B] transition-colors">
+                    <div className="p-2 text-[#2663EB] hover:text-[#2663EB] transition-colors">
                       <MessageCircle className="w-5 h-5" />
                     </div>
                   </div>

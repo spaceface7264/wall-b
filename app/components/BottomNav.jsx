@@ -1,7 +1,8 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Home, MapPin, MessageCircle, User } from 'lucide-react';
+import { Home, MapPin, MessageCircle, User, Lock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useLoginModal } from '../providers/LoginModalProvider';
 import UnreadBadge from './UnreadBadge';
 
 export default function BottomNav() {
@@ -9,6 +10,7 @@ export default function BottomNav() {
   const location = useLocation();
   const pathname = location.pathname;
   const [user, setUser] = useState(null);
+  const { showLoginModal } = useLoginModal();
 
   useEffect(() => {
     const getUser = async () => {
@@ -65,6 +67,16 @@ export default function BottomNav() {
   };
 
   const handleNavigation = (path) => {
+    // If clicking profile and user is not logged in, show login modal
+    if (path === '/profile' && !user) {
+      showLoginModal({ subtitle: 'Sign in to view your profile' });
+      return;
+    }
+    // If clicking chat and user is not logged in, show login modal
+    if (path === '/chat' && !user) {
+      showLoginModal({ subtitle: 'Sign in to start conversations' });
+      return;
+    }
     navigate(path);
   };
 
@@ -74,6 +86,7 @@ export default function BottomNav() {
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path);
+          const requiresAuth = (item.id === 'profile' || item.id === 'chats') && !user;
           
           return (
             <button
@@ -81,9 +94,14 @@ export default function BottomNav() {
               onClick={() => handleNavigation(item.path)}
               className={`bottom-nav-item ${active ? 'active' : ''}`}
               aria-label={item.label}
+              title={requiresAuth ? 'Sign in required' : item.label}
             >
-              <div className="bottom-nav-icon-wrapper">
-                <Icon className="bottom-nav-icon" />
+              <div className="bottom-nav-icon-wrapper relative">
+                {requiresAuth ? (
+                  <Lock className="bottom-nav-icon" />
+                ) : (
+                  <Icon className="bottom-nav-icon" />
+                )}
                 {item.id === 'chats' && user && (
                   <UnreadBadge userId={user.id} />
                 )}

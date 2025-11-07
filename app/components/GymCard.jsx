@@ -55,7 +55,7 @@ const GymCard = React.memo(function GymCard({
             />
           ) : null}
           <div 
-            className="w-full h-full bg-gradient-to-br from-[#087E8B] to-[#087E8B] minimal-flex-center"
+            className="w-full h-full bg-gradient-to-br from-[#2663EB] to-[#2663EB] minimal-flex-center"
             style={{ display: (gym.logo_url || gym.logo) ? 'none' : 'flex' }}
           >
             <span className="text-white font-semibold text-2xl">

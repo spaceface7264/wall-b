@@ -619,11 +619,11 @@ export default function GymDetail() {
       const isClosed = !hours[day] || hours[day] === 'Closed';
       
       return (
-        <div key={day} className={`minimal-flex-between py-2 px-2 rounded ${isToday ? 'bg-[#087E8B]/30' : ''}`}>
-          <span className={`minimal-text text-sm ${isToday ? 'text-[#087E8B] font-medium' : ''}`}>
+        <div key={day} className={`minimal-flex-between py-2 px-2 rounded ${isToday ? 'bg-[#2663EB]/30' : ''}`}>
+          <span className={`minimal-text text-sm ${isToday ? 'text-[#2663EB] font-medium' : ''}`}>
             {dayNames[index]}:
           </span>
-          <span className={`minimal-text text-sm ${isClosed ? 'text-gray-500' : isToday ? 'text-[#087E8B] font-medium' : 'text-gray-300'}`}>
+          <span className={`minimal-text text-sm ${isClosed ? 'text-gray-500' : isToday ? 'text-[#2663EB] font-medium' : 'text-gray-300'}`}>
             {hours[day] || 'Closed'}
           </span>
         </div>
@@ -1126,7 +1126,7 @@ export default function GymDetail() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="border-b border-gray-700/50 pb-6">
                 <h4 className="minimal-heading mb-4 minimal-flex">
-                  <MapPin className="minimal-icon mr-2 text-[#087E8B]" />
+                  <MapPin className="minimal-icon mr-2 text-[#2663EB]" />
                   Location
                 </h4>
                 <div className="space-y-3 mb-4">
@@ -1141,7 +1141,7 @@ export default function GymDetail() {
                   href={mapLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-[#087E8B] hover:text-[#066a75] transition-colors"
+                  className="inline-flex items-center gap-2 text-sm text-[#2663EB] hover:text-[#1e4fd4] transition-colors"
                 >
                   <MapPin className="w-4 h-4" />
                   Open in Google Maps
@@ -1150,14 +1150,14 @@ export default function GymDetail() {
 
               <div className="border-b border-gray-700/50 pb-6">
                 <h4 className="minimal-heading mb-4 minimal-flex">
-                  <Phone className="minimal-icon mr-2 text-[#087E8B]" />
+                  <Phone className="minimal-icon mr-2 text-[#2663EB]" />
                   Contact
                 </h4>
                 <div className="space-y-3">
                   {gym.phone && (
                     <div className="minimal-flex">
                       <Phone className="minimal-icon mr-3 text-gray-400" />
-                      <a href={`tel:${gym.phone}`} className="minimal-text text-sm text-[#087E8B] hover:text-[#087E8B] transition-colors">
+                      <a href={`tel:${gym.phone}`} className="minimal-text text-sm text-[#2663EB] hover:text-[#2663EB] transition-colors">
                         {gym.phone}
                       </a>
                     </div>
@@ -1165,7 +1165,7 @@ export default function GymDetail() {
                   {gym.email && (
                     <div className="minimal-flex">
                       <Mail className="minimal-icon mr-3 text-gray-400" />
-                      <a href={`mailto:${gym.email}`} className="minimal-text text-sm text-[#087E8B] hover:text-[#087E8B] transition-colors">
+                      <a href={`mailto:${gym.email}`} className="minimal-text text-sm text-[#2663EB] hover:text-[#2663EB] transition-colors">
                         {gym.email}
                       </a>
                     </div>
@@ -1173,7 +1173,7 @@ export default function GymDetail() {
                   {gym.website && (
                     <div className="minimal-flex">
                       <Globe className="minimal-icon mr-3 text-gray-400" />
-                      <a href={gym.website} target="_blank" rel="noopener noreferrer" className="minimal-text text-sm text-[#087E8B] hover:text-[#087E8B] transition-colors">
+                      <a href={gym.website} target="_blank" rel="noopener noreferrer" className="minimal-text text-sm text-[#2663EB] hover:text-[#2663EB] transition-colors">
                         Visit Website
                       </a>
                     </div>
@@ -1186,7 +1186,7 @@ export default function GymDetail() {
             {(gym.google_rating || gym.google_ratings_count) && (
               <div className="border-b border-gray-700/50 pb-6 mb-6">
                 <h4 className="minimal-heading mb-4 minimal-flex">
-                  <Star className="minimal-icon mr-2 text-[#087E8B]" />
+                  <Star className="minimal-icon mr-2 text-[#2663EB]" />
                   Google Rating
                 </h4>
                 <div className="flex items-center gap-4">
@@ -1211,7 +1211,7 @@ export default function GymDetail() {
             {gym.description && (
               <div className="border-b border-gray-700/50 pb-6 mb-6">
                 <h4 className="minimal-heading mb-4 minimal-flex">
-                  <Info className="minimal-icon mr-2 text-[#087E8B]" />
+                  <Info className="minimal-icon mr-2 text-[#2663EB]" />
                   About
                 </h4>
                 <p className="minimal-text text-sm text-gray-300 leading-relaxed">{gym.description}</p>
@@ -1222,7 +1222,7 @@ export default function GymDetail() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="border-b border-gray-700/50 pb-6">
               <h4 className="minimal-heading mb-4 minimal-flex">
-                <Dumbbell className="minimal-icon mr-2 text-[#087E8B]" />
+                <Dumbbell className="minimal-icon mr-2 text-[#2663EB]" />
                 Facilities
               </h4>
                 <div className="grid grid-cols-2 gap-3">
@@ -1230,7 +1230,7 @@ export default function GymDetail() {
                   const IconComponent = getFacilityIcon(facility);
                   return (
                       <div key={index} className="minimal-flex mobile-text-sm bg-gray-800/50 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors">
-                      <IconComponent className="w-4 h-4 mr-2 text-[#087E8B]" />
+                      <IconComponent className="w-4 h-4 mr-2 text-[#2663EB]" />
                       {facility}
                     </div>
                   );
@@ -1240,7 +1240,7 @@ export default function GymDetail() {
 
               <div className="border-b border-gray-700/50 pb-6">
                 <h4 className="minimal-heading mb-4 minimal-flex">
-                  <Clock className="minimal-icon mr-2 text-[#087E8B]" />
+                  <Clock className="minimal-icon mr-2 text-[#2663EB]" />
                   Opening Hours
                 </h4>
                 <div className="space-y-2">
@@ -1280,12 +1280,12 @@ export default function GymDetail() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="minimal-heading minimal-flex">
-                <Users className="minimal-icon mr-2 text-[#087E8B]" />
+                <Users className="minimal-icon mr-2 text-[#2663EB]" />
                 Communities at this gym
               </h2>
                 {user && (
                   <button 
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#087E8B] text-white rounded-full text-sm font-medium hover:bg-[#066a75] transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#2663EB] text-white rounded-full text-sm font-medium hover:bg-[#1e4fd4] transition-colors"
                     onClick={() => navigate(`/community/new?gym_id=${gym.id}`)}
                   >
                     <Plus className="w-4 h-4" />
@@ -1691,7 +1691,7 @@ export default function GymDetail() {
                     name="name"
                     defaultValue={editingGym.name}
                     required
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                   />
                 </div>
 
@@ -1701,7 +1701,7 @@ export default function GymDetail() {
                     name="description"
                     defaultValue={editingGym.description}
                     rows={4}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                   />
                 </div>
 
@@ -1713,7 +1713,7 @@ export default function GymDetail() {
                       name="address"
                       defaultValue={editingGym.address}
                       required
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                     />
                   </div>
                   <div>
@@ -1723,7 +1723,7 @@ export default function GymDetail() {
                       name="city"
                       defaultValue={editingGym.city}
                       required
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                     />
                   </div>
                   <div>
@@ -1733,7 +1733,7 @@ export default function GymDetail() {
                       name="country"
                       defaultValue={editingGym.country}
                       required
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                     />
                   </div>
                   <div>
@@ -1742,7 +1742,7 @@ export default function GymDetail() {
                       type="text"
                       name="phone"
                       defaultValue={editingGym.phone || ''}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                     />
                   </div>
                   <div>
@@ -1751,7 +1751,7 @@ export default function GymDetail() {
                       type="email"
                       name="email"
                       defaultValue={editingGym.email || ''}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                     />
                   </div>
                   <div>
@@ -1760,7 +1760,7 @@ export default function GymDetail() {
                       type="url"
                       name="website"
                       defaultValue={editingGym.website || ''}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -1782,7 +1782,7 @@ export default function GymDetail() {
                           <button
                             type="button"
                             onClick={() => setShowFocalPointSelector(true)}
-                            className="p-2 bg-[#087E8B] hover:bg-[#066a75] text-white rounded-full transition-colors"
+                            className="p-2 bg-[#2663EB] hover:bg-[#1e4fd4] text-white rounded-full transition-colors"
                             title="Set focal point"
                           >
                             <Crosshair className="w-4 h-4" />
@@ -1844,7 +1844,7 @@ export default function GymDetail() {
                       name="image_url"
                       defaultValue={editingGym.image_url || ''}
                         placeholder="https://example.com/image.jpg"
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                         disabled={!!uploadedImageUrl}
                     />
                       <p className="text-xs text-gray-500 mt-1">
@@ -1933,7 +1933,7 @@ export default function GymDetail() {
                         name="logo_url"
                         defaultValue={editingGym.logo_url || ''}
                         placeholder="https://example.com/logo.png"
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                         disabled={!!uploadedLogoUrl}
                       />
                       <p className="text-xs text-gray-500 mt-1">
@@ -1968,7 +1968,7 @@ export default function GymDetail() {
                               setSelectedFacilities(selectedFacilities.filter(f => f !== facility));
                             }
                           }}
-                          className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#087E8B] focus:ring-2 focus:ring-[#087E8B] focus:ring-offset-0"
+                          className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#2663EB] focus:ring-2 focus:ring-[#2663EB] focus:ring-offset-0"
                         />
                         <span className="text-sm text-gray-200 select-none">
                           {facility}
@@ -1999,7 +1999,7 @@ export default function GymDetail() {
                             setUniversalHours(firstDay || '');
                           }
                         }}
-                        className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#087E8B] focus:ring-2 focus:ring-[#087E8B] focus:ring-offset-0"
+                        className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#2663EB] focus:ring-2 focus:ring-[#2663EB] focus:ring-offset-0"
                       />
                       <span className="text-xs text-gray-400">Same hours for all days</span>
                     </label>
@@ -2012,7 +2012,7 @@ export default function GymDetail() {
                         type="text"
                         value={universalHours}
                         onChange={(e) => setUniversalHours(e.target.value)}
-                        className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                        className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                         placeholder="9:00-22:00"
                       />
                       <p className="text-xs text-gray-500 mt-1">
@@ -2028,7 +2028,7 @@ export default function GymDetail() {
                             type="text"
                             name={day}
                             defaultValue={editingGym.opening_hours?.[day] || ''}
-                            className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                            className="w-full px-2 py-1 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                             placeholder="9:00-22:00"
                           />
                         </div>
@@ -2052,7 +2052,7 @@ export default function GymDetail() {
                             name="single_entry_price"
                             defaultValue={editingGym.single_entry_price || ''}
                             placeholder="e.g., $20, €15-25"
-                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                           />
                         </div>
                         <div>
@@ -2062,7 +2062,7 @@ export default function GymDetail() {
                             name="membership_price"
                             defaultValue={editingGym.membership_price || ''}
                             placeholder="e.g., $80/month, €50/month"
-                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                           />
                         </div>
                         <div>
@@ -2072,7 +2072,7 @@ export default function GymDetail() {
                             name="price_range"
                             defaultValue={editingGym.price_range || ''}
                             placeholder="e.g., $15-30"
-                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                           />
                         </div>
                       </div>
@@ -2109,7 +2109,7 @@ export default function GymDetail() {
                               }
                             }}
                             placeholder="Add difficulty level"
-                            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                           />
                           <button 
                             type="button" 
@@ -2136,7 +2136,7 @@ export default function GymDetail() {
                             name="latitude"
                             defaultValue={editingGym.latitude || ''}
                             placeholder="e.g., 55.6761"
-                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                           />
                         </div>
                         <div>
@@ -2147,7 +2147,7 @@ export default function GymDetail() {
                             name="longitude"
                             defaultValue={editingGym.longitude || ''}
                             placeholder="e.g., 12.5683"
-                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B]"
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB]"
                           />
                         </div>
                       </div>
@@ -2159,7 +2159,7 @@ export default function GymDetail() {
                             type="checkbox"
                             name="is_hidden"
                             defaultChecked={editingGym.is_hidden || false}
-                            className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#087E8B] focus:ring-2 focus:ring-[#087E8B] focus:ring-offset-0"
+                            className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#2663EB] focus:ring-2 focus:ring-[#2663EB] focus:ring-offset-0"
                           />
                           <span className="text-sm text-gray-300">Hide from public listing</span>
                         </label>
@@ -2192,7 +2192,7 @@ export default function GymDetail() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-[#087E8B] text-white rounded hover:bg-[#066a75] transition-colors"
+                    className="flex-1 px-4 py-2 bg-[#2663EB] text-white rounded hover:bg-[#1e4fd4] transition-colors"
                   >
                     Save Changes
                   </button>
@@ -2333,7 +2333,7 @@ export default function GymDetail() {
                   }
                 }}
                 disabled={isUpdatingGym}
-                className="flex-1 px-4 py-2 bg-[#087E8B] text-white rounded hover:bg-[#066a75] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-[#2663EB] text-white rounded hover:bg-[#1e4fd4] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 type="button"
               >
                 {isUpdatingGym ? 'Processing...' : 'Confirm Changes'}

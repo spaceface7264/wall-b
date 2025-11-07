@@ -192,7 +192,7 @@ export default function MembersList({ communityId, isAdmin = false, userCommunit
           placeholder="Search members..."
           value={searchTerm}
           onChange={handleSearchChange}
-          className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-[#087E8B]"
+          className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-[#2663EB]"
         />
       </div>
 
@@ -221,7 +221,7 @@ export default function MembersList({ communityId, isAdmin = false, userCommunit
               </button>
               <button
                 onClick={() => setShowInviteModal(true)}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#087E8B] hover:bg-[#066a75] text-white rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#2663EB] hover:bg-[#1e4fd4] text-white rounded-lg transition-colors"
               >
                 <UserPlus className="w-4 h-4" />
                 Invite
@@ -263,7 +263,7 @@ export default function MembersList({ communityId, isAdmin = false, userCommunit
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-[#087E8B] rounded-full flex items-center justify-center text-white font-medium text-sm">
+                    <div className="w-10 h-10 bg-[#2663EB] rounded-full flex items-center justify-center text-white font-medium text-sm">
                       {getInitials(displayName)}
                     </div>
                   )}
@@ -280,7 +280,7 @@ export default function MembersList({ communityId, isAdmin = false, userCommunit
                         e.stopPropagation();
                         handleProfileClick(member.user_id);
                       }}
-                      className="font-medium text-white hover:text-[#087E8B] transition-colors truncate text-left"
+                      className="font-medium text-white hover:text-[#2663EB] transition-colors truncate text-left"
                     >
                       {displayName}
                     </button>
@@ -342,7 +342,7 @@ export default function MembersList({ communityId, isAdmin = false, userCommunit
                 onClick={() => handlePageChange(page)}
                 className={`px-3 py-1 text-sm rounded transition-colors ${
                   currentPage === page
-                    ? 'bg-[#087E8B] text-white'
+                    ? 'bg-[#2663EB] text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >

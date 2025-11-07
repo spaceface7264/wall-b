@@ -102,7 +102,7 @@ export default function BlockUserModal({ isOpen, onClose, userId, userName }) {
               onChange={(e) => setReason(e.target.value)}
               placeholder="Why are you blocking this user?"
               rows={3}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent resize-none"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent resize-none"
               disabled={submitting}
               maxLength={200}
             />

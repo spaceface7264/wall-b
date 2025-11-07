@@ -2916,7 +2916,7 @@ export default function AdminPage() {
               <p className="text-sm text-gray-400 mb-6">You need admin access to view this page.</p>
               <button
                 onClick={() => navigate('/communities')}
-                className="px-4 py-2 bg-[#087E8B] text-white text-sm hover:bg-[#066a75] transition-colors"
+                className="px-4 py-2 bg-[#2663EB] text-white text-sm hover:bg-[#1e4fd4] transition-colors"
               >
                 Go to Dashboard
               </button>
@@ -2937,7 +2937,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('overview')}
               className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'overview'
-                  ? 'bg-[#087E8B] text-white'
+                  ? 'bg-[#2663EB] text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -2948,7 +2948,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('users')}
               className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'users'
-                  ? 'bg-[#087E8B] text-white'
+                  ? 'bg-[#2663EB] text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -2959,7 +2959,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('communities')}
               className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'communities'
-                  ? 'bg-[#087E8B] text-white'
+                  ? 'bg-[#2663EB] text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -2970,7 +2970,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('gyms')}
               className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors relative ${
                 activeTab === 'gyms'
-                  ? 'bg-[#087E8B] text-white'
+                  ? 'bg-[#2663EB] text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -2986,7 +2986,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('reports')}
               className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'reports'
-                  ? 'bg-[#087E8B] text-white'
+                  ? 'bg-[#2663EB] text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -2997,7 +2997,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('moderation')}
               className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'moderation'
-                  ? 'bg-[#087E8B] text-white'
+                  ? 'bg-[#2663EB] text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -3008,7 +3008,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('feedback')}
               className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'feedback'
-                  ? 'bg-[#087E8B] text-white'
+                  ? 'bg-[#2663EB] text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -3101,7 +3101,7 @@ export default function AdminPage() {
                     className="bg-gray-900/50 p-4 border border-gray-700/50 hover:bg-gray-900/70 transition-colors text-left"
                     style={{ borderRadius: 2 }}
                   >
-                    <MessageSquare className="w-5 h-5 text-[#087E8B] mb-2" />
+                    <MessageSquare className="w-5 h-5 text-[#2663EB] mb-2" />
                     <p className="text-xs text-gray-400 mb-1">Open Feedback</p>
                     <p className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
                       {feedback.filter(f => f.status === 'open').length}
@@ -3139,7 +3139,7 @@ export default function AdminPage() {
                       className="p-3 bg-gray-900/50 border border-gray-700/50 hover:bg-gray-900/70 transition-colors text-left"
                       style={{ borderRadius: 2 }}
                     >
-                      <Users className="w-4 h-4 text-[#087E8B] mb-1" />
+                      <Users className="w-4 h-4 text-[#2663EB] mb-1" />
                       <p className="text-xs text-white font-medium">Manage Users</p>
                       <p className="text-xs text-gray-400 mt-1">View and manage all users</p>
                     </button>
@@ -3176,7 +3176,7 @@ export default function AdminPage() {
                     <button
                       onClick={() => setShowFilters(!showFilters)}
                       className={`px-3 py-1.5 text-xs transition-colors flex items-center gap-1.5 ${
-                        showFilters ? 'bg-[#087E8B] text-white' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+                        showFilters ? 'bg-[#2663EB] text-white' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
                       }`}
                       style={{ borderRadius: 2 }}
                     >
@@ -3194,7 +3194,7 @@ export default function AdminPage() {
                     placeholder="Search users by name or email..."
                     value={userSearchQuery}
                     onChange={(e) => setUserSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#087E8B]/50"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#2663EB]/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -3244,7 +3244,7 @@ export default function AdminPage() {
                           onClick={() => setDateFilter({ ...dateFilter, type: 'registration' })}
                           className={`px-3 py-1.5 text-xs transition-colors ${
                             dateFilter.type === 'registration'
-                              ? 'bg-[#087E8B] text-white'
+                              ? 'bg-[#2663EB] text-white'
                               : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
                           }`}
                           style={{ borderRadius: 2 }}
@@ -3255,7 +3255,7 @@ export default function AdminPage() {
                           onClick={() => setDateFilter({ ...dateFilter, type: 'lastActive' })}
                           className={`px-3 py-1.5 text-xs transition-colors ${
                             dateFilter.type === 'lastActive'
-                              ? 'bg-[#087E8B] text-white'
+                              ? 'bg-[#2663EB] text-white'
                               : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
                           }`}
                           style={{ borderRadius: 2 }}
@@ -3270,7 +3270,7 @@ export default function AdminPage() {
                             type="date"
                             value={dateFilter.from}
                             onChange={(e) => setDateFilter({ ...dateFilter, from: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#087E8B]/50"
+                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#2663EB]/50"
                             style={{ borderRadius: 2 }}
                           />
                         </div>
@@ -3280,7 +3280,7 @@ export default function AdminPage() {
                             type="date"
                             value={dateFilter.to}
                             onChange={(e) => setDateFilter({ ...dateFilter, to: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#087E8B]/50"
+                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#2663EB]/50"
                             style={{ borderRadius: 2 }}
                           />
                         </div>
@@ -3356,8 +3356,8 @@ export default function AdminPage() {
                             checked={selectedUsers.has(user.id)}
                             onChange={() => handleSelectUser(user.id)}
                           />
-                          <div className="w-8 h-8 bg-[#087E8B]/20 rounded-full flex items-center justify-center border border-gray-700/50 flex-shrink-0">
-                            <span className="text-xs font-semibold text-[#087E8B]">
+                          <div className="w-8 h-8 bg-[#2663EB]/20 rounded-full flex items-center justify-center border border-gray-700/50 flex-shrink-0">
+                            <span className="text-xs font-semibold text-[#2663EB]">
                               {user.full_name?.charAt(0) || '?'}
                             </span>
                           </div>
@@ -3572,7 +3572,7 @@ export default function AdminPage() {
                     <button
                       onClick={() => setShowCommunityFilters(!showCommunityFilters)}
                       className={`px-3 py-1.5 text-xs transition-colors flex items-center gap-1.5 ${
-                        showCommunityFilters ? 'bg-[#087E8B] text-white' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+                        showCommunityFilters ? 'bg-[#2663EB] text-white' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
                       }`}
                       style={{ borderRadius: 2 }}
                     >
@@ -3590,7 +3590,7 @@ export default function AdminPage() {
                     placeholder="Search communities by name, description, or gym..."
                     value={communitySearchQuery}
                     onChange={(e) => setCommunitySearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#087E8B]/50"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#2663EB]/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -3604,7 +3604,7 @@ export default function AdminPage() {
                         <select
                           value={communityFilters.type}
                           onChange={(e) => setCommunityFilters({ ...communityFilters, type: e.target.value })}
-                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#087E8B]/50"
+                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#2663EB]/50"
                           style={{ borderRadius: 2 }}
                         >
                           <option value="">All Types</option>
@@ -3617,7 +3617,7 @@ export default function AdminPage() {
                         <select
                           value={communityFilters.hasGym}
                           onChange={(e) => setCommunityFilters({ ...communityFilters, hasGym: e.target.value })}
-                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#087E8B]/50"
+                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#2663EB]/50"
                           style={{ borderRadius: 2 }}
                         >
                           <option value="">All Communities</option>
@@ -3635,7 +3635,7 @@ export default function AdminPage() {
                             type="date"
                             value={communityFilters.dateFrom}
                             onChange={(e) => setCommunityFilters({ ...communityFilters, dateFrom: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#087E8B]/50"
+                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#2663EB]/50"
                             style={{ borderRadius: 2 }}
                           />
                         </div>
@@ -3645,7 +3645,7 @@ export default function AdminPage() {
                             type="date"
                             value={communityFilters.dateTo}
                             onChange={(e) => setCommunityFilters({ ...communityFilters, dateTo: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#087E8B]/50"
+                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#2663EB]/50"
                             style={{ borderRadius: 2 }}
                           />
                         </div>
@@ -3656,7 +3656,7 @@ export default function AdminPage() {
                       <select
                         value={communityFilters.status}
                         onChange={(e) => setCommunityFilters({ ...communityFilters, status: e.target.value })}
-                        className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#087E8B]/50"
+                        className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#2663EB]/50"
                         style={{ borderRadius: 2 }}
                       >
                         <option value="">All Statuses</option>
@@ -3736,7 +3736,7 @@ export default function AdminPage() {
                         checked={selectedCommunities.size === filteredCommunities.length && filteredCommunities.length > 0}
                         onChange={handleSelectAllCommunities}
                         className="w-4 h-4 rounded border-gray-600 cursor-pointer"
-                        style={{ accentColor: '#087E8B' }}
+                        style={{ accentColor: '#2663EB' }}
                       />
                       <span className="text-xs text-gray-400">Select All ({filteredCommunities.length})</span>
                     </label>
@@ -3755,7 +3755,7 @@ export default function AdminPage() {
                             checked={selectedCommunities.has(community.id)}
                             onChange={() => handleSelectCommunity(community.id)}
                             className="mt-1 w-4 h-4 rounded border-gray-600 cursor-pointer flex-shrink-0"
-                            style={{ accentColor: '#087E8B' }}
+                            style={{ accentColor: '#2663EB' }}
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
@@ -3962,7 +3962,7 @@ export default function AdminPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => navigate('/gyms/request')}
-                      className="px-3 py-1.5 text-xs bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors flex items-center gap-1.5"
+                      className="px-3 py-1.5 text-xs bg-[#2663EB] text-white hover:bg-[#1e4fd4] transition-colors flex items-center gap-1.5"
                       style={{ borderRadius: 2 }}
                     >
                       <MapPin className="w-3.5 h-3.5" />
@@ -3979,7 +3979,7 @@ export default function AdminPage() {
                     <button
                       onClick={() => setShowGymFilters(!showGymFilters)}
                       className={`px-3 py-1.5 text-xs transition-colors flex items-center gap-1.5 ${
-                        showGymFilters ? 'bg-[#087E8B] text-white' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+                        showGymFilters ? 'bg-[#2663EB] text-white' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
                       }`}
                       style={{ borderRadius: 2 }}
                     >
@@ -4004,7 +4004,7 @@ export default function AdminPage() {
                         onClick={() => setGymFilters({ ...gymFilters, viewType: option.value })}
                         className={`px-3 py-1 text-xs transition-colors ${
                           gymFilters.viewType === option.value
-                            ? 'bg-[#087E8B] text-white'
+                            ? 'bg-[#2663EB] text-white'
                             : 'text-gray-400 hover:text-white'
                         }`}
                         style={{ borderRadius: 2 }}
@@ -4023,7 +4023,7 @@ export default function AdminPage() {
                     placeholder="Search gyms by name, city, country, or address..."
                     value={gymSearchQuery}
                     onChange={(e) => setGymSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#087E8B]/50"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#2663EB]/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -4037,7 +4037,7 @@ export default function AdminPage() {
                         <select
                           value={gymFilters.country}
                           onChange={(e) => setGymFilters({ ...gymFilters, country: e.target.value })}
-                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#087E8B]/50"
+                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#2663EB]/50"
                           style={{ borderRadius: 2 }}
                         >
                           <option value="">All Countries</option>
@@ -4051,7 +4051,7 @@ export default function AdminPage() {
                         <select
                           value={gymFilters.city}
                           onChange={(e) => setGymFilters({ ...gymFilters, city: e.target.value })}
-                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#087E8B]/50"
+                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#2663EB]/50"
                           style={{ borderRadius: 2 }}
                         >
                           <option value="">All Cities</option>
@@ -4069,7 +4069,7 @@ export default function AdminPage() {
                       <select
                         value={gymFilters.visibility}
                         onChange={(e) => setGymFilters({ ...gymFilters, visibility: e.target.value })}
-                        className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#087E8B]/50"
+                        className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#2663EB]/50"
                         style={{ borderRadius: 2 }}
                       >
                         <option value="">All Gyms</option>
@@ -4086,7 +4086,7 @@ export default function AdminPage() {
                             type="date"
                             value={gymFilters.dateFrom}
                             onChange={(e) => setGymFilters({ ...gymFilters, dateFrom: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#087E8B]/50"
+                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#2663EB]/50"
                             style={{ borderRadius: 2 }}
                           />
                         </div>
@@ -4096,7 +4096,7 @@ export default function AdminPage() {
                             type="date"
                             value={gymFilters.dateTo}
                             onChange={(e) => setGymFilters({ ...gymFilters, dateTo: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#087E8B]/50"
+                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#2663EB]/50"
                             style={{ borderRadius: 2 }}
                           />
                         </div>
@@ -4226,7 +4226,7 @@ export default function AdminPage() {
                             })()}
                             onChange={handleSelectAllGyms}
                             className="w-4 h-4 rounded border-gray-600 cursor-pointer"
-                            style={{ accentColor: '#087E8B' }}
+                            style={{ accentColor: '#2663EB' }}
                           />
                           <span className="text-xs text-gray-400">
                             Select All ({selectableCount} selectable)
@@ -4266,7 +4266,7 @@ export default function AdminPage() {
                                 }
                               }}
                               className="mt-1 w-4 h-4 rounded border-gray-600 cursor-pointer flex-shrink-0"
-                              style={{ accentColor: '#087E8B' }}
+                              style={{ accentColor: '#2663EB' }}
                             />
                           ) : (
                             <div className="w-4 h-4 flex-shrink-0" /> // Spacer for alignment
@@ -4311,7 +4311,7 @@ export default function AdminPage() {
                                     href={item.website} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="text-xs text-[#087E8B] hover:underline flex items-center gap-1"
+                                    className="text-xs text-[#2663EB] hover:underline flex items-center gap-1"
                                   >
                                     <ExternalLink className="w-3 h-3" />
                                     Website
@@ -4398,7 +4398,7 @@ export default function AdminPage() {
                                   setGymRequestNotes(item.admin_notes || '');
                                   await loadGymRequestHistory(itemId);
                                 }}
-                                className="px-3 py-1.5 text-xs bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors flex items-center gap-1.5"
+                                className="px-3 py-1.5 text-xs bg-[#2663EB] text-white hover:bg-[#1e4fd4] transition-colors flex items-center gap-1.5"
                                 style={{ borderRadius: 2 }}
                               >
                                 <Eye className="w-3 h-3" />
@@ -4670,7 +4670,7 @@ export default function AdminPage() {
                     placeholder="Search posts and comments by keywords..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#087E8B]/50"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#2663EB]/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -4681,7 +4681,7 @@ export default function AdminPage() {
                     onClick={() => setModerationView('reports')}
                     className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                       moderationView === 'reports'
-                        ? 'bg-[#087E8B] text-white'
+                        ? 'bg-[#2663EB] text-white'
                         : 'bg-gray-700/50 text-gray-400 hover:text-white'
                     }`}
                     style={{ borderRadius: 2 }}
@@ -4693,7 +4693,7 @@ export default function AdminPage() {
                     onClick={() => setModerationView('posts')}
                     className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                       moderationView === 'posts'
-                        ? 'bg-[#087E8B] text-white'
+                        ? 'bg-[#2663EB] text-white'
                         : 'bg-gray-700/50 text-gray-400 hover:text-white'
                     }`}
                     style={{ borderRadius: 2 }}
@@ -4705,7 +4705,7 @@ export default function AdminPage() {
                     onClick={() => setModerationView('comments')}
                     className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                       moderationView === 'comments'
-                        ? 'bg-[#087E8B] text-white'
+                        ? 'bg-[#2663EB] text-white'
                         : 'bg-gray-700/50 text-gray-400 hover:text-white'
                     }`}
                     style={{ borderRadius: 2 }}
@@ -4717,7 +4717,7 @@ export default function AdminPage() {
                     onClick={() => setModerationView('queue')}
                     className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                       moderationView === 'queue'
-                        ? 'bg-[#087E8B] text-white'
+                        ? 'bg-[#2663EB] text-white'
                         : 'bg-gray-700/50 text-gray-400 hover:text-white'
                     }`}
                     style={{ borderRadius: 2 }}
@@ -4943,7 +4943,7 @@ export default function AdminPage() {
                     value={feedbackSearchQuery}
                     onChange={(e) => setFeedbackSearchQuery(e.target.value)}
                     placeholder="Search feedback..."
-                    className="w-full pl-8 pr-3 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+                    className="w-full pl-8 pr-3 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#2663EB]"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -4956,7 +4956,7 @@ export default function AdminPage() {
                       <select
                         value={feedbackFilters.type}
                         onChange={(e) => setFeedbackFilters({ ...feedbackFilters, type: e.target.value })}
-                        className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none focus:border-[#087E8B]"
+                        className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none focus:border-[#2663EB]"
                         style={{ borderRadius: 2 }}
                       >
                         <option value="">All Types</option>
@@ -4971,7 +4971,7 @@ export default function AdminPage() {
                       <select
                         value={feedbackFilters.status}
                         onChange={(e) => setFeedbackFilters({ ...feedbackFilters, status: e.target.value })}
-                        className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none focus:border-[#087E8B]"
+                        className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none focus:border-[#2663EB]"
                         style={{ borderRadius: 2 }}
                       >
                         <option value="">All Status</option>
@@ -4986,7 +4986,7 @@ export default function AdminPage() {
                       <select
                         value={feedbackFilters.priority}
                         onChange={(e) => setFeedbackFilters({ ...feedbackFilters, priority: e.target.value })}
-                        className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none focus:border-[#087E8B]"
+                        className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none focus:border-[#2663EB]"
                         style={{ borderRadius: 2 }}
                       >
                         <option value="">All Priorities</option>
@@ -5049,7 +5049,7 @@ export default function AdminPage() {
                           checked={selectedFeedback.size === filteredFeedback.length && filteredFeedback.length > 0}
                           onChange={handleSelectAllFeedback}
                           className="w-4 h-4 rounded border-gray-600 cursor-pointer"
-                          style={{ accentColor: '#087E8B' }}
+                          style={{ accentColor: '#2663EB' }}
                         />
                         <span className="text-xs text-gray-400">Select All ({filteredFeedback.length})</span>
                       </label>
@@ -5087,7 +5087,7 @@ export default function AdminPage() {
                               checked={selectedFeedback.has(item.id)}
                               onChange={() => handleSelectFeedback(item.id)}
                               className="mt-1 w-4 h-4 rounded border-gray-600 cursor-pointer flex-shrink-0"
-                              style={{ accentColor: '#087E8B' }}
+                              style={{ accentColor: '#2663EB' }}
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2 mb-2">
@@ -5123,7 +5123,7 @@ export default function AdminPage() {
                                   </button>
                                   <button
                                     onClick={() => setEditingFeedback(item)}
-                                    className="px-2 py-1 text-xs bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
+                                    className="px-2 py-1 text-xs bg-[#2663EB] text-white hover:bg-[#1e4fd4] transition-colors"
                                     style={{ borderRadius: 2 }}
                                   >
                                     Edit
@@ -5184,7 +5184,7 @@ export default function AdminPage() {
               {viewingFeedback.page_url && (
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Page URL</label>
-                  <a href={viewingFeedback.page_url} target="_blank" rel="noopener noreferrer" className="text-sm text-[#087E8B] hover:underline flex items-center gap-1">
+                  <a href={viewingFeedback.page_url} target="_blank" rel="noopener noreferrer" className="text-sm text-[#2663EB] hover:underline flex items-center gap-1">
                     {viewingFeedback.page_url} <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
@@ -5211,7 +5211,7 @@ export default function AdminPage() {
                   setEditingFeedback(viewingFeedback);
                   setViewingFeedback(null);
                 }}
-                className="flex-1 px-4 py-2 bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
+                className="flex-1 px-4 py-2 bg-[#2663EB] text-white hover:bg-[#1e4fd4] transition-colors"
                 style={{ borderRadius: 2 }}
               >
                 Edit Feedback
@@ -5249,7 +5249,7 @@ export default function AdminPage() {
                   <select
                     value={editingFeedback.status}
                     onChange={(e) => setEditingFeedback({ ...editingFeedback, status: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
                     style={{ borderRadius: 2 }}
                   >
                     <option value="open">Open</option>
@@ -5263,7 +5263,7 @@ export default function AdminPage() {
                   <select
                     value={editingFeedback.priority}
                     onChange={(e) => setEditingFeedback({ ...editingFeedback, priority: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
                     style={{ borderRadius: 2 }}
                   >
                     <option value="low">Low</option>
@@ -5279,7 +5279,7 @@ export default function AdminPage() {
                 <textarea
                   value={editingFeedback.admin_response || ''}
                   onChange={(e) => setEditingFeedback({ ...editingFeedback, admin_response: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
                   style={{ borderRadius: 2 }}
                   rows={4}
                   placeholder="Add a response to the user..."
@@ -5308,7 +5308,7 @@ export default function AdminPage() {
                   editingFeedback.priority,
                   editingFeedback.admin_response || null
                 )}
-                className="flex-1 px-4 py-2 bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
+                className="flex-1 px-4 py-2 bg-[#2663EB] text-white hover:bg-[#1e4fd4] transition-colors"
                 style={{ borderRadius: 2 }}
               >
                 Save Changes
@@ -5701,7 +5701,7 @@ export default function AdminPage() {
                     showToast('error', 'Error', 'Failed to save notes');
                   }
                 }}
-                className="flex-1 px-4 py-2 text-sm bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
+                className="flex-1 px-4 py-2 text-sm bg-[#2663EB] text-white hover:bg-[#1e4fd4] transition-colors"
                 style={{ borderRadius: 2 }}
               >
                 Save Notes
@@ -5714,7 +5714,7 @@ export default function AdminPage() {
                       setViewingGymRequest(null);
                       setGymRequestNotes('');
                     }}
-                    className="px-4 py-2 text-sm bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors flex items-center gap-2"
+                    className="px-4 py-2 text-sm bg-[#2663EB] text-white hover:bg-[#1e4fd4] transition-colors flex items-center gap-2"
                     style={{ borderRadius: 2 }}
                   >
                     <Edit className="w-4 h-4" />
@@ -5820,7 +5820,7 @@ export default function AdminPage() {
                       name="gym_name"
                       defaultValue={editingGymRequest.gym_name}
                       required
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#2663EB]"
                       style={{ borderRadius: 2 }}
                     />
                   </div>
@@ -5832,7 +5832,7 @@ export default function AdminPage() {
                         name="country"
                         defaultValue={editingGymRequest.country}
                         required
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B]"
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#2663EB]"
                         style={{ borderRadius: 2 }}
                       />
                     </div>
@@ -5843,7 +5843,7 @@ export default function AdminPage() {
                         name="city"
                         defaultValue={editingGymRequest.city}
                         required
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B]"
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#2663EB]"
                         style={{ borderRadius: 2 }}
                       />
                     </div>
@@ -5854,7 +5854,7 @@ export default function AdminPage() {
                       type="text"
                       name="address"
                       defaultValue={editingGymRequest.address || ''}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#2663EB]"
                       style={{ borderRadius: 2 }}
                     />
                   </div>
@@ -5871,7 +5871,7 @@ export default function AdminPage() {
                       type="tel"
                       name="phone"
                       defaultValue={editingGymRequest.phone || ''}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#2663EB]"
                       style={{ borderRadius: 2 }}
                     />
                   </div>
@@ -5881,7 +5881,7 @@ export default function AdminPage() {
                       type="email"
                       name="email"
                       defaultValue={editingGymRequest.email || ''}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#2663EB]"
                       style={{ borderRadius: 2 }}
                     />
                   </div>
@@ -5892,7 +5892,7 @@ export default function AdminPage() {
                       name="website"
                       defaultValue={editingGymRequest.website || ''}
                       placeholder="https://example.com"
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#2663EB]"
                       style={{ borderRadius: 2 }}
                     />
                   </div>
@@ -5906,7 +5906,7 @@ export default function AdminPage() {
                   name="description"
                   defaultValue={editingGymRequest.description || ''}
                   rows={4}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B] resize-none"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#2663EB] resize-none"
                   style={{ borderRadius: 2 }}
                   placeholder="Describe the gym..."
                 />
@@ -5919,7 +5919,7 @@ export default function AdminPage() {
                   name="admin_notes"
                   defaultValue={editingGymRequest.admin_notes || ''}
                   rows={3}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#087E8B] resize-none"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#2663EB] resize-none"
                   style={{ borderRadius: 2 }}
                   placeholder="Internal notes about this request..."
                 />
@@ -5947,7 +5947,7 @@ export default function AdminPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 text-sm bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 text-sm bg-[#2663EB] text-white hover:bg-[#1e4fd4] transition-colors flex items-center justify-center gap-2"
                   style={{ borderRadius: 2 }}
                 >
                   <CheckCircle className="w-4 h-4" />
@@ -6022,7 +6022,7 @@ export default function AdminPage() {
                   }
                 }}
                 disabled={isUpdatingCommunity}
-                className="flex-1 px-4 py-2 bg-[#087E8B] text-white rounded hover:bg-[#066a75] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-[#2663EB] text-white rounded hover:bg-[#1e4fd4] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isUpdatingCommunity ? 'Saving...' : 'Confirm & Save'}
               </button>
@@ -6087,7 +6087,7 @@ export default function AdminPage() {
                   type="text"
                   name="name"
                   defaultValue={editingCommunity.name}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-[#2663EB]"
                   style={{ borderRadius: 2 }}
                   required
                 />
@@ -6099,7 +6099,7 @@ export default function AdminPage() {
                   name="description"
                   defaultValue={editingCommunity.description || ''}
                   rows={3}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-[#087E8B] resize-none"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-[#2663EB] resize-none"
                   style={{ borderRadius: 2 }}
                 />
               </div>
@@ -6110,7 +6110,7 @@ export default function AdminPage() {
                   name="rules"
                   defaultValue={editingCommunity.rules || ''}
                   rows={4}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-[#087E8B] resize-none"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-[#2663EB] resize-none"
                   style={{ borderRadius: 2 }}
                   placeholder="Community guidelines and rules..."
                 />
@@ -6132,7 +6132,7 @@ export default function AdminPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 text-sm bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
+                  className="flex-1 px-4 py-2 text-sm bg-[#2663EB] text-white hover:bg-[#1e4fd4] transition-colors"
                   style={{ borderRadius: 2 }}
                 >
                   Save Changes
@@ -6237,7 +6237,7 @@ export default function AdminPage() {
                           setAssigningModerator(viewingCommunity);
                           setViewingCommunity(null);
                         }}
-                        className="text-xs text-[#087E8B] hover:text-[#087E8B] flex items-center gap-1"
+                        className="text-xs text-[#2663EB] hover:text-[#2663EB] flex items-center gap-1"
                       >
                         <Shield className="w-3 h-3" />
                         Assign Moderator
@@ -6257,7 +6257,7 @@ export default function AdminPage() {
                           <div key={member.id} className="flex items-center justify-between p-2 bg-gray-900/30 rounded hover:bg-gray-900/50 transition-colors" style={{ borderRadius: 2 }}>
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               {isModerator ? (
-                                <Shield className="w-3.5 h-3.5 text-[#087E8B] flex-shrink-0" />
+                                <Shield className="w-3.5 h-3.5 text-[#2663EB] flex-shrink-0" />
                               ) : (
                                 <Users className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
                               )}
@@ -6301,7 +6301,7 @@ export default function AdminPage() {
                     navigate(`/community/${viewingCommunity.id}`);
                     setViewingCommunity(null);
                   }}
-                  className="flex-1 px-4 py-2 text-sm bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
+                  className="flex-1 px-4 py-2 text-sm bg-[#2663EB] text-white hover:bg-[#1e4fd4] transition-colors"
                   style={{ borderRadius: 2 }}
                 >
                   View Community
@@ -6389,7 +6389,7 @@ export default function AdminPage() {
                     type="text"
                     value={editingUser.full_name || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, full_name: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#087E8B]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#2663EB]/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6399,7 +6399,7 @@ export default function AdminPage() {
                     type="email"
                     value={editingUser.email || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#087E8B]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#2663EB]/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6411,7 +6411,7 @@ export default function AdminPage() {
                   value={editingUser.bio || ''}
                   onChange={(e) => setEditingUser({ ...editingUser, bio: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#087E8B]/50"
+                  className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#2663EB]/50"
                   style={{ borderRadius: 2 }}
                 />
               </div>
@@ -6423,7 +6423,7 @@ export default function AdminPage() {
                     type="text"
                     value={editingUser.company || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, company: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#087E8B]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#2663EB]/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6433,7 +6433,7 @@ export default function AdminPage() {
                     type="text"
                     value={editingUser.role || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#087E8B]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#2663EB]/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6446,7 +6446,7 @@ export default function AdminPage() {
                     type="text"
                     value={editingUser.climbing_grade || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, climbing_grade: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#087E8B]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#2663EB]/50"
                     style={{ borderRadius: 2 }}
                     placeholder="e.g., 5.12a"
                   />
@@ -6457,7 +6457,7 @@ export default function AdminPage() {
                     type="number"
                     value={editingUser.years_climbing || 0}
                     onChange={(e) => setEditingUser({ ...editingUser, years_climbing: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#087E8B]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#2663EB]/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6467,7 +6467,7 @@ export default function AdminPage() {
                     type="text"
                     value={editingUser.favorite_style || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, favorite_style: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#087E8B]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#2663EB]/50"
                     style={{ borderRadius: 2 }}
                     placeholder="e.g., bouldering"
                   />
@@ -6481,7 +6481,7 @@ export default function AdminPage() {
                     type="url"
                     value={editingUser.instagram_url || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, instagram_url: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#087E8B]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#2663EB]/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6491,7 +6491,7 @@ export default function AdminPage() {
                     type="url"
                     value={editingUser.twitter_url || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, twitter_url: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#087E8B]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#2663EB]/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6501,7 +6501,7 @@ export default function AdminPage() {
                     type="url"
                     value={editingUser.website_url || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, website_url: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#087E8B]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#2663EB]/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6537,7 +6537,7 @@ export default function AdminPage() {
               <div className="flex gap-2 pt-2 border-t border-gray-700/50">
                 <button
                   onClick={() => handleUpdateUser(editingUser)}
-                  className="flex-1 px-4 py-2 text-sm bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
+                  className="flex-1 px-4 py-2 text-sm bg-[#2663EB] text-white hover:bg-[#1e4fd4] transition-colors"
                   style={{ borderRadius: 2 }}
                 >
                   Save Changes
@@ -6669,7 +6669,7 @@ export default function AdminPage() {
                     handleEditUser(viewingUser);
                     setViewingUser(null);
                   }}
-                  className="flex-1 px-4 py-2 text-sm bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
+                  className="flex-1 px-4 py-2 text-sm bg-[#2663EB] text-white hover:bg-[#1e4fd4] transition-colors"
                   style={{ borderRadius: 2 }}
                 >
                   Edit Profile
@@ -6732,7 +6732,7 @@ export default function AdminPage() {
                 {viewingGym.website && (
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">Website</label>
-                    <a href={viewingGym.website} target="_blank" rel="noopener noreferrer" className="text-sm text-[#087E8B] hover:underline flex items-center gap-1">
+                    <a href={viewingGym.website} target="_blank" rel="noopener noreferrer" className="text-sm text-[#2663EB] hover:underline flex items-center gap-1">
                       {viewingGym.website} <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
@@ -6861,7 +6861,7 @@ export default function AdminPage() {
                   setEditingGym(viewingGym);
                   setViewingGym(null);
                 }}
-                className="flex-1 px-4 py-2 text-sm bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
+                className="flex-1 px-4 py-2 text-sm bg-[#2663EB] text-white hover:bg-[#1e4fd4] transition-colors"
                 style={{ borderRadius: 2 }}
               >
                 Edit Gym
@@ -6987,7 +6987,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="text"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
             style={{ borderRadius: 2 }}
             required
           />
@@ -6998,7 +6998,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="text"
             value={formData.country}
             onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
             style={{ borderRadius: 2 }}
             required
           />
@@ -7009,7 +7009,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="text"
             value={formData.city}
             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
             style={{ borderRadius: 2 }}
             required
           />
@@ -7020,7 +7020,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="text"
             value={formData.address}
             onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
             style={{ borderRadius: 2 }}
             required
           />
@@ -7031,7 +7031,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="text"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7041,7 +7041,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="email"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7051,7 +7051,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="url"
             value={formData.website}
             onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7062,7 +7062,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             value={formData.single_entry_price}
             onChange={(e) => setFormData({ ...formData, single_entry_price: e.target.value })}
             placeholder="e.g., $20, €15-25"
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7073,7 +7073,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             value={formData.membership_price}
             onChange={(e) => setFormData({ ...formData, membership_price: e.target.value })}
             placeholder="e.g., $80/month, €50/month"
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7084,7 +7084,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             step="any"
             value={formData.latitude}
             onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7095,7 +7095,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             step="any"
             value={formData.longitude}
             onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7105,7 +7105,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="url"
             value={formData.image_url}
             onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7117,7 +7117,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           rows={4}
-          className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+          className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
           style={{ borderRadius: 2 }}
         />
       </div>
@@ -7141,7 +7141,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             onChange={(e) => setNewFacility(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFacility())}
             placeholder="Add facility"
-            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
             style={{ borderRadius: 2 }}
           />
           <button type="button" onClick={addFacility} className="px-3 py-2 bg-gray-700 text-white text-sm hover:bg-gray-600" style={{ borderRadius: 2 }}>
@@ -7169,7 +7169,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             onChange={(e) => setNewDifficulty(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addDifficulty())}
             placeholder="Add difficulty level"
-            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#087E8B]"
+            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#2663EB]"
             style={{ borderRadius: 2 }}
           />
           <button type="button" onClick={addDifficulty} className="px-3 py-2 bg-gray-700 text-white text-sm hover:bg-gray-600" style={{ borderRadius: 2 }}>
@@ -7185,7 +7185,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             checked={formData.is_hidden}
             onChange={(e) => setFormData({ ...formData, is_hidden: e.target.checked })}
             className="w-4 h-4 rounded border-gray-600"
-            style={{ accentColor: '#087E8B' }}
+            style={{ accentColor: '#2663EB' }}
           />
           <span className="text-xs text-gray-400">Hide from public listing</span>
         </label>
@@ -7194,7 +7194,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
       <div className="flex gap-2 pt-4 border-t border-gray-700/50">
         <button
           type="submit"
-          className="flex-1 px-4 py-2 text-sm bg-[#087E8B] text-white hover:bg-[#066a75] transition-colors"
+          className="flex-1 px-4 py-2 text-sm bg-[#2663EB] text-white hover:bg-[#1e4fd4] transition-colors"
           style={{ borderRadius: 2 }}
         >
           Save Changes

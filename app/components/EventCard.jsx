@@ -29,7 +29,7 @@ export default function EventCard({
     const colors = {
       meetup: '#3b82f6',
       competition: '#ef4444',
-      training: '#087E8B',
+      training: '#2663EB',
       social: '#ec4899'
     };
     return colors[type] || '#6b7280';

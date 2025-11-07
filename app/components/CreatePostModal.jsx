@@ -16,7 +16,7 @@ export default function CreatePostModal({
 }) {
   const [title, setTitle] = useState(initialData?.title || '');
   const [content, setContent] = useState(initialData?.content || '');
-  const [tag, setTag] = useState(initialData?.tag || 'general');
+  const [tag, setTag] = useState(initialData?.tag || null);
   const [submitting, setSubmitting] = useState(false);
   const [mediaFiles, setMediaFiles] = useState(initialData?.media_files || []);
   const [events, setEvents] = useState([]);
@@ -28,6 +28,8 @@ export default function CreatePostModal({
   const [uploadingFiles, setUploadingFiles] = useState([]); // Array of file objects being uploaded
   const [lastSaved, setLastSaved] = useState(null);
   const [contentWarning, setContentWarning] = useState(null);
+  const [animatingTagIndex, setAnimatingTagIndex] = useState(null);
+  const animationTimeoutsRef = useRef([]);
   
   // Refs for focus management
   const titleInputRef = useRef(null);
@@ -41,6 +43,17 @@ export default function CreatePostModal({
 
   // Draft storage key
   const draftKey = `post-draft-${communityId}`;
+
+  const tags = [
+    { value: 'general', label: 'General', color: '#6b7280' },
+    { value: 'beta', label: 'Beta', color: '#ef4444' },
+    { value: 'event', label: 'Events', color: '#3b82f6' },
+    { value: 'question', label: 'Questions', color: '#10b981' },
+    { value: 'gear', label: 'Gear', color: '#f59e0b' },
+    { value: 'training', label: 'Training', color: '#8b5cf6' },
+    { value: 'social', label: 'Social', color: '#ec4899' },
+    { value: 'news', label: 'News', color: '#ec4899' },
+  ];
 
   // Handle close - memoized to avoid recreating on each render
   const handleClose = useCallback(() => {
@@ -116,6 +129,41 @@ export default function CreatePostModal({
     };
   }, [showEventPicker, handleClose]);
 
+  // Function to trigger category animation
+  const triggerCategoryAnimation = useCallback(() => {
+    // Clear any existing timeouts
+    animationTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+    animationTimeoutsRef.current = [];
+    
+    // Reset animation state
+    setAnimatingTagIndex(null);
+    
+    // Start animation sequence immediately (no delay)
+    tags.forEach((_, index) => {
+      const showTimeout = setTimeout(() => {
+        setAnimatingTagIndex(index);
+        // Clear animation after showing color briefly
+        const clearTimeout = setTimeout(() => {
+          setAnimatingTagIndex(prev => prev === index ? null : prev);
+        }, 200); // Show each color for 200ms (reduced from 300ms)
+        animationTimeoutsRef.current.push(clearTimeout);
+      }, index * 150); // 150ms delay between each button (reduced from 350ms)
+      animationTimeoutsRef.current.push(showTimeout);
+    });
+  }, []);
+
+  // Category button color animation on modal open
+  useEffect(() => {
+    if (editMode) return; // Skip animation in edit mode
+    triggerCategoryAnimation();
+    
+    return () => {
+      animationTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      animationTimeoutsRef.current = [];
+      setAnimatingTagIndex(null);
+    };
+  }, [editMode, triggerCategoryAnimation]); // Run once when modal opens
+
   // Load draft from localStorage on mount
   useEffect(() => {
     if (!editMode && !initialData) {
@@ -126,7 +174,7 @@ export default function CreatePostModal({
           if (draft.title || draft.content) {
             setTitle(draft.title || '');
             setContent(draft.content || '');
-            setTag(draft.tag || 'general');
+            setTag(draft.tag || null);
           }
         } catch (error) {
           console.error('Error loading draft:', error);
@@ -224,9 +272,12 @@ export default function CreatePostModal({
   const handleKeyDown = (e) => {
     // Cmd/Ctrl + Enter to submit
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !submitting) {
-      const canSubmit = title.trim().length >= 5 && content.trim().length >= 10;
+      const canSubmit = title.trim().length >= 5 && content.trim().length >= 10 && tag;
       if (canSubmit) {
         handleSubmit();
+      } else if (!tag) {
+        showToast('error', 'Select a Category', 'Please select a category before posting.');
+        triggerCategoryAnimation();
       }
     }
 
@@ -252,19 +303,15 @@ export default function CreatePostModal({
     }
   };
 
-  const tags = [
-    { value: 'general', label: 'General', color: '#6b7280' },
-    { value: 'beta', label: 'Beta', color: '#ef4444' },
-    { value: 'event', label: 'Events', color: '#3b82f6' },
-    { value: 'question', label: 'Questions', color: '#10b981' },
-    { value: 'gear', label: 'Gear', color: '#f59e0b' },
-    { value: 'training', label: 'Training', color: '#8b5cf6' },
-    { value: 'social', label: 'Social', color: '#ec4899' },
-    { value: 'news', label: 'News', color: '#6b7280' },
-  ];
-
   const handleSubmit = async () => {
     if (title.trim().length < 5 || content.trim().length < 10) {
+      return;
+    }
+
+    // Check if category is selected
+    if (!tag) {
+      showToast('error', 'Select a Category', 'Please select a category before posting.');
+      triggerCategoryAnimation();
       return;
     }
 
@@ -454,7 +501,7 @@ export default function CreatePostModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 md:p-4"
+      className="fixed inset-0 bg-black/60 z-50 flex items-end md:items-center justify-center md:p-4"
       onClick={handleClose}
       role="dialog"
       aria-modal="true"
@@ -462,13 +509,13 @@ export default function CreatePostModal({
     >
       <div
         ref={modalRef}
-        className="bg-[#252526] rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col shadow-xl my-8 md:my-4"
+        className="bg-[#252526] w-full h-full md:h-auto md:rounded-lg md:max-w-2xl md:max-h-[90vh] flex flex-col shadow-xl md:my-4"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header - Who is posting where */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
+        <div className="flex items-center justify-between p-4 md:p-4 border-b border-gray-700 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#087E8B] rounded-full flex items-center justify-center text-white font-medium text-sm">
+            <div className="w-8 h-8 bg-[#2663EB] rounded-full flex items-center justify-center text-white font-medium text-sm">
               {userName.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -487,29 +534,35 @@ export default function CreatePostModal({
         </div>
 
         {/* Form Content */}
-        <div className="flex-1 p-4 flex flex-col min-h-0 overflow-y-auto">
+        <div className="flex-1 p-6 md:p-4 flex flex-col min-h-0 overflow-y-auto">
           {/* Tag Selector */}
           <div className="mb-4">
             <div className="flex flex-wrap gap-2">
-              {tags.map((tagOption) => (
-                <button
-                  key={tagOption.value}
-                  onClick={() => setTag(tagOption.value)}
-                  disabled={submitting}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                    tag === tagOption.value
-                      ? 'text-white'
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  }`}
-                  style={
-                    tag === tagOption.value
-                      ? { backgroundColor: tagOption.color }
-                      : {}
-                  }
-                >
-                  {tagOption.label}
-                </button>
-              ))}
+              {tags.map((tagOption, index) => {
+                const isAnimating = animatingTagIndex === index;
+                const isSelected = tag === tagOption.value;
+                const shouldShowColor = isSelected || isAnimating;
+                
+                return (
+                  <button
+                    key={tagOption.value}
+                    onClick={() => setTag(tagOption.value)}
+                    disabled={submitting}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                      shouldShowColor
+                        ? 'text-white scale-105'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    }`}
+                    style={
+                      shouldShowColor
+                        ? { backgroundColor: tagOption.color }
+                        : {}
+                    }
+                  >
+                    {tagOption.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -578,7 +631,7 @@ export default function CreatePostModal({
                         onClick={() => handleEventSelect(event)}
                         className={`w-full text-left p-2 rounded text-sm transition-colors ${
                           index === selectedEventIndex
-                            ? 'bg-[#087E8B] text-white'
+                            ? 'bg-[#2663EB] text-white'
                             : 'text-gray-300 hover:bg-gray-700'
                         }`}
                       >
@@ -608,7 +661,7 @@ export default function CreatePostModal({
                     {file.fileName && uploadProgress[file.fileName] !== undefined && (
                       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-800 rounded-b-lg overflow-hidden">
                         <div
-                          className="h-full bg-[#087E8B] transition-all duration-300"
+                          className="h-full bg-[#2663EB] transition-all duration-300"
                           style={{ width: `${uploadProgress[file.fileName]}%` }}
                         />
                       </div>
@@ -695,7 +748,7 @@ export default function CreatePostModal({
                 content.trim().length < 10 ||
                 submitting
               }
-              className="bg-[#087E8B] hover:bg-[#066a75] disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+              className="bg-[#2663EB] hover:bg-[#1e4fd4] disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
               aria-label={editMode ? 'Save post' : 'Post'}
             >
               {submitting ? (

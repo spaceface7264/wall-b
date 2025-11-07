@@ -156,7 +156,7 @@ export default function ShareInviteModal({ isOpen, onClose, communityId, communi
                 type="text"
                 value={inviteLink}
                 readOnly
-                className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
+                className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent"
               />
               <button
                 onClick={copyToClipboard}
@@ -189,7 +189,7 @@ export default function ShareInviteModal({ isOpen, onClose, communityId, communi
             {navigator.share && (
               <button
                 onClick={shareNative}
-                className="w-full flex items-center gap-3 p-3 bg-[#087E8B] hover:bg-[#066a75] text-white rounded-lg transition-colors"
+                className="w-full flex items-center gap-3 p-3 bg-[#2663EB] hover:bg-[#1e4fd4] text-white rounded-lg transition-colors"
               >
                 <Share2 className="w-5 h-5" />
                 <span className="font-medium">Share</span>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { MapPin, Heart, MoreVertical, Navigation, Filter, X, ChevronDown, ChevronUp, SlidersHorizontal, Bookmark, BookmarkCheck, Trash2 } from 'lucide-react';
+import { MapPin, Heart, MoreVertical, Navigation, Filter, X, ChevronDown, ChevronUp, SlidersHorizontal, Bookmark, BookmarkCheck, Trash2, Search } from 'lucide-react';
 import GymCard from '../components/GymCard';
 import { useToast } from '../providers/ToastProvider';
 import { useGeolocation } from '../hooks/useGeolocation';
@@ -465,12 +465,13 @@ export default function Gyms() {
     if (selectedFacilities.length > 0) count++;
     if (selectedCountry) count++;
     if (selectedCity) count++;
-    if (selectedDifficulties.length > 0) count++;
-    if (priceRange.min || priceRange.max) count++;
+    // Difficulty and price filters disabled
+    // if (selectedDifficulties.length > 0) count++;
+    // if (priceRange.min || priceRange.max) count++;
     if (distanceRadius !== null) count++;
     if (favoritesOnly) count++;
     return count;
-  }, [selectedFacilities, selectedCountry, selectedCity, selectedDifficulties, priceRange, distanceRadius, favoritesOnly]);
+  }, [selectedFacilities, selectedCountry, selectedCity, distanceRadius, favoritesOnly]);
 
   // Clear all filters
   const clearAllFilters = useCallback(() => {
@@ -528,27 +529,29 @@ export default function Gyms() {
     }
 
     // Filter by difficulty levels (OR logic - gym must have at least one selected difficulty)
-    if (selectedDifficulties.length > 0) {
-      filtered = filtered.filter(gym => {
-        const difficulties = getGymDifficulties(gym);
-        return selectedDifficulties.some(difficulty => difficulties.includes(difficulty));
-      });
-    }
+    // DISABLED - Difficulty filter deactivated
+    // if (selectedDifficulties.length > 0) {
+    //   filtered = filtered.filter(gym => {
+    //     const difficulties = getGymDifficulties(gym);
+    //     return selectedDifficulties.some(difficulty => difficulties.includes(difficulty));
+    //   });
+    // }
 
     // Filter by price range
-    if (priceRange.min || priceRange.max) {
-      filtered = filtered.filter(gym => {
-        if (!gym.price_range) return false;
-        const gymPrice = parsePriceRange(gym.price_range);
-        if (priceRange.min && gymPrice.max !== null && gymPrice.max < parseFloat(priceRange.min)) {
-          return false;
-        }
-        if (priceRange.max && gymPrice.min !== null && gymPrice.min > parseFloat(priceRange.max)) {
-          return false;
-        }
-        return true;
-      });
-    }
+    // DISABLED - Price filter deactivated
+    // if (priceRange.min || priceRange.max) {
+    //   filtered = filtered.filter(gym => {
+    //     if (!gym.price_range) return false;
+    //     const gymPrice = parsePriceRange(gym.price_range);
+    //     if (priceRange.min && gymPrice.max !== null && gymPrice.max < parseFloat(priceRange.min)) {
+    //       return false;
+    //     }
+    //     if (priceRange.max && gymPrice.min !== null && gymPrice.min > parseFloat(priceRange.max)) {
+    //       return false;
+    //     }
+    //     return true;
+    //   });
+    // }
 
     // Calculate distances when geolocation is enabled
     if (geolocationEnabled && location) {
@@ -634,8 +637,8 @@ export default function Gyms() {
     isAdmin,
     selectedCountry,
     selectedCity,
-    selectedDifficulties,
-    priceRange,
+    // selectedDifficulties, // DISABLED
+    // priceRange, // DISABLED
     distanceRadius,
     favoritesOnly,
     sortBy,
@@ -719,122 +722,172 @@ export default function Gyms() {
   return (
     <div className="mobile-container">
 
-        {/* Search and Filter Controls */}
-        <div className="animate-slide-up" style={{ position: 'relative', zIndex: 50 }}>
-          <div className="flex items-center gap-3">
+        {/* Search Bar */}
+        <div className="animate-slide-up mt-6 mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
+              placeholder="Search gyms..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search gyms..."
-              className="flex-1 minimal-input"
+              className="w-full pl-10 pr-10 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent"
+              style={{ color: 'var(--text-primary)' }}
             />
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="relative p-1.5 hover:bg-gray-700 rounded-md transition-colors flex-shrink-0"
-              aria-label="Filter gyms"
-            >
-              <Filter className="w-4 h-4 text-gray-400" />
-              {activeFilterCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#087E8B] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center" style={{ fontSize: '10px' }}>
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
-            <div className="relative flex-shrink-0">
+            {searchTerm && (
               <button
-                ref={menuButtonRef}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!showMenu) {
-                    // Calculate menu position
-                    const button = e.currentTarget;
-                    const rect = button.getBoundingClientRect();
-                    setMenuPosition({
-                      top: rect.bottom + 4,
-                      right: window.innerWidth - rect.right
-                    });
-                  }
-                  setShowMenu(!showMenu);
-                }}
-                className="p-1.5 hover:bg-gray-700 rounded-md transition-colors"
-                aria-label="More options"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
               >
-                <MoreVertical className="w-4 h-4 text-gray-400" />
+                <X className="w-4 h-4" />
               </button>
+            )}
+          </div>
+        </div>
 
-              {/* Dropdown Menu */}
-              {showMenu && (
-                <>
-                  {/* Overlay to close menu */}
-                  <div 
-                    className="fixed inset-0 z-[1000]" 
-                    onClick={() => setShowMenu(false)}
-                  />
-                  
-                  {/* Dropdown Menu - fixed positioning */}
-                  <div
-                    role="menu"
-                    ref={menuRef}
-                    className="fixed rounded-lg shadow-xl z-[1100]"
-                    style={{ 
-                      top: `${menuPosition.top}px`,
-                      right: `${menuPosition.right}px`,
-                      minWidth: '180px',
-                      backgroundColor: 'var(--bg-surface)', 
-                      border: '1px solid var(--border-color)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
-                      maxHeight: 'calc(100vh - 20px)',
-                      overflowY: 'auto'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleGeolocation();
-                      setShowMenu(false);
-                    }}
-                    disabled={locationLoading}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ 
-                      fontSize: '11px',
-                      color: geolocationEnabled ? 'var(--text-primary)' : 'var(--text-secondary)'
-                    }}
-                    onMouseEnter={(e) => !locationLoading && (e.currentTarget.style.backgroundColor = 'var(--bg-primary)')}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    role="menuitem"
-                  >
-                    {locationLoading ? (
-                      <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" style={{ flexShrink: 0 }}></div>
-                    ) : (
-                      <Navigation className="w-3.5 h-3.5" style={{ flexShrink: 0, color: geolocationEnabled ? '#087E8B' : 'var(--text-muted)' }} />
-                    )}
-                    <span>{geolocationEnabled ? 'Turn off location' : 'Turn on location'}</span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate('/gyms/request');
-                      setShowMenu(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
-                    style={{ 
-                      fontSize: '11px',
-                      color: 'var(--text-secondary)',
-                      borderTop: '1px solid var(--border-color)'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    role="menuitem"
-                  >
-                    <MapPin className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
-                    <span>Request Gym</span>
-                  </button>
-                </div>
-                </>
-              )}
-            </div>
+        {/* Filter and Sort Controls */}
+        <div className="animate-slide-up mb-4 flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+              showFilters || activeFilterCount > 0
+                ? 'bg-[#2663EB]/20 text-[#2663EB] border border-[#2663EB]/30'
+                : 'bg-gray-800/50 text-gray-300 border border-gray-700 hover:bg-gray-700/50'
+            }`}
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 bg-[#2663EB] text-white text-xs rounded-full">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="px-3 py-1.5 bg-gray-800/50 border border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            <option value="name-a-z">Name (A-Z)</option>
+            <option value="name-z-a">Name (Z-A)</option>
+            {geolocationEnabled && location && (
+              <>
+                <option value="distance-nearest">Distance (Nearest)</option>
+                <option value="distance-farthest">Distance (Farthest)</option>
+              </>
+            )}
+            <option value="price-low-high">Price (Low to High)</option>
+            <option value="price-high-low">Price (High to Low)</option>
+          </select>
+
+          {(activeFilterCount > 0 || searchTerm.trim()) && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                clearAllFilters();
+              }}
+              className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+              Clear
+            </button>
+          )}
+
+          <div className="relative flex-shrink-0 ml-auto">
+            <button
+              ref={menuButtonRef}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!showMenu) {
+                  // Calculate menu position
+                  const button = e.currentTarget;
+                  const rect = button.getBoundingClientRect();
+                  setMenuPosition({
+                    top: rect.bottom + 4,
+                    right: window.innerWidth - rect.right
+                  });
+                }
+                setShowMenu(!showMenu);
+              }}
+              className="p-1.5 hover:bg-gray-700 rounded-md transition-colors"
+              aria-label="More options"
+            >
+              <MoreVertical className="w-4 h-4 text-gray-400" />
+            </button>
+
+            {/* Dropdown Menu */}
+            {showMenu && (
+              <>
+                {/* Overlay to close menu */}
+                <div 
+                  className="fixed inset-0 z-[1000]" 
+                  onClick={() => setShowMenu(false)}
+                />
+                
+                {/* Dropdown Menu - fixed positioning */}
+                <div
+                  role="menu"
+                  ref={menuRef}
+                  className="fixed rounded-lg shadow-xl z-[1100]"
+                  style={{ 
+                    top: `${menuPosition.top}px`,
+                    right: `${menuPosition.right}px`,
+                    minWidth: '180px',
+                    backgroundColor: 'var(--bg-surface)', 
+                    border: '1px solid var(--border-color)',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+                    maxHeight: 'calc(100vh - 20px)',
+                    overflowY: 'auto'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleGeolocation();
+                    setShowMenu(false);
+                  }}
+                  disabled={locationLoading}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ 
+                    fontSize: '11px',
+                    color: geolocationEnabled ? 'var(--text-primary)' : 'var(--text-secondary)'
+                  }}
+                  onMouseEnter={(e) => !locationLoading && (e.currentTarget.style.backgroundColor = 'var(--bg-primary)')}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  role="menuitem"
+                >
+                  {locationLoading ? (
+                    <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" style={{ flexShrink: 0 }}></div>
+                  ) : (
+                    <Navigation className="w-3.5 h-3.5" style={{ flexShrink: 0, color: geolocationEnabled ? '#2663EB' : 'var(--text-muted)' }} />
+                  )}
+                  <span>{geolocationEnabled ? 'Turn off location' : 'Turn on location'}</span>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate('/gyms/request');
+                    setShowMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
+                  style={{ 
+                    fontSize: '11px',
+                    color: 'var(--text-secondary)',
+                    borderTop: '1px solid var(--border-color)'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  role="menuitem"
+                >
+                  <MapPin className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
+                  <span>Request Gym</span>
+                </button>
+              </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -848,7 +901,7 @@ export default function Gyms() {
                   onClick={() => handleApplySavedFilter(savedFilter)}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-800/50 border border-gray-700 hover:bg-gray-700 hover:border-gray-600 transition-colors flex-shrink-0 group"
                 >
-                  <BookmarkCheck className="w-3.5 h-3.5 text-[#087E8B]" />
+                  <BookmarkCheck className="w-3.5 h-3.5 text-[#2663EB]" />
                   <span className="mobile-text-xs text-gray-300 whitespace-nowrap">{savedFilter.name}</span>
                   <button
                     onClick={(e) => handleDeleteSavedFilter(savedFilter.id, e)}
@@ -910,7 +963,8 @@ export default function Gyms() {
                 </button>
               </div>
             )}
-            {selectedDifficulties.length > 0 && (
+            {/* Difficulty and Price filters disabled - chips removed */}
+            {/* {selectedDifficulties.length > 0 && (
               <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-gray-800/50 border border-gray-700">
                 <span className="mobile-text-xs text-gray-300">{selectedDifficulties.length} difficulty{selectedDifficulties.length !== 1 ? 'ies' : ''}</span>
                 <button
@@ -933,7 +987,7 @@ export default function Gyms() {
                   <X className="w-3 h-3 text-gray-400" />
                 </button>
               </div>
-            )}
+            )} */}
             {distanceRadius !== null && (
               <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-gray-800/50 border border-gray-700">
                 <span className="mobile-text-xs text-gray-300">Within {distanceRadius}km</span>
@@ -996,10 +1050,10 @@ export default function Gyms() {
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-700/50 flex-shrink-0" style={{ backgroundColor: 'var(--bg-surface)' }}>
                 <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="w-5 h-5 text-[#087E8B]" />
+                  <SlidersHorizontal className="w-5 h-5 text-[#2663EB]" />
                   <h3 className="mobile-subheading" style={{ margin: 0 }}>Filters</h3>
                   {activeFilterCount > 0 && (
-                    <span className="ml-2 px-2 py-0.5 rounded-full bg-[#087E8B] text-white text-xs font-medium">
+                    <span className="ml-2 px-2 py-0.5 rounded-full bg-[#2663EB] text-white text-xs font-medium">
                       {activeFilterCount}
                     </span>
                   )}
@@ -1119,7 +1173,7 @@ export default function Gyms() {
                               }
                             }}
                             className="w-4 h-4 rounded border-gray-600 cursor-pointer"
-                            style={{ accentColor: '#087E8B' }}
+                            style={{ accentColor: '#2663EB' }}
                           />
                           <span className="text-sm text-gray-300 select-none">{facility}</span>
                         </label>
@@ -1127,8 +1181,8 @@ export default function Gyms() {
                     </div>
                   </div>
 
-                  {/* Difficulty Levels */}
-                  <div>
+                  {/* Difficulty Levels - DISABLED */}
+                  {/* <div>
                     <label className="block mb-2.5 text-sm font-semibold text-gray-200">
                       Difficulty Levels
                       {selectedDifficulties.length > 0 && (
@@ -1151,16 +1205,16 @@ export default function Gyms() {
                               }
                             }}
                             className="w-4 h-4 rounded border-gray-600 cursor-pointer"
-                            style={{ accentColor: '#087E8B' }}
+                            style={{ accentColor: '#2663EB' }}
                           />
                           <span className="text-sm text-gray-300 select-none">{level}</span>
                         </label>
                       ))}
                     </div>
-                  </div>
+                  </div> */}
 
-                  {/* Price Range */}
-                  <div>
+                  {/* Price Range - DISABLED */}
+                  {/* <div>
                     <label className="block mb-2.5 text-sm font-semibold text-gray-200">Price Range</label>
                     <div className="flex items-center gap-2">
                       <input
@@ -1181,7 +1235,7 @@ export default function Gyms() {
                         min="0"
                       />
                     </div>
-                  </div>
+                  </div> */}
 
                   {/* Favorites Only */}
                   {user && (
@@ -1192,7 +1246,7 @@ export default function Gyms() {
                           checked={favoritesOnly}
                           onChange={(e) => setFavoritesOnly(e.target.checked)}
                           className="w-4 h-4 rounded border-gray-600 cursor-pointer"
-                          style={{ accentColor: '#087E8B' }}
+                          style={{ accentColor: '#2663EB' }}
                         />
                         <span className="text-sm font-medium text-gray-300 select-none">Show favorites only</span>
                       </label>
@@ -1270,7 +1324,7 @@ export default function Gyms() {
                   </button>
                   <button
                     onClick={handleSaveFilter}
-                    className="flex-1 py-2 px-4 rounded-lg bg-[#087E8B] hover:bg-[#076876] text-sm font-medium text-white transition-colors"
+                    className="flex-1 py-2 px-4 rounded-lg bg-[#2663EB] hover:bg-[#076876] text-sm font-medium text-white transition-colors"
                   >
                     Save
                   </button>
@@ -1315,19 +1369,14 @@ export default function Gyms() {
                   <p className="mobile-text-sm text-gray-400 mb-4 leading-relaxed">
                     {activeFilterCount > 0 || debouncedSearchTerm.trim() 
                       ? "No gyms match your search and filters. Try adjusting your filters or search terms."
-                      : "We couldn't find any gyms. Request to add a gym if it's missing."}
+                      : "Your gym not listed?"}
                   </p>
-                  {(activeFilterCount > 0 || debouncedSearchTerm.trim()) && (
-                    <button
-                      onClick={() => {
-                        setSearchTerm('');
-                        clearAllFilters();
-                      }}
-                      className="mobile-btn-primary minimal-flex gap-2 mx-auto"
-                    >
-                      Clear filters
-                    </button>
-                  )}
+                  <button
+                    onClick={() => navigate('/gyms/request')}
+                    className="mobile-btn-primary minimal-flex gap-2 mx-auto"
+                  >
+                    Request gym
+                  </button>
                 </div>
               </div>
             ) : (

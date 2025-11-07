@@ -247,7 +247,7 @@ export default function ConversationList({ onSelectConversation, currentUserId }
             </button>
             <button
               onClick={() => setShowUserDiscovery(true)}
-              className="p-2 bg-[#087E8B] text-white rounded-lg hover:bg-[#066a75] transition-colors"
+              className="p-2 bg-[#2663EB] text-white rounded-lg hover:bg-[#1e4fd4] transition-colors"
               title="New conversation"
             >
               <Plus className="w-4 h-4" />
@@ -262,7 +262,7 @@ export default function ConversationList({ onSelectConversation, currentUserId }
             placeholder="Search conversations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-[#087E8B] transition-colors text-sm"
+            className="w-full pl-10 pr-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-[#2663EB] transition-colors text-sm"
           />
         </div>
       </div>
@@ -284,7 +284,7 @@ export default function ConversationList({ onSelectConversation, currentUserId }
               {!searchTerm && (
                 <button
                   onClick={() => setShowUserDiscovery(true)}
-                  className="px-4 py-2 bg-[#087E8B] text-white rounded-lg hover:bg-[#066a75] transition-colors text-sm font-medium"
+                  className="px-4 py-2 bg-[#2663EB] text-white rounded-lg hover:bg-[#1e4fd4] transition-colors text-sm font-medium"
                 >
                   Start Chatting
                 </button>
@@ -301,7 +301,7 @@ export default function ConversationList({ onSelectConversation, currentUserId }
                 >
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
-                    <div className="w-10 h-10 bg-[#087E8B] rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-[#2663EB] rounded-lg flex items-center justify-center">
                       {getConversationAvatar(conversation) ? (
                         <img
                           src={getConversationAvatar(conversation)}

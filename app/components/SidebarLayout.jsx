@@ -463,7 +463,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     return (
       <div className="mobile-app mobile-safe-area flex items-center justify-center animate-fade-in" style={{ backgroundColor: '#252526' }}>
         <div className="text-center animate-bounce-in">
-          <div className="w-8 h-8 border-4 border-[#087E8B] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-8 h-8 border-4 border-[#2663EB] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="minimal-text">Loading Send Train...</p>
         </div>
       </div>
@@ -500,8 +500,8 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
   }
 
   return (
-    <div className="mobile-app mobile-safe-area">
-      {/* Mobile Header */}
+    <>
+      {/* Mobile Header - Outside safe-area */}
       <div className="mobile-header mobile-only">
         <button 
           onClick={toggleDrawer}
@@ -530,6 +530,8 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           )}
         </div>
       </div>
+
+      <div className="mobile-app mobile-safe-area">
 
       {/* Drawer Overlay - Mobile Only */}
       {drawerOpen && (
@@ -604,7 +606,26 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           
           {/* Desktop collapsed search icon - hidden on mobile and when not collapsed */}
           <button
-            onClick={handleUniversalSearch}
+            onClick={() => {
+              if (sidebarCollapsed) {
+                toggleSidebar(); // Expand sidebar when collapsed
+                // Focus search input after sidebar expands
+                setTimeout(() => {
+                  const searchInput = document.querySelector('.sidebar-search-section input');
+                  if (searchInput) {
+                    searchInput.focus();
+                  }
+                }, 100);
+              } else if (searchQuery.trim()) {
+                handleUniversalSearch();
+              } else {
+                // Focus search input if sidebar is already expanded
+                const searchInput = document.querySelector('.sidebar-search-section input');
+                if (searchInput) {
+                  searchInput.focus();
+                }
+              }
+            }}
             className="sidebar-icon-button desktop-only"
             title="Search everything"
           >
@@ -730,7 +751,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                             : ''
                         } ${
                           community.hasNewPosts && currentCommunityId !== community.id
-                            ? 'ring-1 ring-[#087E8B]/50'
+                            ? 'ring-1 ring-[#2663EB]/50'
                             : ''
                         }`}
                         style={
@@ -878,5 +899,6 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
         onClose={() => setFeedbackModalOpen(false)}
       />
     </div>
+    </>
   );
 }

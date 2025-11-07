@@ -8,7 +8,7 @@ import { enrichCommunitiesWithActualCounts } from '../../lib/community-utils';
 import CommunityCard from '../components/CommunityCard';
 import GymCard from '../components/GymCard';
 import ListSkeleton from '../components/ListSkeleton';
-import { Users, MapPin, ArrowRight, Sparkles, PlusCircle } from 'lucide-react';
+import { Users, MapPin, ArrowRight, Sparkles, PlusCircle, Compass } from 'lucide-react';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -227,16 +227,28 @@ export default function HomePage() {
                     Welcome to Send Train!
                   </h3>
                 </div>
-                <p className="mobile-text-sm ml-9" style={{ color: 'var(--text-muted)' }}>
-                  Your new climbing community hub
-                </p>
-              </div>
-              <p className="mobile-text text-left" style={{ color: 'var(--text-muted)' }}>
-                Connecting you with communities in local climbing gyms and around the world.
-              </p>
-              <p className="mobile-text text-left" style={{ color: 'var(--text-muted)' }}>
+                <p className="mobile-text-sm text-left" style={{ color: 'var(--text-muted)' }}>
                 <strong style={{ color: 'var(--text-sm)' }}>How it works:</strong> Join or create communities around your favorite gyms or interests, ask questions, coordinate sessions, share beta, and training tips, discover events, and connect with climbers who share your passion.
               </p>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex flex-col md:flex-row gap-3 mt-4">
+                <button
+                  onClick={() => navigate('/communities')}
+                  className="mobile-btn-primary flex-1 flex items-center justify-center gap-2"
+                >
+                  <Compass className="w-4 h-4" />
+                  Explore Communities
+                </button>
+                <button
+                  onClick={() => navigate('/community/new')}
+                  className="mobile-btn-primary flex-1 flex items-center justify-center gap-2"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  Create Community
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -25,10 +25,13 @@ export default function CommunitiesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedType, setSelectedType] = useState(''); // 'gym', 'location', 'online', ''
+  const [selectedType, setSelectedType] = useState(''); // 'gym', 'general', ''
   const [selectedCountry, setSelectedCountry] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
+  const [selectedGym, setSelectedGym] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [sortBy, setSortBy] = useState('newest'); // 'newest', 'members', 'active', 'alphabetical'
+  const [availableGyms, setAvailableGyms] = useState([]);
   
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -103,6 +106,40 @@ export default function CommunitiesPage() {
     
     loadRecommended();
   }, [user, userIntent, location]);
+
+  // Load gyms when gym type is selected
+  useEffect(() => {
+    const loadGyms = async () => {
+      if (selectedType === 'gym') {
+        try {
+          const { data: gyms, error } = await supabase
+            .from('gyms')
+            .select('id, name, country, city')
+            .eq('is_hidden', false)
+            .order('name', { ascending: true });
+          
+          if (error) {
+            console.error('Error loading gyms:', error);
+            setAvailableGyms([]);
+          } else {
+            // Filter by country if selected
+            let filteredGyms = gyms || [];
+            if (selectedCountry) {
+              filteredGyms = filteredGyms.filter(gym => gym.country === selectedCountry);
+            }
+            setAvailableGyms(filteredGyms);
+          }
+        } catch (error) {
+          console.error('Error loading gyms:', error);
+          setAvailableGyms([]);
+        }
+      } else {
+        setAvailableGyms([]);
+      }
+    };
+    
+    loadGyms();
+  }, [selectedType, selectedCountry]);
 
   // Reload communities when navigating back to this page
   useEffect(() => {
@@ -454,30 +491,47 @@ export default function CommunitiesPage() {
     if (selectedType) {
       filtered = filtered.filter(community => {
         if (selectedType === 'gym') {
-          return community.gym_id || (community.gyms && community.gyms.length > 0);
+          return community.gym_id || (community.gyms && community.gyms.length > 0) || community.community_type === 'gym';
         }
-        if (selectedType === 'location') {
-          return community.community_type === 'location';
-        }
-        if (selectedType === 'online') {
-          return community.community_type === 'online';
+        if (selectedType === 'general') {
+          return community.community_type === 'general' || (!community.gym_id && !community.gyms);
         }
         return true;
       });
     }
     
-    // Country filter
-    if (selectedCountry) {
+    // Gym filter (only for gym-based communities)
+    if (selectedType === 'gym' && selectedGym) {
       filtered = filtered.filter(community => {
-        const gymData = community.gyms 
-          ? (Array.isArray(community.gyms) ? community.gyms[0] : community.gyms)
-          : null;
-        return gymData?.country === selectedCountry;
+        return community.gym_id === selectedGym;
       });
     }
     
-    // City filter
-    if (selectedCity) {
+    // Category filter (only for general communities)
+    if (selectedType === 'general' && selectedCategory) {
+      // Note: This would require checking posts in the community
+      // For now, we'll skip this filter as it requires additional queries
+      // You can implement this later if needed
+    }
+    
+    // Country filter
+    if (selectedCountry) {
+      filtered = filtered.filter(community => {
+        // For gym-based communities, check gym country
+        if (selectedType === 'gym' || community.gym_id || community.gyms) {
+          const gymData = community.gyms 
+            ? (Array.isArray(community.gyms) ? community.gyms[0] : community.gyms)
+            : null;
+          return gymData?.country === selectedCountry;
+        }
+        // For general communities, we might need to check if they have location data
+        // For now, if no gym data, skip country filter for general communities
+        return true;
+      });
+    }
+    
+    // City filter (only for gym-based communities)
+    if (selectedType === 'gym' && selectedCity) {
       filtered = filtered.filter(community => {
         const gymData = community.gyms 
           ? (Array.isArray(community.gyms) ? community.gyms[0] : community.gyms)
@@ -504,7 +558,7 @@ export default function CommunitiesPage() {
     });
     
     return filtered;
-  }, [allCommunities, debouncedSearchQuery, selectedType, selectedCountry, selectedCity, sortBy]);
+  }, [allCommunities, debouncedSearchQuery, selectedType, selectedCountry, selectedCity, selectedGym, selectedCategory, sortBy]);
   
   
   const clearFilters = useCallback(() => {
@@ -512,6 +566,8 @@ export default function CommunitiesPage() {
     setSelectedType('');
     setSelectedCountry('');
     setSelectedCity('');
+    setSelectedGym('');
+    setSelectedCategory('');
     setSortBy('newest');
   }, []);
   
@@ -520,8 +576,10 @@ export default function CommunitiesPage() {
     if (selectedType) count++;
     if (selectedCountry) count++;
     if (selectedCity) count++;
+    if (selectedGym) count++;
+    if (selectedCategory) count++;
     return count;
-  }, [selectedType, selectedCountry, selectedCity]);
+  }, [selectedType, selectedCountry, selectedCity, selectedGym, selectedCategory]);
   
   // Helper function to check if community is new (< 7 days old)
   const isNewCommunity = useCallback((community) => {
@@ -666,7 +724,7 @@ export default function CommunitiesPage() {
       <div className="mobile-container">
         <div className="mobile-section">
           {/* Search Bar */}
-          <div className="animate-slide-up mt-6 mb-4">
+          <div className="animate-slide-up mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -753,24 +811,32 @@ export default function CommunitiesPage() {
                     Type
                   </label>
                   <div className="flex gap-2 flex-wrap">
-                    {['', 'gym', 'location', 'online'].map((type) => (
+                    {['', 'gym', 'general'].map((type) => (
                       <button
                         key={type}
-                        onClick={() => setSelectedType(type === selectedType ? '' : type)}
+                        onClick={() => {
+                          setSelectedType(type === selectedType ? '' : type);
+                          // Clear dependent filters when type changes
+                          if (type !== selectedType) {
+                            setSelectedGym('');
+                            setSelectedCategory('');
+                            setSelectedCity('');
+                          }
+                        }}
                         className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${
                           selectedType === type
                             ? 'bg-[#2663EB] text-white'
                             : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
                         }`}
                       >
-                        {type === '' ? 'All' : type === 'gym' ? 'Gym-based' : type === 'location' ? 'Location-based' : 'Online'}
+                        {type === '' ? 'All' : type === 'gym' ? 'Gym-based' : 'No home'}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Country Filter */}
-                {availableCountries.length > 0 && (
+                {/* Country Filter - Only shown when a type is selected */}
+                {selectedType && availableCountries.length > 0 && (
                   <div>
                     <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
                       Country
@@ -780,6 +846,7 @@ export default function CommunitiesPage() {
                       onChange={(e) => {
                         setSelectedCountry(e.target.value);
                         setSelectedCity(''); // Reset city when country changes
+                        setSelectedGym(''); // Reset gym when country changes
                       }}
                       className="w-full px-3 py-1.5 bg-gray-700/50 border border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent"
                       style={{ color: 'var(--text-primary)' }}
@@ -794,8 +861,30 @@ export default function CommunitiesPage() {
                   </div>
                 )}
 
-                {/* City Filter */}
-                {availableCities.length > 0 && selectedCountry && (
+                {/* Gym Filter - Only for gym-based communities */}
+                {selectedType === 'gym' && availableGyms.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                      Gym
+                    </label>
+                    <select
+                      value={selectedGym}
+                      onChange={(e) => setSelectedGym(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-gray-700/50 border border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      <option value="">All Gyms</option>
+                      {availableGyms.map((gym) => (
+                        <option key={gym.id} value={gym.id}>
+                          {gym.name} {gym.city ? `(${gym.city})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* City Filter - Only for gym-based communities */}
+                {selectedType === 'gym' && availableCities.length > 0 && selectedCountry && (
                   <div>
                     <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
                       City
@@ -825,6 +914,29 @@ export default function CommunitiesPage() {
                     </select>
                   </div>
                 )}
+
+                {/* Category Filter - Only for general (no home) communities */}
+                {selectedType === 'general' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                      Category
+                    </label>
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-gray-700/50 border border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      <option value="">All Categories</option>
+                      <option value="beta">Beta</option>
+                      <option value="event">Event</option>
+                      <option value="question">Question</option>
+                      <option value="gear">Gear</option>
+                      <option value="training">Training</option>
+                      <option value="social">Social</option>
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -839,7 +951,17 @@ export default function CommunitiesPage() {
               )}
               {selectedType && (
                 <span className="px-2 py-1 bg-gray-800/50 rounded text-xs">
-                  Type: {selectedType === 'gym' ? 'Gym-based' : selectedType === 'location' ? 'Location-based' : 'Online'}
+                  Type: {selectedType === 'gym' ? 'Gym-based' : 'No home'}
+                </span>
+              )}
+              {selectedGym && (
+                <span className="px-2 py-1 bg-gray-800/50 rounded text-xs">
+                  Gym: {availableGyms.find(g => g.id === selectedGym)?.name || selectedGym}
+                </span>
+              )}
+              {selectedCategory && (
+                <span className="px-2 py-1 bg-gray-800/50 rounded text-xs">
+                  Category: {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
                 </span>
               )}
               {selectedCountry && (
@@ -929,3 +1051,4 @@ export default function CommunitiesPage() {
     </>
   );
 }
+

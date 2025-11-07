@@ -35,7 +35,7 @@ export default function EmptyState({
 
   const iconColorClass = {
     default: 'text-gray-400',
-    primary: 'text-[#087E8B]',
+    primary: 'text-[#2663EB]',
     success: 'text-green-400',
     warning: 'text-amber-400',
     muted: 'text-gray-500'
@@ -43,7 +43,7 @@ export default function EmptyState({
 
   const iconBgClass = {
     default: 'bg-gray-800/50',
-    primary: 'bg-[#087E8B]/10',
+    primary: 'bg-[#2663EB]/10',
     success: 'bg-green-500/10',
     warning: 'bg-amber-500/10',
     muted: 'bg-gray-800/30'
@@ -91,7 +91,7 @@ export function EmptyCommunities({ onCreateClick, onExploreClick }) {
       <div className="text-center max-w-sm mx-auto">
         {/* Icon */}
         <div className="bg-gray-800/50 w-16 h-16 rounded-full minimal-flex-center mx-auto mb-4">
-          <Globe className="text-[#087E8B]" size={32} />
+          <Globe className="text-[#2663EB]" size={32} />
         </div>
 
         {/* Title */}
@@ -220,7 +220,7 @@ export function EmptyComments({ onCreateClick }) {
   return (
     <div className="py-8 my-6">
       <div className="text-center">
-        <MessageCircle className="text-[#087E8B] mx-auto mb-3" size={32} />
+        <MessageCircle className="text-[#2663EB] mx-auto mb-3" size={32} />
         <h3 className="text-base font-medium mb-2" style={{ color: 'var(--text-primary)' }}>No comments yet</h3>
         <p className="text-sm text-gray-400 mb-4" style={{ color: 'var(--text-muted)' }}>
           Be the first to share your thoughts!

@@ -123,7 +123,7 @@ export default function SuspendUserModal({ isOpen, onClose, userId, userName }) 
               onChange={(e) => setReason(e.target.value)}
               placeholder="Why is this user being suspended?"
               rows={3}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent resize-none"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent resize-none"
               disabled={submitting}
               required
               maxLength={500}
@@ -139,7 +139,7 @@ export default function SuspendUserModal({ isOpen, onClose, userId, userName }) 
             <select
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent"
               disabled={submitting}
             >
               <option value="24h">24 Hours</option>
@@ -159,7 +159,7 @@ export default function SuspendUserModal({ isOpen, onClose, userId, userName }) 
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Any additional information for other moderators..."
               rows={2}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent resize-none"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent resize-none"
               disabled={submitting}
               maxLength={300}
             />

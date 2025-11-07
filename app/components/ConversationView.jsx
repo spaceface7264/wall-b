@@ -576,7 +576,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
           </button>
           
           <div className="relative flex-shrink-0">
-            <div className="w-10 h-10 bg-[#087E8B] rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-[#2663EB] rounded-lg flex items-center justify-center">
               {getConversationAvatar() ? (
                 <img
                   src={getConversationAvatar()}
@@ -595,7 +595,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
             {conversation.type === 'direct' ? (
               <button
                 onClick={handleProfileClick}
-                className="text-base font-semibold text-[#087E8B] hover:text-[#087E8B] transition-colors truncate text-left"
+                className="text-base font-semibold text-[#2663EB] hover:text-[#2663EB] transition-colors truncate text-left"
               >
                 {getConversationName()}
               </button>
@@ -616,7 +616,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
                 console.log('Opening group members modal for conversation:', conversation);
                 setShowGroupMembers(true);
               }}
-              className="p-2 text-slate-400 hover:text-[#087E8B] hover:bg-slate-700/50 rounded-lg transition-colors"
+              className="p-2 text-slate-400 hover:text-[#2663EB] hover:bg-slate-700/50 rounded-lg transition-colors"
               title="View group members"
             >
               <Users className="w-5 h-5" />
@@ -650,7 +650,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
         {/* Loading More Indicator */}
         {loadingMore && (
           <div className="flex justify-center mb-6">
-            <div className="w-8 h-8 border-3 border-[#087E8B] border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-3 border-[#2663EB] border-t-transparent rounded-full animate-spin"></div>
           </div>
         )}
         
@@ -668,8 +668,8 @@ export default function ConversationView({ conversation, currentUserId, onBack }
           <div className="flex items-center justify-center h-full animate-fade-in">
             <div className="text-center max-w-sm px-6">
               <div className="relative mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-[#087E8B]/20 to-[#087E8B]600/20 rounded-full flex items-center justify-center mx-auto">
-                  <MessageCircle className="w-8 h-8 text-[#087E8B]" />
+                <div className="w-16 h-16 bg-gradient-to-br from-[#2663EB]/20 to-[#2663EB]600/20 rounded-full flex items-center justify-center mx-auto">
+                  <MessageCircle className="w-8 h-8 text-[#2663EB]" />
                 </div>
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500/30 rounded-full animate-pulse"></div>
               </div>
@@ -678,7 +678,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
                 Send a message to {getConversationName()} to get started. Your messages will appear here.
               </p>
               <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
-                <div className="w-1 h-1 bg-[#087E8B] rounded-full animate-pulse"></div>
+                <div className="w-1 h-1 bg-[#2663EB] rounded-full animate-pulse"></div>
                 <span>Messages are end-to-end secure</span>
               </div>
             </div>
@@ -724,7 +724,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
                 <div
                   className={`px-3 py-2 rounded-lg text-sm max-w-xs transition-all duration-200 ${
                     message.sender_id === currentUserId
-                      ? 'bg-[#087E8B] text-white shadow-md hover:shadow-lg'
+                      ? 'bg-[#2663EB] text-white shadow-md hover:shadow-lg'
                       : 'bg-slate-700 text-white shadow-sm hover:shadow-md'
                   } ${message.sending ? 'opacity-70' : 'opacity-100'} ${message.isNew ? 'scale-[1.02]' : 'scale-100'}`}
                 >
@@ -771,9 +771,9 @@ export default function ConversationView({ conversation, currentUserId, onBack }
               <div className="px-4 py-2.5 rounded-lg text-sm bg-slate-700 text-white shadow-sm">
                 <div className="flex items-center gap-2">
                   <div className="flex space-x-1.5 items-center">
-                    <div className="w-2 h-2 bg-[#087E8B] rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                    <div className="w-2 h-2 bg-[#087E8B] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
-                    <div className="w-2 h-2 bg-[#087E8B] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+                    <div className="w-2 h-2 bg-[#2663EB] rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                    <div className="w-2 h-2 bg-[#2663EB] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
+                    <div className="w-2 h-2 bg-[#2663EB] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
                   </div>
                   <span className="text-xs text-slate-300 font-medium">
                     {typingUsers.length === 1
@@ -796,7 +796,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
           {/* Attachment Button */}
           <button
             type="button"
-            className="p-2 text-slate-400 hover:text-[#087E8B] hover:bg-slate-700/50 rounded-lg transition-colors"
+            className="p-2 text-slate-400 hover:text-[#2663EB] hover:bg-slate-700/50 rounded-lg transition-colors"
             title="Attach file"
           >
             <Paperclip className="w-4 h-4" />
@@ -810,13 +810,13 @@ export default function ConversationView({ conversation, currentUserId, onBack }
             placeholder="Type your message..."
             disabled={!currentUserId || sendingMessage}
             maxLength={500}
-            className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-[#087E8B] transition-colors text-sm"
+            className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-[#2663EB] transition-colors text-sm"
           />
           
           {/* Emoji Button */}
           <button
             type="button"
-            className="p-2 text-slate-400 hover:text-[#087E8B] hover:bg-slate-700/50 rounded-lg transition-colors"
+            className="p-2 text-slate-400 hover:text-[#2663EB] hover:bg-slate-700/50 rounded-lg transition-colors"
             title="Add emoji"
           >
             <Smile className="w-4 h-4" />
@@ -826,7 +826,7 @@ export default function ConversationView({ conversation, currentUserId, onBack }
           <button
             type="submit"
             disabled={!newMessage.trim() || !currentUserId || sendingMessage}
-            className="p-2 bg-[#087E8B] text-white rounded-lg hover:bg-[#066a75] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+            className="p-2 bg-[#2663EB] text-white rounded-lg hover:bg-[#1e4fd4] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
           >
             {sendingMessage ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

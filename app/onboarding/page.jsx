@@ -254,6 +254,20 @@ export default function OnboardingPage() {
     if (error) setError('');
   };
 
+  const selectAllPurposes = () => {
+    const allPurposeIds = PURPOSE_OPTIONS.map(option => option.id);
+    const allSelected = allPurposeIds.every(id => selectedPurposes.includes(id));
+    
+    if (allSelected) {
+      // If all are selected, deselect all
+      setSelectedPurposes([]);
+    } else {
+      // Otherwise, select all
+      setSelectedPurposes(allPurposeIds);
+    }
+    if (error) setError('');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 relative">
@@ -317,7 +331,7 @@ export default function OnboardingPage() {
         <div className="w-full max-w-sm relative z-10">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
-              <Shield className="w-12 h-12 text-[#087E8B]" />
+              <Shield className="w-12 h-12 text-[#2663EB]" />
             </div>
             <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Age Verification</h1>
             <p className="mobile-text-sm" style={{ color: 'var(--text-muted)' }}>You must be 16 years or older to use this platform</p>
@@ -409,6 +423,45 @@ export default function OnboardingPage() {
                   </button>
                 );
               })}
+              
+              {/* All of the above button */}
+              {(() => {
+                const allPurposeIds = PURPOSE_OPTIONS.map(option => option.id);
+                const allSelected = allPurposeIds.every(id => selectedPurposes.includes(id));
+                return (
+                  <button
+                    type="button"
+                    onClick={selectAllPurposes}
+                    className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
+                      allSelected
+                        ? 'border-blue-600 bg-blue-600/10'
+                        : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${allSelected ? 'bg-blue-600' : 'bg-gray-700'}`}>
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                          All of the above
+                        </h3>
+                      </div>
+                      {allSelected && (
+                        <div className="flex-shrink-0">
+                          <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })()}
             </div>
 
             {error && (

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
-import { MapPin, Phone, Mail, Globe, ArrowLeft, CheckCircle, AlertCircle, List } from 'lucide-react';
+import { MapPin, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
 import { useToast } from '../../providers/ToastProvider';
 import FormSkeleton from '../../components/FormSkeleton';
@@ -298,19 +298,18 @@ export default function GymRequestPage() {
       <div className="mobile-container">
         <div className="mobile-section">
           {/* Header */}
-          <div className="mobile-card animate-fade-in mb-6">
-            <div className="minimal-flex-between items-center mb-4">
-              <button
-                onClick={() => navigate(-1)}
-                className="mobile-btn-secondary minimal-flex gap-2"
-              >
-                <ArrowLeft className="minimal-icon" />
-                Back
-              </button>
-            </div>
+          <div className="animate-fade-in mb-6">
+            <button
+              onClick={() => navigate(-1)}
+              className="mobile-btn-secondary minimal-flex gap-2 mb-4"
+            >
+              <ArrowLeft className="minimal-icon" />
+              Back
+            </button>
             
-            <div className="text-center">
-              <p className="mobile-text-sm text-gray-300">
+            <div className="text-center mb-2">
+              <h1 className="mobile-heading text-2xl mb-2">Request a Gym</h1>
+              <p className="mobile-text-sm text-gray-400">
                 Is your gym missing from our database? Let us know and we'll add it!
               </p>
             </div>
@@ -319,205 +318,217 @@ export default function GymRequestPage() {
           {/* Form */}
           <div className="mobile-card animate-slide-up">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Gym Name */}
-              <div>
-                <label className="minimal-label flex items-center gap-2 mb-2">
-                  <MapPin className="w-4 h-4" />
-                  Gym Name *
-                </label>
-                <input
-                  type="text"
-                  name="gym_name"
-                  value={formData.gym_name}
-                  onChange={handleInputChange}
-                  placeholder="Enter the gym name"
-                  className={`minimal-input w-full ${errors.gym_name ? 'border-red-500' : ''}`}
-                />
-                {errors.gym_name && (
-                  <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.gym_name}
-                  </p>
-                )}
-              </div>
-
-              {/* Country and City */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Basic Information Section */}
+              <div className="space-y-4">
+                <h3 className="mobile-subheading text-base mb-4">Basic Information</h3>
+                
+                {/* Gym Name */}
                 <div>
-                  <label className="minimal-label flex items-center gap-2 mb-2">
-                    <MapPin className="w-4 h-4" />
-                    Country *
-                  </label>
-                  <select
-                    name="country"
-                    value={formData.country}
-                    onChange={handleInputChange}
-                    className={`minimal-input w-full ${errors.country ? 'border-red-500' : ''}`}
-                  >
-                    <option value="">Select a country</option>
-                    {countries.map(country => (
-                      <option key={country} value={country}>{country}</option>
-                    ))}
-                  </select>
-                  {errors.country && (
-                    <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
-                      <AlertCircle className="w-4 h-4" />
-                      {errors.country}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="minimal-label flex items-center gap-2 mb-2">
-                    <MapPin className="w-4 h-4" />
-                    City *
+                  <label className="minimal-label mb-2">
+                    Gym Name <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
-                    name="city"
-                    value={formData.city}
+                    name="gym_name"
+                    value={formData.gym_name}
                     onChange={handleInputChange}
-                    placeholder="Enter the city"
-                    className={`minimal-input w-full ${errors.city ? 'border-red-500' : ''}`}
+                    placeholder="Enter the gym name"
+                    className={`minimal-input w-full ${errors.gym_name ? 'border-red-500' : ''}`}
                   />
-                  {errors.city && (
+                  {errors.gym_name && (
                     <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                       <AlertCircle className="w-4 h-4" />
-                      {errors.city}
+                      {errors.gym_name}
                     </p>
                   )}
                 </div>
-              </div>
 
-              {/* Address */}
-              <div>
-                <label className="minimal-label flex items-center gap-2 mb-2">
-                  <MapPin className="w-4 h-4" />
-                  Address
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  placeholder="Enter the full address (optional)"
-                  className="minimal-input w-full"
-                />
-              </div>
+                {/* Country and City */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="minimal-label mb-2">
+                      Country <span className="text-red-400">*</span>
+                    </label>
+                    <select
+                      name="country"
+                      value={formData.country}
+                      onChange={handleInputChange}
+                      className={`minimal-input w-full ${errors.country ? 'border-red-500' : ''}`}
+                    >
+                      <option value="">Select a country</option>
+                      {countries.map(country => (
+                        <option key={country} value={country}>{country}</option>
+                      ))}
+                    </select>
+                    {errors.country && (
+                      <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" />
+                        {errors.country}
+                      </p>
+                    )}
+                  </div>
 
-              {/* Contact Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="minimal-label mb-2">
+                      City <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      placeholder="Enter the city"
+                      className={`minimal-input w-full ${errors.city ? 'border-red-500' : ''}`}
+                    />
+                    {errors.city && (
+                      <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" />
+                        {errors.city}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Address */}
                 <div>
-                  <label className="minimal-label flex items-center gap-2 mb-2">
-                    <Phone className="w-4 h-4" />
-                    Phone
+                  <label className="minimal-label mb-2">
+                    Address
                   </label>
                   <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
+                    type="text"
+                    name="address"
+                    value={formData.address}
                     onChange={handleInputChange}
-                    placeholder="Enter phone number (optional)"
+                    placeholder="Enter the full address (optional)"
                     className="minimal-input w-full"
                   />
                 </div>
+              </div>
 
+              {/* Divider */}
+              <div className="border-t border-gray-700 my-6"></div>
+
+              {/* Contact Information Section */}
+              <div className="space-y-4">
+                <h3 className="mobile-subheading text-base mb-4">Contact Information</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="minimal-label mb-2">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      placeholder="Enter phone number (optional)"
+                      className="minimal-input w-full"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="minimal-label mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="Enter email address (optional)"
+                      className={`minimal-input w-full ${errors.email ? 'border-red-500' : ''}`}
+                    />
+                    {errors.email && (
+                      <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" />
+                        {errors.email}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Website */}
                 <div>
-                  <label className="minimal-label flex items-center gap-2 mb-2">
-                    <Mail className="w-4 h-4" />
-                    Email
+                  <label className="minimal-label mb-2">
+                    Website
                   </label>
                   <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
+                    type="url"
+                    name="website"
+                    value={formData.website}
                     onChange={handleInputChange}
-                    placeholder="Enter email address (optional)"
-                    className={`minimal-input w-full ${errors.email ? 'border-red-500' : ''}`}
+                    placeholder="https://example.com (optional)"
+                    className={`minimal-input w-full ${errors.website ? 'border-red-500' : ''}`}
                   />
-                  {errors.email && (
+                  {errors.website && (
                     <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                       <AlertCircle className="w-4 h-4" />
-                      {errors.email}
+                      {errors.website}
                     </p>
                   )}
                 </div>
               </div>
 
-              {/* Website */}
-              <div>
-                <label className="minimal-label flex items-center gap-2 mb-2">
-                  <Globe className="w-4 h-4" />
-                  Website
-                </label>
-                <input
-                  type="url"
-                  name="website"
-                  value={formData.website}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com (optional)"
-                  className={`minimal-input w-full ${errors.website ? 'border-red-500' : ''}`}
-                />
-                {errors.website && (
-                  <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.website}
-                  </p>
-                )}
-              </div>
+              {/* Divider */}
+              <div className="border-t border-gray-700 my-6"></div>
 
-              {/* Facilities */}
-              <div>
-                <label className="minimal-label flex items-center gap-2 mb-2">
-                  <List className="w-4 h-4" />
-                  Facilities
-                </label>
-                <p className="text-sm text-gray-400 mb-3">
-                  Select all facilities available at this gym (optional)
-                </p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {availableFacilities.map((facility) => (
-                    <label
-                      key={facility}
-                      className="flex items-center gap-2 p-3 rounded-lg border border-gray-700 bg-gray-800/50 hover:bg-gray-700/50 cursor-pointer transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.facilities.includes(facility)}
-                        onChange={() => handleFacilityToggle(facility)}
-                        className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
-                      />
-                      <span className="text-sm text-gray-200 select-none">
-                        {facility}
-                      </span>
-                    </label>
-                  ))}
+              {/* Additional Information Section */}
+              <div className="space-y-4">
+                <h3 className="mobile-subheading text-base mb-4">Additional Information</h3>
+                
+                {/* Description */}
+                <div>
+                  <label className="minimal-label mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    placeholder="Tell us about this gym - facilities, specialties, etc. (optional)"
+                    rows={4}
+                    className="minimal-input w-full resize-none"
+                  />
                 </div>
-                {formData.facilities.length > 0 && (
-                  <p className="text-xs text-gray-400 mt-2">
-                    {formData.facilities.length} facility{formData.facilities.length !== 1 ? 'ies' : ''} selected
-                  </p>
-                )}
-              </div>
 
-              {/* Description */}
-              <div>
-                <label className="minimal-label flex items-center gap-2 mb-2">
-                  <MapPin className="w-4 h-4" />
-                  Description
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Tell us about this gym - facilities, specialties, etc. (optional)"
-                  rows={4}
-                  className="minimal-input w-full resize-none"
-                />
+                {/* Facilities */}
+                <div>
+                  <label className="minimal-label mb-2">
+                    Facilities
+                  </label>
+                  <p className="text-sm text-gray-400 mb-3">
+                    Select all facilities available at this gym (optional)
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {availableFacilities.map((facility) => (
+                      <label
+                        key={facility}
+                        className="flex items-center gap-2 p-3 rounded-lg border border-gray-700 bg-gray-800/50 hover:bg-gray-700/50 cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.facilities.includes(facility)}
+                          onChange={() => handleFacilityToggle(facility)}
+                          className="w-4 h-4 rounded border-gray-600 cursor-pointer"
+                          style={{ accentColor: '#2663EB' }}
+                        />
+                        <span className="text-sm text-gray-200 select-none">
+                          {facility}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  {formData.facilities.length > 0 && (
+                    <p className="text-xs text-gray-400 mt-2">
+                      {formData.facilities.length} facility{formData.facilities.length !== 1 ? 'ies' : ''} selected
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Submit Button */}
-              <div className="pt-4">
+              <div className="pt-4 border-t border-gray-700">
                 <button
                   type="submit"
                   disabled={submitting}
@@ -535,22 +546,19 @@ export default function GymRequestPage() {
                     </>
                   )}
                 </button>
+                
+                {/* Info Note */}
+                <div className="flex items-start gap-3 mt-4 p-3 rounded-lg bg-gray-800/30 border border-gray-700/50">
+                  <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gray-400 leading-relaxed">
+                      We'll review your request and add the gym to our database if it meets our criteria. 
+                      You'll be notified once it's been added!
+                    </p>
+                  </div>
+                </div>
               </div>
             </form>
-          </div>
-
-          {/* Info Card */}
-          <div className="mobile-card-flat p-4 mt-6">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-medium text-white mb-1">What happens next?</h4>
-                <p className="text-sm text-gray-300">
-                  We'll review your request and add the gym to our database if it meets our criteria. 
-                  You'll be notified once it's been added!
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </div>

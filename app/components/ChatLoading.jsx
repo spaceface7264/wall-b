@@ -8,14 +8,14 @@ export default function ChatLoading() {
       <div className="text-center space-y-6">
         {/* Animated Message Icon */}
         <div className="relative">
-          <div className="bg-gradient-to-br from-[#087E8B] to-[#087E8B]600 rounded-full w-20 h-20 flex items-center justify-center mx-auto shadow-lg">
+          <div className="bg-gradient-to-br from-[#2663EB] to-[#2663EB]600 rounded-full w-20 h-20 flex items-center justify-center mx-auto shadow-lg">
             <MessageCircle className="w-10 h-10 text-white animate-pulse" />
           </div>
           
           {/* Floating dots animation */}
           <div className="absolute -top-2 -right-2 w-4 h-4 bg-green-400 rounded-full animate-bounce"></div>
           <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
-          <div className="absolute top-1/2 -left-3 w-2 h-2 bg-[#087E8B] rounded-full animate-bounce" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-1/2 -left-3 w-2 h-2 bg-[#2663EB] rounded-full animate-bounce" style={{ animationDelay: '1s' }}></div>
         </div>
 
         {/* Loading text with typing animation */}
@@ -23,9 +23,9 @@ export default function ChatLoading() {
           <div className="flex items-center justify-center space-x-1">
             <span className="text-slate-200 text-lg font-medium">Loading conversations</span>
             <div className="flex space-x-1">
-              <div className="w-1 h-1 bg-[#087E8B] rounded-full animate-bounce"></div>
-              <div className="w-1 h-1 bg-[#087E8B] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-1 h-1 bg-[#087E8B] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-1 h-1 bg-[#2663EB] rounded-full animate-bounce"></div>
+              <div className="w-1 h-1 bg-[#2663EB] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-1 h-1 bg-[#2663EB] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
             </div>
           </div>
           
@@ -35,7 +35,7 @@ export default function ChatLoading() {
         {/* Progress bar */}
         <div className="w-48 mx-auto">
           <div className="bg-slate-700 rounded-full h-1 overflow-hidden">
-            <div className="bg-gradient-to-r from-[#087E8B] to-[#087E8B]600 h-full rounded-full animate-pulse"></div>
+            <div className="bg-gradient-to-r from-[#2663EB] to-[#2663EB]600 h-full rounded-full animate-pulse"></div>
           </div>
         </div>
       </div>

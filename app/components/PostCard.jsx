@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal, Edit2, Trash2, Calendar, User, Users, MapPin, Ban, VolumeX, Flag } from 'lucide-react';
+import { Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal, Edit2, Trash2, Calendar, User, Users, MapPin, Ban, VolumeX, Flag, Lock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ConfirmationModal from './ConfirmationModal';
@@ -102,7 +102,7 @@ export default function PostCard({
       parts.push(
         <span
           key={match.index}
-          className="inline-flex items-center gap-1 px-2 py-1 bg-[#087E8B]30 text-[#087E8B] rounded text-sm font-medium hover:bg-[#087E8B]40 transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1 px-2 py-1 bg-[#2663EB]30 text-[#2663EB] rounded text-sm font-medium hover:bg-[#2663EB]40 transition-colors cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             console.log('Event mentioned:', eventTitle);
@@ -290,14 +290,29 @@ export default function PostCard({
           <div className="post-actions-compact">
             <button
               onClick={handleLike}
-              disabled={isPostLoading}
-              className={`post-action-btn ${isPostLiked ? 'post-action-btn-active' : ''}`}
+              disabled={isPostLoading || !currentUserId}
+              className={`post-action-btn ${isPostLiked ? 'post-action-btn-active' : ''} ${!currentUserId ? 'opacity-60' : ''}`}
+              title={!currentUserId ? 'Sign in to like' : ''}
             >
-              <Heart className={`w-4 h-4 ${isPostLiked ? 'fill-current' : ''}`} />
+              {isPostLoading ? (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : !currentUserId ? (
+                <Lock className="w-4 h-4" />
+              ) : (
+                <Heart className={`w-4 h-4 ${isPostLiked ? 'fill-current' : ''}`} />
+              )}
               <span>{post.like_count || 0}</span>
             </button>
-            <button className="post-action-btn">
-              <MessageCircle className="w-4 h-4" />
+            <button 
+              onClick={handleOpen}
+              className={`post-action-btn ${!currentUserId ? 'opacity-60' : ''}`}
+              title={!currentUserId ? 'Sign in to comment' : ''}
+            >
+              {!currentUserId ? (
+                <Lock className="w-4 h-4" />
+              ) : (
+                <MessageCircle className="w-4 h-4" />
+              )}
               <span>{post.comment_count || 0}</span>
             </button>
           </div>
@@ -610,11 +625,14 @@ export default function PostCard({
       <div className="post-actions" style={{ padding: '0 16px', marginTop: '1px', gap: '6px' }}>
           <button 
             onClick={handleLike}
-          disabled={isPostLoading}
-          className={`post-action-btn ${isPostLiked ? 'post-action-btn-liked' : ''}`}
+          disabled={isPostLoading || !currentUserId}
+          className={`post-action-btn ${isPostLiked ? 'post-action-btn-liked' : ''} ${!currentUserId ? 'opacity-60' : ''}`}
+          title={!currentUserId ? 'Sign in to like' : ''}
           >
           {isPostLoading ? (
               <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : !currentUserId ? (
+            <Lock className="w-4 h-4" />
             ) : (
             <Heart className={`w-4 h-4 ${isPostLiked ? 'fill-current' : ''}`} />
             )}
@@ -623,9 +641,14 @@ export default function PostCard({
         
           <button 
             onClick={handleOpen}
-          className="post-action-btn"
+          className={`post-action-btn ${!currentUserId ? 'opacity-60' : ''}`}
+          title={!currentUserId ? 'Sign in to comment' : ''}
           >
-          <MessageCircle className="w-4 h-4" />
+          {!currentUserId ? (
+            <Lock className="w-4 h-4" />
+          ) : (
+            <MessageCircle className="w-4 h-4" />
+          )}
           <span>{post.comment_count || 0}</span>
           </button>
         

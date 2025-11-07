@@ -322,7 +322,7 @@ export default function PublicProfile() {
           {/* Communities */}
           <div className="pt-8 mt-8">
             <h2 className="profile-section-header minimal-flex gap-2 mb-4">
-              <Users className="minimal-icon text-[#087E8B]" />
+              <Users className="minimal-icon text-[#2663EB]" />
               Communities ({communities.length})
             </h2>
             
@@ -332,7 +332,7 @@ export default function PublicProfile() {
                 <p className="text-gray-400 text-sm mb-2">No communities yet</p>
                 <button
                   onClick={() => navigate('/communities')}
-                  className="text-[#087E8B] text-sm hover:underline"
+                  className="text-[#2663EB] text-sm hover:underline"
                 >
                   Explore communities
                 </button>
