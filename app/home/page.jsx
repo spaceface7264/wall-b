@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { getRecommendedCommunities, getRecommendedGyms } from '../../lib/recommendation-utils';
+import { calculateDistance } from '../../lib/geolocation';
+import { enrichCommunitiesWithActualCounts } from '../../lib/community-utils';
 import CommunityCard from '../components/CommunityCard';
 import GymCard from '../components/GymCard';
 import ListSkeleton from '../components/ListSkeleton';
@@ -63,12 +65,6 @@ export default function HomePage() {
 
   useEffect(() => {
     const loadRecommendations = async () => {
-      if (!user || userIntent.length === 0) {
-        setLoadingCommunities(false);
-        setLoadingGyms(false);
-        return;
-      }
-
       // Request location if supported (for location-based recommendations)
       // Only request once, don't retry on errors
       if (geolocationSupported && !location) {
@@ -78,22 +74,112 @@ export default function HomePage() {
         });
       }
 
-      // Load recommended communities
+      // Load recommended communities (always show general communities regardless of userIntent)
       try {
         setLoadingCommunities(true);
-        const communities = await getRecommendedCommunities(user.id, userIntent, location, 8);
-        setRecommendedCommunities(communities);
+        const { data: communities, error } = await supabase
+          .from('communities')
+          .select(`
+            *,
+            gyms (
+              name,
+              city,
+              country,
+              address,
+              image_url,
+              latitude,
+              longitude
+            )
+          `)
+          .eq('is_active', true)
+          .order('member_count', { ascending: false })
+          .limit(8);
+
+        if (error) {
+          console.error('Error loading communities:', error);
+          setRecommendedCommunities([]);
+        } else {
+          // Sort by location if available, otherwise use member count
+          let sortedCommunities = communities || [];
+          if (location && sortedCommunities.length > 0) {
+            sortedCommunities = sortedCommunities.map(community => {
+              const gym = community.gyms 
+                ? (Array.isArray(community.gyms) ? community.gyms[0] : community.gyms)
+                : null;
+              if (gym && gym.latitude && gym.longitude) {
+                const distance = calculateDistance(
+                  location.latitude,
+                  location.longitude,
+                  gym.latitude,
+                  gym.longitude
+                );
+                return { ...community, distance_km: distance };
+              }
+              return { ...community, distance_km: null };
+            }).sort((a, b) => {
+              // Prioritize communities with distance info
+              if (a.distance_km === null && b.distance_km === null) {
+                return (b.member_count || 0) - (a.member_count || 0);
+              }
+              if (a.distance_km === null) return 1;
+              if (b.distance_km === null) return -1;
+              return a.distance_km - b.distance_km;
+            });
+          }
+          
+          // Enrich with actual member counts
+          const enriched = await enrichCommunitiesWithActualCounts(sortedCommunities.slice(0, 8));
+          setRecommendedCommunities(enriched);
+        }
       } catch (error) {
         console.error('Error loading recommended communities:', error);
       } finally {
         setLoadingCommunities(false);
       }
 
-      // Load recommended gyms
+      // Load recommended gyms (works for both authenticated and unauthenticated users)
       try {
         setLoadingGyms(true);
-        const gyms = await getRecommendedGyms(user.id, userIntent, location, 8);
-        setRecommendedGyms(gyms);
+        if (user && userIntent.length > 0) {
+          // Personalized recommendations for logged-in users
+          const gyms = await getRecommendedGyms(user.id, userIntent, location, 8);
+          setRecommendedGyms(gyms);
+        } else {
+          // General gyms for unauthenticated users (popular/nearby)
+          const { data: gyms, error } = await supabase
+            .from('gyms')
+            .select('*')
+            .eq('is_hidden', false)
+            .limit(8);
+
+          if (error) {
+            console.error('Error loading gyms:', error);
+            setRecommendedGyms([]);
+          } else {
+            // Sort by location if available, otherwise just return first 8
+            let sortedGyms = gyms || [];
+            if (location) {
+              sortedGyms = sortedGyms.map(gym => {
+                if (gym.latitude && gym.longitude) {
+                  const distance = calculateDistance(
+                    location.latitude,
+                    location.longitude,
+                    gym.latitude,
+                    gym.longitude
+                  );
+                  return { ...gym, distance_km: distance };
+                }
+                return { ...gym, distance_km: null };
+              }).sort((a, b) => {
+                if (a.distance_km === null && b.distance_km === null) return 0;
+                if (a.distance_km === null) return 1;
+                if (b.distance_km === null) return -1;
+                return a.distance_km - b.distance_km;
+              });
+            }
+            setRecommendedGyms(sortedGyms.slice(0, 8));
+          }
+        }
       } catch (error) {
         console.error('Error loading recommended gyms:', error);
       } finally {
@@ -149,10 +235,7 @@ export default function HomePage() {
                 Connecting you with communities in local climbing gyms and around the world.
               </p>
               <p className="mobile-text text-left" style={{ color: 'var(--text-muted)' }}>
-                <strong style={{ color: 'var(--text-primary)' }}>How it works:</strong> Join communities around your favorite gyms or interests, share your sends, ask questions, share beta, and training tips, discover events, and connect with climbers who share your passion.
-              </p>
-              <p className="mobile-text text-left" style={{ color: 'var(--text-muted)' }}>
-                No communities match your interests yet? No problem! Be a trailblazer and create your own community where climbers can come together. Create the community and be the first to rally your crew. Every great climbing community starts with someone taking the first step.
+                <strong style={{ color: 'var(--text-sm)' }}>How it works:</strong> Join or create communities around your favorite gyms or interests, ask questions, coordinate sessions, share beta, and training tips, discover events, and connect with climbers who share your passion.
               </p>
             </div>
           </div>
@@ -163,7 +246,7 @@ export default function HomePage() {
       <div className="mobile-section mb-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Users className="minimal-icon text-[#087E8B]" />
+            <Users className="minimal-icon text-[#2663EB]" />
             <h2 className="minimal-heading">Communities</h2>
           </div>
           <button
@@ -241,7 +324,7 @@ export default function HomePage() {
       <div className="mobile-section mb-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <MapPin className="minimal-icon text-[#087E8B]" />
+            <MapPin className="minimal-icon text-[#2663EB]" />
             <h2 className="minimal-heading">Gyms</h2>
           </div>
           <button

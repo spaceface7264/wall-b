@@ -674,7 +674,7 @@ export default function CommunitiesPage() {
                 placeholder="Search communities..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
+                className="w-full pl-10 pr-10 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent"
                 style={{ color: 'var(--text-primary)' }}
               />
               {searchQuery && (
@@ -693,7 +693,7 @@ export default function CommunitiesPage() {
             <div className="animate-slide-up mb-4">
               <button
                 onClick={() => navigate('/community/new')}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#087E8B] hover:bg-[#066a75] text-white rounded-lg transition-colors font-medium"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#2663EB] hover:bg-[#1e4fd4] text-white rounded-lg transition-colors font-medium"
               >
                 <Plus className="w-5 h-5" />
                 Create Community
@@ -707,14 +707,14 @@ export default function CommunitiesPage() {
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 showFilters || activeFilterCount > 0
-                  ? 'bg-[#087E8B]/20 text-[#087E8B] border border-[#087E8B]/30'
+                  ? 'bg-[#2663EB]/20 text-[#2663EB] border border-[#2663EB]/30'
                   : 'bg-gray-800/50 text-gray-300 border border-gray-700 hover:bg-gray-700/50'
               }`}
             >
               <Filter className="w-4 h-4" />
               Filters
               {activeFilterCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 bg-[#087E8B] text-white text-xs rounded-full">
+                <span className="ml-1 px-1.5 py-0.5 bg-[#2663EB] text-white text-xs rounded-full">
                   {activeFilterCount}
                 </span>
               )}
@@ -723,7 +723,7 @@ export default function CommunitiesPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-1.5 bg-gray-800/50 border border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
+              className="px-3 py-1.5 bg-gray-800/50 border border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent"
               style={{ color: 'var(--text-primary)' }}
             >
               <option value="newest">Newest</option>
@@ -759,7 +759,7 @@ export default function CommunitiesPage() {
                         onClick={() => setSelectedType(type === selectedType ? '' : type)}
                         className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${
                           selectedType === type
-                            ? 'bg-[#087E8B] text-white'
+                            ? 'bg-[#2663EB] text-white'
                             : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
                         }`}
                       >
@@ -781,7 +781,7 @@ export default function CommunitiesPage() {
                         setSelectedCountry(e.target.value);
                         setSelectedCity(''); // Reset city when country changes
                       }}
-                      className="w-full px-3 py-1.5 bg-gray-700/50 border border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
+                      className="w-full px-3 py-1.5 bg-gray-700/50 border border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent"
                       style={{ color: 'var(--text-primary)' }}
                     >
                       <option value="">All Countries</option>
@@ -803,7 +803,7 @@ export default function CommunitiesPage() {
                     <select
                       value={selectedCity}
                       onChange={(e) => setSelectedCity(e.target.value)}
-                      className="w-full px-3 py-1.5 bg-gray-700/50 border border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#087E8B] focus:border-transparent"
+                      className="w-full px-3 py-1.5 bg-gray-700/50 border border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2663EB] focus:border-transparent"
                       style={{ color: 'var(--text-primary)' }}
                     >
                       <option value="">All Cities</option>

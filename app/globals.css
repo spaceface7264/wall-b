@@ -18,10 +18,10 @@
   --border-color: #333333;     /* Default border */
   --border-hover: #4b5563;     /* Hover border */
   --divider-color: #333333;    /* Divider color */
-  --accent-primary: #087E8B;   /* Primary accent color (replaces indigo/purple) */
-  --accent-primary-hover: #066a75; /* Primary accent hover */
-  --accent-primary-light: #087E8B40; /* Primary accent with 25% opacity */
-  --accent-primary-lighter: #087E8B30; /* Primary accent with 20% opacity */
+  --accent-primary: #2663EB;   /* Primary accent color (replaces indigo/purple) */
+  --accent-primary-hover: #1e4fd4; /* Primary accent hover */
+  --accent-primary-light: #2663EB40; /* Primary accent with 25% opacity */
+  --accent-primary-lighter: #2663EB30; /* Primary accent with 20% opacity */
   
   /* Button colors */
   --button-primary-bg: #3b82f6;
@@ -104,15 +104,15 @@
   --divider-color: #e5e7eb;    /* Divider color - consistent with borders */
   
   /* Accent colors - same teal works for both themes */
-  --accent-primary: #087E8B;   /* Primary accent color */
-  --accent-primary-hover: #066a75; /* Primary accent hover */
-  --accent-primary-light: #087E8B40; /* Primary accent with 25% opacity */
-  --accent-primary-lighter: #087E8B30; /* Primary accent with 20% opacity */
+  --accent-primary: #2663EB;   /* Primary accent color */
+  --accent-primary-hover: #1e4fd4; /* Primary accent hover */
+  --accent-primary-light: #2663EB40; /* Primary accent with 25% opacity */
+  --accent-primary-lighter: #2663EB30; /* Primary accent with 20% opacity */
   
   /* Button colors - use accent for consistency */
-  --button-primary-bg: #087E8B;
-  --button-primary-hover: #066a75;
-  --button-primary-active: #055a63;
+  --button-primary-bg: #2663EB;
+  --button-primary-hover: #1e4fd4;
+  --button-primary-active: #1a47c4;
   
   /* Toast colors - light background for light theme */
   --toast-bg: #ffffff;
@@ -220,7 +220,10 @@
     align-items: center;
     justify-content: space-between;
     height: 56px;
-    padding: 0 var(--container-padding-mobile);
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
     background-color: var(--bg-header);
     border-bottom: 1px solid var(--divider-color);
     position: sticky;
@@ -229,6 +232,20 @@
     transition: background-color 0.3s ease, border-color 0.3s ease;
     box-sizing: border-box;
     flex-shrink: 0;
+  }
+  
+  /* Add padding to header inner elements */
+  .mobile-header > button:first-child {
+    padding-left: var(--container-padding-mobile);
+  }
+  
+  .mobile-header > .mobile-header-actions {
+    padding-right: var(--container-padding-mobile);
+  }
+  
+  .mobile-header > .mobile-header-title {
+    padding-left: var(--container-padding-mobile);
+    padding-right: var(--container-padding-mobile);
   }
   
   @media (min-width: 1024px) {
