@@ -2541,10 +2541,18 @@ export default function AdminPage() {
 
       if (error) {
         console.error('Edge Function error:', error);
-        if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-          showToast('error', 'Connection Error', 'Could not connect to delete function. Make sure the Edge Function is deployed.');
+        const errorMsg = error.message || error.toString() || '';
+        
+        if (errorMsg.includes('Failed to send') || 
+            errorMsg.includes('Failed to fetch') || 
+            errorMsg.includes('NetworkError') ||
+            errorMsg.includes('not found') ||
+            errorMsg.includes('404')) {
+          showToast('error', 'Function Not Deployed', 
+            'The delete-users Edge Function is not deployed. ' +
+            'Deploy it with: supabase functions deploy delete-users');
         } else {
-          showToast('error', 'Error', error.message || 'Failed to delete users');
+          showToast('error', 'Error', errorMsg || 'Failed to delete users');
         }
         return;
       }
@@ -2571,7 +2579,15 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error('Error deleting users:', error);
-      showToast('error', 'Error', error.message || 'Failed to delete users');
+      const errorMsg = error.message || error.toString() || '';
+      
+      if (errorMsg.includes('Failed to send') || errorMsg.includes('Failed to fetch')) {
+        showToast('error', 'Function Not Deployed', 
+          'The delete-users Edge Function is not deployed. ' +
+          'Deploy it with: supabase functions deploy delete-users');
+      } else {
+        showToast('error', 'Error', errorMsg || 'Failed to delete users');
+      }
     }
   };
 
