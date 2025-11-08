@@ -7,7 +7,7 @@ import MembersListSkeleton from './MembersListSkeleton';
 import InviteMembersModal from './InviteMembersModal';
 import ShareInviteModal from './ShareInviteModal';
 
-export default function MembersList({ communityId, isAdmin = false, userCommunityRole = null, communityName = 'Community', isMember = false }) {
+export default function MembersList({ communityId, isAdmin = false, userCommunityRole = null, communityName = 'Community', isMember = false, creatorId = null }) {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -192,7 +192,7 @@ export default function MembersList({ communityId, isAdmin = false, userCommunit
           placeholder="Search members..."
           value={searchTerm}
           onChange={handleSearchChange}
-          className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-[#00d4ff]"
+          className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-accent-blue"
         />
       </div>
 
@@ -221,7 +221,7 @@ export default function MembersList({ communityId, isAdmin = false, userCommunit
               </button>
               <button
                 onClick={() => setShowInviteModal(true)}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#00d4ff] hover:bg-[#00b8e6] text-white rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-accent-blue hover:bg-accent-blue-hover text-white rounded-lg transition-colors"
               >
                 <UserPlus className="w-4 h-4" />
                 Invite
@@ -263,7 +263,7 @@ export default function MembersList({ communityId, isAdmin = false, userCommunit
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-[#00d4ff] rounded-full flex items-center justify-center text-white font-medium text-sm">
+                    <div className="w-10 h-10 bg-accent-blue rounded-full flex items-center justify-center text-white font-medium text-sm">
                       {getInitials(displayName)}
                     </div>
                   )}
@@ -280,10 +280,15 @@ export default function MembersList({ communityId, isAdmin = false, userCommunit
                         e.stopPropagation();
                         handleProfileClick(member.user_id);
                       }}
-                      className="font-medium text-white hover:text-[#00d4ff] transition-colors truncate text-left"
+                      className="font-medium text-white hover:text-accent-blue transition-colors truncate text-left"
                     >
                       {displayName}
                     </button>
+                    {creatorId && member.user_id === creatorId && (
+                      <span className="px-2 py-0.5 text-xs rounded-full flex-shrink-0 text-purple-300 bg-purple-500/20 border border-purple-500/30">
+                        Creator
+                      </span>
+                    )}
                     {member.role !== 'member' && (
                       <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${getRoleColor(member.role)}`}>
                         {member.role === 'admin' ? 'Admin' : 'Moderator'}
@@ -342,7 +347,7 @@ export default function MembersList({ communityId, isAdmin = false, userCommunit
                 onClick={() => handlePageChange(page)}
                 className={`px-3 py-1 text-sm rounded transition-colors ${
                   currentPage === page
-                    ? 'bg-[#00d4ff] text-white'
+                    ? 'bg-accent-blue text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
