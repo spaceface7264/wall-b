@@ -432,12 +432,18 @@ export default function GymDetail() {
 
   const loadCommunities = async (gymId) => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('communities')
         .select('*')
         .eq('gym_id', gymId)
-        .eq('community_type', 'gym')
-        .eq('is_active', true);
+        .eq('community_type', 'gym');
+      
+      // Only filter suspended communities if user is not admin
+      if (!isAdmin) {
+        query = query.eq('is_active', true);
+      }
+      
+      const { data, error } = await query;
 
       if (error) {
         console.log('Error loading communities, showing empty state');
@@ -445,8 +451,10 @@ export default function GymDetail() {
         return;
       }
 
-      // Filter out suspended communities (is_active = false or null)
-      const activeCommunities = (data || []).filter(c => c.is_active !== false);
+      // Filter out suspended communities for non-admins (double-check)
+      const activeCommunities = isAdmin 
+        ? (data || [])
+        : (data || []).filter(c => c.is_active !== false);
 
       // Enrich communities with actual member counts
       const enrichedCommunities = await enrichCommunitiesWithActualCounts(activeCommunities);
@@ -459,12 +467,18 @@ export default function GymDetail() {
 
   const loadEvents = async (gymId) => {
     try {
-      // First, get active communities for this gym (exclude suspended)
-      const { data: communities, error: communitiesError } = await supabase
+      // First, get communities for this gym
+      let communitiesQuery = supabase
         .from('communities')
         .select('id')
-        .eq('gym_id', gymId)
-        .eq('is_active', true);
+        .eq('gym_id', gymId);
+      
+      // Only filter suspended communities if user is not admin
+      if (!isAdmin) {
+        communitiesQuery = communitiesQuery.eq('is_active', true);
+      }
+      
+      const { data: communities, error: communitiesError } = await communitiesQuery;
 
       if (communitiesError) {
         console.error('Error loading communities for events:', communitiesError);
@@ -472,8 +486,10 @@ export default function GymDetail() {
         return;
       }
 
-      // Filter out suspended communities (is_active = false or null)
-      const activeCommunities = (communities || []).filter(c => c.is_active !== false);
+      // Filter out suspended communities for non-admins (double-check)
+      const activeCommunities = isAdmin 
+        ? (communities || [])
+        : (communities || []).filter(c => c.is_active !== false);
 
       if (!activeCommunities || activeCommunities.length === 0) {
         setEvents([]);

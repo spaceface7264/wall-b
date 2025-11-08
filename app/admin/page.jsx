@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Shield, Settings, MapPin, Flag, CheckCircle, XCircle, Clock, Trash2, MessageSquare, FileText, Search, AlertCircle, MoreVertical, User, MessageCircle, Ban, ShieldCheck, ShieldOff, AlertTriangle, Edit, BarChart3, X, Download, Filter, Calendar, Activity, Star, Eye, EyeOff, ExternalLink, Sparkles, Lightbulb, Bug, ArrowRight } from 'lucide-react';
+import { Users, Shield, Settings, MapPin, Flag, CheckCircle, XCircle, Clock, Trash2, MessageSquare, FileText, Search, AlertCircle, MoreVertical, User, MessageCircle, Ban, ShieldCheck, ShieldOff, AlertTriangle, Edit, BarChart3, X, Download, Filter, Calendar, Activity, Star, Eye, EyeOff, ExternalLink, Sparkles, Lightbulb, Bug, ArrowRight, Lock, Globe, UserPlus } from 'lucide-react';
 import SidebarLayout from '../components/SidebarLayout';
 import ConfirmationModal from '../components/ConfirmationModal';
 import SuspendUserModal from '../components/SuspendUserModal';
@@ -2516,42 +2516,78 @@ export default function AdminPage() {
 
   const executeBulkDelete = async (userIds) => {
     try {
-      // Delete from auth.users (cascades to profiles)
-      const results = {
-        successful: [],
-        failed: []
-      };
-
-      for (const userId of userIds) {
-        try {
-          const { error } = await supabase.auth.admin.deleteUser(userId);
-          if (error) {
-            console.error(`Error deleting user ${userId}:`, error);
-            results.failed.push({ userId, error: error.message || 'Unknown error' });
-          } else {
-            results.successful.push(userId);
-          }
-        } catch (err) {
-          console.error(`Exception deleting user ${userId}:`, err);
-          results.failed.push({ userId, error: err.message || 'Unknown error' });
-        }
+      // Verify admin status
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        showToast('error', 'Error', 'You must be logged in');
+        return;
       }
 
-      // Show appropriate message based on results
-      if (results.failed.length > 0 && results.successful.length === 0) {
-        showToast('error', 'Deletion Failed', results.failed[0]?.error || 'Failed to delete users');
-      } else if (results.failed.length > 0) {
-        showToast('warning', 'Partial Success', `Deleted ${results.successful.length} user(s), ${results.failed.length} failed`);
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.is_admin) {
+        showToast('error', 'Permission Denied', 'You must be an admin to delete users');
+        return;
+      }
+
+      // Call Edge Function - this is required because auth.admin.deleteUser() needs service role
+      const { data, error } = await supabase.functions.invoke('delete-users', {
+        body: { userIds }
+      });
+
+      if (error) {
+        console.error('Edge Function error:', error);
+        const errorMsg = error.message || error.toString() || '';
+        
+        if (errorMsg.includes('Failed to send') || 
+            errorMsg.includes('Failed to fetch') || 
+            errorMsg.includes('NetworkError') ||
+            errorMsg.includes('not found') ||
+            errorMsg.includes('404')) {
+          showToast('error', 'Function Not Deployed', 
+            'User deletion requires the Edge Function to be deployed. ' +
+            'Run: supabase functions deploy delete-users');
+        } else {
+          showToast('error', 'Error', errorMsg || 'Failed to delete users');
+        }
+        return;
+      }
+
+      if (!data) {
+        showToast('error', 'Error', 'No response from server');
+        return;
+      }
+
+      // Handle response
+      const { results } = data;
+      const { successful = [], failed = [] } = results || {};
+      
+      if (failed.length > 0 && successful.length === 0) {
+        showToast('error', 'Deletion Failed', failed[0]?.error || 'Failed to delete users');
+      } else if (failed.length > 0) {
+        showToast('warning', 'Partial Success', `Deleted ${successful.length} user(s), ${failed.length} failed`);
         setSelectedUsers(new Set());
         loadData();
       } else {
-        showToast('success', 'Users Deleted', `Successfully deleted ${results.successful.length} user(s)`);
+        showToast('success', 'Users Deleted', `Successfully deleted ${successful.length} user(s)`);
         setSelectedUsers(new Set());
         loadData();
       }
     } catch (error) {
-      console.error('Error bulk deleting users:', error);
-      showToast('error', 'Error', error.message || 'Failed to delete users.');
+      console.error('Error deleting users:', error);
+      const errorMsg = error.message || error.toString() || '';
+      
+      if (errorMsg.includes('Failed to send') || errorMsg.includes('Failed to fetch')) {
+        showToast('error', 'Function Not Deployed', 
+          'User deletion requires the Edge Function to be deployed. ' +
+          'Run: supabase functions deploy delete-users');
+      } else {
+        showToast('error', 'Error', errorMsg || 'Failed to delete users');
+      }
     }
   };
 
@@ -2776,6 +2812,16 @@ export default function AdminPage() {
   const calculateCommunityChanges = (originalData, newData) => {
     const changes = [];
     
+    // If originalData is null, use editingCommunity as fallback
+    if (!originalData && editingCommunity) {
+      originalData = editingCommunity;
+    }
+    
+    // If still null, return empty changes array
+    if (!originalData) {
+      return changes;
+    }
+    
     // Compare name
     const oldName = (originalData.name || '').trim();
     const newName = (newData.name || '').trim();
@@ -2806,6 +2852,17 @@ export default function AdminPage() {
         field: 'Rules',
         oldValue: oldRules || '(empty)',
         newValue: newRules || '(empty)'
+      });
+    }
+    
+    // Compare privacy
+    const oldPrivacy = originalData.is_private || false;
+    const newPrivacy = newData.is_private || false;
+    if (oldPrivacy !== newPrivacy) {
+      changes.push({
+        field: 'Privacy',
+        oldValue: oldPrivacy ? 'Private' : 'Public',
+        newValue: newPrivacy ? 'Private' : 'Public'
       });
     }
     
@@ -3895,6 +3952,7 @@ export default function AdminPage() {
                                 <button
                                   onClick={() => {
                                     setEditingCommunity(community);
+                                    setOriginalCommunityData({ ...community });
                                     setOpenCommunityMenuId(null);
                                   }}
                                   className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-800 transition-colors flex items-center gap-2"
@@ -6080,7 +6138,8 @@ export default function AdminPage() {
                   const newData = {
                     name: formData.get('name') || '',
                     description: formData.get('description') || '',
-                    rules: formData.get('rules') || ''
+                    rules: formData.get('rules') || '',
+                    is_private: formData.get('is_private') === 'true'
                   };
 
                   // Calculate changes and show confirmation
@@ -6136,6 +6195,45 @@ export default function AdminPage() {
                   style={{ borderRadius: 2 }}
                   placeholder="Community guidelines and rules..."
                 />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Privacy</label>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="is_private"
+                      value="false"
+                      defaultChecked={!editingCommunity.is_private}
+                      className="w-4 h-4"
+                      style={{ accentColor: '#2663EB' }}
+                    />
+                    <div className="flex items-center gap-1.5">
+                      <Globe className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-300">Public</span>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="is_private"
+                      value="true"
+                      defaultChecked={editingCommunity.is_private}
+                      className="w-4 h-4"
+                      style={{ accentColor: '#2663EB' }}
+                    />
+                    <div className="flex items-center gap-1.5">
+                      <Lock className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-300">Private</span>
+                    </div>
+                  </label>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">
+                  {editingCommunity.is_private 
+                    ? 'Only approved members can see content. Anyone can request to join.'
+                    : 'Anyone can view and join this community.'}
+                </p>
               </div>
               
               <div className="flex gap-2 pt-2">

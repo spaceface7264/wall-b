@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Users, MessageCircle, Plus, MessageSquare, Clock, X, ThumbsUp, MapPin, UserPlus, TrendingUp, Calendar, Settings, ArrowLeft, Shield, Info, MoreHorizontal, RefreshCw, Heart, Flag, AlertTriangle, UserMinus, Lock } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
@@ -14,6 +14,7 @@ import CreateEventModal from '../../components/CreateEventModal';
 import MembersList from '../../components/MembersList';
 import CalendarView from '../../components/CalendarView';
 import LoginOverlay from '../../components/LoginOverlay';
+import JoinRequestsList from '../../components/JoinRequestsList';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getActualMemberCount, updateLastViewedAt } from '../../../lib/community-utils';
 import { useToast } from '../../providers/ToastProvider';
@@ -53,6 +54,7 @@ export default function CommunityPage() {
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
   const [showLoginOverlay, setShowLoginOverlay] = useState(false);
+  const [joinRequestStatus, setJoinRequestStatus] = useState(null); // 'pending', 'approved', 'rejected', or null
   const menuRef = useRef(null);
   const menuButtonRef = useRef(null);
   const navigate = useNavigate();
@@ -62,12 +64,35 @@ export default function CommunityPage() {
   const { showLoginModal } = useLoginModal();
   const communityId = params.communityId;
 
-  const tabs = [
+  // Define base tabs
+  const baseTabs = [
     { id: 'posts', label: 'Forum', icon: MessageCircle },
     { id: 'members', label: 'Members', icon: Users },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'about', label: 'About', icon: Info }
   ];
+
+  // Compute visible tabs based on community privacy and user permissions
+  const tabs = useMemo(() => {
+    const visibleTabs = [...baseTabs];
+    
+    // Check if user can see content (member or public community)
+    const canSeeContent = isMember || !community?.is_private || isAdmin;
+    
+    // If private community and user is not a member, hide content tabs
+    if (community?.is_private && !canSeeContent) {
+      // Only show About tab for non-members viewing private communities
+      return [{ id: 'about', label: 'About', icon: Info }];
+    }
+    
+    // Add Requests tab if user is admin/moderator
+    const canManageRequests = (userCommunityRole === 'admin' || userCommunityRole === 'moderator' || isAdmin);
+    if (canManageRequests && !visibleTabs.find(t => t.id === 'requests')) {
+      visibleTabs.push({ id: 'requests', label: 'Requests', icon: UserPlus });
+    }
+    
+    return visibleTabs;
+  }, [community?.is_private, isMember, isAdmin, userCommunityRole]);
 
   useEffect(() => {
     const getUser = async () => {
@@ -76,6 +101,7 @@ export default function CommunityPage() {
       if (user) {
         checkMembership(user.id);
         checkAdminStatus(user.id);
+        checkJoinRequest(user.id);
         // Load user profile for display name
         const { data: profile } = await supabase
           .from('profiles')
@@ -436,12 +462,83 @@ export default function CommunityPage() {
     }
   };
 
+  const checkJoinRequest = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('community_join_requests')
+        .select('status')
+        .eq('community_id', communityId)
+        .eq('user_id', userId)
+        .order('requested_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking join request:', error);
+        setJoinRequestStatus(null);
+        return;
+      }
+
+      setJoinRequestStatus(data?.status || null);
+    } catch (error) {
+      console.error('Error checking join request:', error);
+      setJoinRequestStatus(null);
+    }
+  };
+
   const handleJoinCommunity = async () => {
     if (!user) {
       showLoginModal({ subtitle: 'Sign in to join communities' });
       return;
     }
 
+    // Check if community is private
+    if (community?.is_private) {
+      // Create join request instead of joining directly
+      setJoining(true);
+      try {
+        const { error } = await supabase
+          .from('community_join_requests')
+          .insert({
+            community_id: communityId,
+            user_id: user.id,
+            status: 'pending'
+          });
+
+        if (error) {
+          console.error('Error creating join request:', error);
+          if (error.code === '23505') {
+            // Unique constraint violation - request already exists
+            showToast('info', 'Request Already Sent', 'You have already requested to join this community');
+            await checkJoinRequest(user.id);
+          } else if (error.code === '42P01') {
+            // Table doesn't exist
+            showToast('error', 'Error', 'Join requests feature is not set up. Please contact an administrator.');
+          } else if (error.message) {
+            // Show the actual error message
+            showToast('error', 'Error', `Failed to send join request: ${error.message}`);
+          } else {
+            showToast('error', 'Error', 'Failed to send join request. Please try again.');
+          }
+          return;
+        }
+
+        setJoinRequestStatus('pending');
+        showToast('success', 'Request Sent', 'Your join request has been sent to the community admins');
+      } catch (error) {
+        console.error('Error creating join request:', error);
+        if (error.message) {
+          showToast('error', 'Error', `Failed to send join request: ${error.message}`);
+        } else {
+          showToast('error', 'Error', 'Failed to send join request. Please try again.');
+        }
+      } finally {
+        setJoining(false);
+      }
+      return;
+    }
+
+    // Public community - join directly
     setJoining(true);
     try {
       const { error } = await supabase
@@ -480,7 +577,13 @@ export default function CommunityPage() {
 
       if (error) {
         console.error('Error leaving community:', error);
-        showToast('error', 'Error', 'Failed to leave community');
+        let errorMessage = 'Failed to leave community';
+        if (error.code === '42501' || error.message?.includes('permission denied') || error.message?.includes('policy')) {
+          errorMessage = 'Permission denied. Please ensure the RLS policy allows users to leave communities. Run the SQL script: fix-leave-community-policy.sql';
+        } else if (error.message) {
+          errorMessage = `Failed to leave community: ${error.message}`;
+        }
+        showToast('error', 'Error', errorMessage);
         return;
       }
 
@@ -755,6 +858,66 @@ export default function CommunityPage() {
   };
 
   const renderTabContent = () => {
+    // Check if user can see content (member or public community)
+    const canSeeContent = isMember || !community?.is_private || isAdmin;
+    
+    // If private community and user is not a member, show restricted view
+    if (community?.is_private && !canSeeContent) {
+      if (activeTab === 'about') {
+        // Show About tab content
+        return (
+          <div className="space-y-4">
+            <div className="p-6 bg-gray-800/50 border border-gray-700 rounded-lg">
+              <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>About</h3>
+              {community.description ? (
+                <p className="text-gray-300 whitespace-pre-wrap">{community.description}</p>
+              ) : (
+                <p className="text-gray-400 italic">No description available.</p>
+              )}
+              {community.rules && (
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                  <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Community Rules</h4>
+                  <p className="text-gray-300 whitespace-pre-wrap">{community.rules}</p>
+                </div>
+              )}
+            </div>
+            <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Lock className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-semibold mb-1 text-blue-400">This is a private community</h4>
+                  <p className="text-sm text-gray-300 mb-3">
+                    Join this community to see posts, events, members, and more.
+                  </p>
+                  {user ? (
+                    joinRequestStatus === 'pending' ? (
+                      <p className="text-sm text-gray-400">Your join request is pending approval.</p>
+                    ) : (
+                      <button
+                        onClick={handleJoinCommunity}
+                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"
+                      >
+                        Request to Join
+                      </button>
+                    )
+                  ) : (
+                    <button
+                      onClick={() => showLoginModal({ subtitle: 'Sign in to request to join' })}
+                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"
+                    >
+                      Sign in to Request
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+      // Default to About tab if trying to access restricted content
+      return null;
+    }
+
     switch (activeTab) {
       case 'posts':
         return (
@@ -871,6 +1034,24 @@ export default function CommunityPage() {
               searchTerm={eventSearchTerm}
               isMember={isMember || isAdmin}
               onCreateClick={() => setShowNewEventModal(true)}
+            />
+          </div>
+        );
+
+      case 'requests':
+        return (
+          <div className="space-y-4">
+            <JoinRequestsList 
+              communityId={communityId}
+              communityName={community?.name || 'Community'}
+              userCommunityRole={userCommunityRole}
+              onRequestProcessed={() => {
+                // Refresh membership status and join request status
+                if (user) {
+                  checkMembership(user.id);
+                  checkJoinRequest(user.id);
+                }
+              }}
             />
           </div>
         );
@@ -1099,15 +1280,15 @@ export default function CommunityPage() {
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 text-sm rounded-full border-2 border-[#FF5A5F] text-[#FF5A5F] hover:bg-[#FF5A5F] hover:text-white transition-all duration-200 whitespace-nowrap flex-shrink-0"
                 >
                   <Lock className="w-3.5 h-3.5" />
-                  Join
+                  {community?.is_private ? 'Request to Join' : 'Join'}
                 </button>
               ) : !isMember ? (
                 <button
                   onClick={handleJoinCommunity}
-                  disabled={joining}
+                  disabled={joining || joinRequestStatus === 'pending'}
                   className="px-2.5 py-1 text-sm rounded-full border-2 border-[#FF5A5F] text-[#FF5A5F] hover:bg-[#FF5A5F] hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
                 >
-                  {joining ? 'Joining...' : 'Join'}
+                  {joining ? 'Joining...' : joinRequestStatus === 'pending' ? 'Request Pending' : community?.is_private ? 'Request to Join' : 'Join'}
                 </button>
               ) : (
                 <button

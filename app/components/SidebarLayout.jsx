@@ -32,7 +32,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
 
   // Define loadUserCommunities BEFORE useEffect to avoid ReferenceError
   // (const functions are NOT hoisted in JavaScript)
-  const loadUserCommunities = async (userId) => {
+  const loadUserCommunities = async (userId, adminStatus = false) => {
     if (!userId) return;
     
     setCommunitiesLoading(true);
@@ -89,8 +89,11 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       }
 
       const communitiesList = data?.map(item => item.communities).filter(Boolean) || [];
-      // Filter out suspended communities
-      const activeCommunities = communitiesList.filter(c => c.is_active !== false);
+      // Filter out suspended communities for non-admins
+      // Admins can see all communities including suspended ones
+      const activeCommunities = adminStatus 
+        ? communitiesList 
+        : communitiesList.filter(c => c.is_active !== false);
       // Enrich with actual member counts
       const enrichedCommunities = await enrichCommunitiesWithActualCounts(activeCommunities);
       
@@ -198,7 +201,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               }
               
               setIsAdmin(profile?.is_admin || false);
-              loadUserCommunities(user.id);
+              loadUserCommunities(user.id, profile?.is_admin || false);
             } catch (error) {
               console.error('❌ Profile check failed:', error);
               setIsAdmin(false);
@@ -255,7 +258,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                 }
                 
                 setIsAdmin(profile?.is_admin || false);
-                loadUserCommunities(session.user.id);
+                loadUserCommunities(session.user.id, profile?.is_admin || false);
               } catch (error) {
                 console.error('Error checking admin status:', error);
                 setIsAdmin(false);
@@ -283,6 +286,13 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       }
     };
   }, []);
+
+  // Reload communities when admin status changes
+  useEffect(() => {
+    if (user?.id) {
+      loadUserCommunities(user.id, isAdmin);
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     // Only redirect to login if we're not already on the login page

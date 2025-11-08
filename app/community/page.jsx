@@ -14,6 +14,7 @@ import ListSkeleton from '../components/ListSkeleton';
 
 export default function CommunitiesPage() {
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [userIntent, setUserIntent] = useState([]);
   const [communities, setCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +54,19 @@ export default function CommunitiesPage() {
         const { data: { user } } = await supabase.auth.getUser();
         setUser(user);
         if (user) {
+          // Check if user is admin
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('is_admin')
+              .eq('id', user.id)
+              .single();
+            setIsAdmin(profile?.is_admin || false);
+          } catch (error) {
+            console.error('Error checking admin status:', error);
+            setIsAdmin(false);
+          }
+          
           loadMyCommunities(user.id);
           
           // Get user intent for recommendations
@@ -80,6 +94,11 @@ export default function CommunitiesPage() {
     getUser();
     loadCommunities();
   }, []);
+
+  // Reload communities when admin status changes
+  useEffect(() => {
+    loadCommunities();
+  }, [isAdmin]);
   
   // Load recommended communities when user and intent are available
   useEffect(() => {
@@ -158,8 +177,8 @@ export default function CommunitiesPage() {
       setLoading(true);
       
       // First try with gyms relation
-      // Filter out suspended communities (is_active = false)
-      let { data, error } = await supabase
+      // Filter out suspended communities for non-admins
+      let query = supabase
         .from('communities')
         .select(`
           *,
@@ -170,20 +189,32 @@ export default function CommunitiesPage() {
             address,
             image_url
           )
-        `)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        `);
+      
+      // Only filter suspended communities if user is not admin
+      if (!isAdmin) {
+        query = query.eq('is_active', true);
+      }
+      
+      query = query.order('created_at', { ascending: false });
+      
+      let { data, error } = await query;
 
       // If that fails (e.g., RLS issue with gyms), try without gyms relation
       if (error) {
         console.warn('Error loading communities with gyms relation:', error);
         console.log('Retrying without gyms relation...');
         
-        const fallbackResult = await supabase
+        let fallbackQuery = supabase
           .from('communities')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false });
+          .select('*');
+        
+        // Only filter suspended communities if user is not admin
+        if (!isAdmin) {
+          fallbackQuery = fallbackQuery.eq('is_active', true);
+        }
+        
+        const fallbackResult = await fallbackQuery.order('created_at', { ascending: false });
         
         if (fallbackResult.error) {
           console.error('Error loading communities:', fallbackResult.error);
@@ -192,7 +223,6 @@ export default function CommunitiesPage() {
         }
         
         data = fallbackResult.data;
-        error = null;
         
         // Fetch gym data separately for communities that have gym_id
         if (data && data.length > 0) {
@@ -329,8 +359,13 @@ export default function CommunitiesPage() {
 
         const { data: communitiesData, error: communitiesError } = await supabase
           .from('communities')
-          .select('id, name, description, community_type, member_count, created_at, gym_id')
+          .select('id, name, description, community_type, member_count, created_at, gym_id, is_active')
           .in('id', communityIds);
+        
+        // Filter out suspended communities for non-admins
+        if (!isAdmin && communitiesData) {
+          communitiesData = communitiesData.filter(c => c.is_active !== false);
+        }
 
         if (communitiesError) {
           console.error('Error loading communities:', communitiesError);
@@ -402,8 +437,15 @@ export default function CommunitiesPage() {
       }
 
       const myCommunitiesList = data?.map(item => item.communities).filter(Boolean) || [];
+      
+      // Filter out suspended communities for non-admins
+      // Admins can see all communities including suspended ones
+      const activeMyCommunities = isAdmin 
+        ? myCommunitiesList 
+        : myCommunitiesList.filter(c => c.is_active !== false);
+      
       // Enrich with actual member counts
-      const enrichedMyCommunities = await enrichCommunitiesWithActualCounts(myCommunitiesList);
+      const enrichedMyCommunities = await enrichCommunitiesWithActualCounts(activeMyCommunities);
       setMyCommunities(enrichedMyCommunities);
     } catch (error) {
       console.error('Error loading my communities:', error);
@@ -677,7 +719,13 @@ export default function CommunitiesPage() {
 
       if (error) {
         console.error('Error leaving community:', error);
-        showToast('error', 'Error', 'Failed to leave community');
+        let errorMessage = 'Failed to leave community';
+        if (error.code === '42501' || error.message?.includes('permission denied') || error.message?.includes('policy')) {
+          errorMessage = 'Permission denied. Please ensure the RLS policy allows users to leave communities. Run the SQL script: fix-leave-community-policy.sql';
+        } else if (error.message) {
+          errorMessage = `Failed to leave community: ${error.message}`;
+        }
+        showToast('error', 'Error', errorMessage);
         return;
       }
 

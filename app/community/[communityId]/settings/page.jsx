@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../../../lib/supabase';
-import { ArrowLeft, Save, Users, UserPlus, X, Settings as SettingsIcon, Trash2, Shield, MapPin, ChevronDown, Building } from 'lucide-react';
+import { ArrowLeft, Save, Users, UserPlus, X, Settings as SettingsIcon, Trash2, Shield, MapPin, ChevronDown, Building, Lock, Globe } from 'lucide-react';
 import SidebarLayout from '../../../components/SidebarLayout';
 import { useToast } from '../../../providers/ToastProvider';
 import ConfirmationModal from '../../../components/ConfirmationModal';
@@ -29,6 +29,8 @@ export default function CommunitySettingsPage() {
   const [gymId, setGymId] = useState(null);
   const [selectedGym, setSelectedGym] = useState(null);
   const [showGymSelector, setShowGymSelector] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [showPrivacyWarning, setShowPrivacyWarning] = useState(false);
   
   // Moderator management
   const [showAddModeratorModal, setShowAddModeratorModal] = useState(false);
@@ -97,6 +99,7 @@ export default function CommunitySettingsPage() {
       setDescription(communityData.description || '');
       setRules(communityData.rules || '');
       setGymId(communityData.gym_id || null);
+      setIsPrivate(communityData.is_private || false);
       
       // Set selected gym if available
       let currentGym = null;
@@ -121,6 +124,7 @@ export default function CommunitySettingsPage() {
         description: communityData.description || '',
         rules: communityData.rules || '',
         gym_id: communityData.gym_id || null,
+        is_private: communityData.is_private || false,
         gym: currentGym ? { name: currentGym.name, city: currentGym.city, country: currentGym.country } : null
       });
       
@@ -316,6 +320,13 @@ export default function CommunitySettingsPage() {
         new: newGymName
       });
     }
+    if (isPrivate !== originalData.is_private) {
+      changes.push({
+        field: 'Privacy',
+        old: originalData.is_private ? 'Private' : 'Public',
+        new: isPrivate ? 'Private' : 'Public'
+      });
+    }
     
     return changes;
   };
@@ -328,8 +339,22 @@ export default function CommunitySettingsPage() {
       return;
     }
     
+    // Show warning if changing to private
+    if (isPrivate && !originalData.is_private) {
+      setShowPrivacyWarning(true);
+      return;
+    }
+    
     setPendingChanges(changes);
     setShowChangesConfirm(true);
+  };
+
+  const handlePrivacyChange = (newValue) => {
+    setIsPrivate(newValue);
+    // Show warning when changing to private
+    if (newValue && !originalData?.is_private) {
+      setShowPrivacyWarning(true);
+    }
   };
 
   const confirmSave = async () => {
@@ -342,6 +367,7 @@ export default function CommunitySettingsPage() {
           description,
           rules,
           gym_id: gymId,
+          is_private: isPrivate,
           updated_at: new Date().toISOString()
         })
         .eq('id', communityId);
@@ -353,6 +379,7 @@ export default function CommunitySettingsPage() {
         description, 
         rules, 
         gym_id: gymId,
+        is_private: isPrivate,
         gym: selectedGym ? { name: selectedGym.name, city: selectedGym.city, country: selectedGym.country } : null
       });
       setShowChangesConfirm(false);
@@ -602,6 +629,44 @@ export default function CommunitySettingsPage() {
                     placeholder="Community rules and guidelines..."
                   />
                 </div>
+                
+                {/* Privacy Setting */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    Privacy
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => handlePrivacyChange(false)}
+                      disabled={!canEdit}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        !isPrivate
+                          ? 'bg-[#2663EB] text-white'
+                          : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+                      }`}
+                    >
+                      <Globe className="w-4 h-4" />
+                      Public
+                    </button>
+                    <button
+                      onClick={() => handlePrivacyChange(true)}
+                      disabled={!canEdit}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        isPrivate
+                          ? 'bg-[#2663EB] text-white'
+                          : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+                      }`}
+                    >
+                      <Lock className="w-4 h-4" />
+                      Private
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    {isPrivate 
+                      ? 'Only approved members can see community content. Anyone can request to join.'
+                      : 'Anyone can view and join this community.'}
+                  </p>
+                </div>
               </div>
               
               {canEdit && (
@@ -760,6 +825,23 @@ export default function CommunitySettingsPage() {
         onClose={() => setShowGymSelector(false)}
         selectedGymId={gymId}
         onSelectGym={handleGymSelect}
+      />
+
+      {/* Privacy Warning Modal */}
+      <ConfirmationModal
+        isOpen={showPrivacyWarning}
+        onClose={() => setShowPrivacyWarning(false)}
+        onConfirm={() => {
+          setShowPrivacyWarning(false);
+          const changes = calculateChanges();
+          setPendingChanges(changes);
+          setShowChangesConfirm(true);
+        }}
+        title="Change to Private Community"
+        message="When you change this community to private, existing members will remain members, but new users will need to request to join. Are you sure you want to continue?"
+        confirmText="Yes, Make Private"
+        cancelText="Cancel"
+        confirmButtonStyle="bg-blue-500 hover:bg-blue-600"
       />
 
       {/* Changes Confirmation Modal */}

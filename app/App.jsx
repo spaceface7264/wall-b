@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './LoginPage.jsx'
+import LandingPage from './components/LandingPage.jsx'
 import CommunitiesPage from './community/page.jsx'
 import CommunityPage from './community/[communityId]/page.jsx'
 import PostDetailPage from './community/[communityId]/post/[postId]/page.jsx'
@@ -28,7 +29,7 @@ function App() {
       <Router>
         <LoginModalProvider>
           <Routes>
-          <Route path="/" element={<LoginPage />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/terms" element={<TermsPage />} />

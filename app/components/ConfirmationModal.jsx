@@ -74,7 +74,7 @@ export default function ConfirmationModal({
         
         {/* Message */}
         <div className="confirmation-modal-message">
-          {typeof message === 'string' ? message : String(message)}
+          {typeof message === 'string' ? message : (React.isValidElement(message) ? message : String(message))}
         </div>
         
         {/* Buttons */}
