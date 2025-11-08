@@ -2,10 +2,11 @@ import PostCardSkeleton from './PostCardSkeleton';
 import CommunityCardSkeleton from './CommunityCardSkeleton';
 import EventCardSkeleton from './EventCardSkeleton';
 import ConversationListSkeleton from './ConversationListSkeleton';
+import GymCardSkeleton from './GymCardSkeleton';
 
 /**
  * ListSkeleton - Renders multiple skeleton items
- * @param {string} variant - 'post', 'community', 'event', 'conversation', or 'custom'
+ * @param {string} variant - 'post', 'community', 'event', 'conversation', 'gym', or 'custom'
  * @param {number} count - Number of skeleton items to render
  * @param {React.Component} SkeletonComponent - Custom skeleton component to use
  * @param {object} skeletonProps - Props to pass to each skeleton item
@@ -28,6 +29,9 @@ export default function ListSkeleton({
         break;
       case 'event':
         Component = EventCardSkeleton;
+        break;
+      case 'gym':
+        Component = GymCardSkeleton;
         break;
       case 'conversation':
         // ConversationListSkeleton handles its own count

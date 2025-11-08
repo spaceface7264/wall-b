@@ -7,6 +7,7 @@ import { useToast } from '../providers/ToastProvider';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { calculateDistance } from '../../lib/geolocation';
 import { EmptyGyms } from '../components/EmptyState';
+import ListSkeleton from '../components/ListSkeleton';
 
 const availableFacilities = [
   'Kilter Board',
@@ -1337,27 +1338,8 @@ export default function Gyms() {
         {/* Gyms List */}
         <div style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
             {loading ? (
-              <div>
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="animate-fade-in w-full border-b border-gray-700/50 last:border-b-0" style={{ padding: '16px 0' }}>
-                    <div style={{ display: 'flex', gap: '16px', padding: '0 16px' }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="mobile-skeleton h-4 w-3/4 mb-3"></div>
-                        <div className="mobile-skeleton h-3 w-1/2 mb-3"></div>
-                        <div className="mobile-skeleton h-3 w-2/3 mb-3"></div>
-                        <div className="flex gap-1 mt-3">
-                          <div className="mobile-skeleton h-5 w-16 rounded"></div>
-                          <div className="mobile-skeleton h-5 w-12 rounded"></div>
-                          <div className="mobile-skeleton h-5 w-14 rounded"></div>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end', flexShrink: 0 }}>
-                        <div className="mobile-skeleton h-3 w-20 mb-2"></div>
-                        <div className="mobile-skeleton h-4 w-4 rounded"></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="desktop-grid-3">
+                <ListSkeleton variant="gym" count={6} />
               </div>
             ) : filteredGyms.length === 0 ? (
               <div style={{ padding: '40px 16px', textAlign: 'center' }}>

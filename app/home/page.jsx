@@ -349,7 +349,11 @@ export default function HomePage() {
         </div>
 
         {loadingGyms ? (
-          <ListSkeleton variant="gym" count={4} />
+          <div style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
+            <div className="desktop-grid-3 px-3">
+              <ListSkeleton variant="gym" count={4} />
+            </div>
+          </div>
         ) : recommendedGyms.length === 0 ? (
           <div className="mobile-card p-8 text-center">
             <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-500" />
