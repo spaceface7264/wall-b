@@ -49,12 +49,8 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
         let communitiesQuery = supabase
           .from('communities')
           .select('id, name, description, member_count, is_active')
+          .eq('is_active', true) // Always filter out suspended communities
           .limit(10);
-        
-        // Filter out suspended communities for non-admins
-        if (!adminStatus) {
-          communitiesQuery = communitiesQuery.eq('is_active', true);
-        }
         
         const { data: communitiesData, error: communitiesError } = await communitiesQuery;
         
@@ -63,17 +59,12 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           return;
         }
         
-        // Double-check filter for non-admins
-        const filteredCommunities = adminStatus 
-          ? (communitiesData || [])
-          : (communitiesData || []).filter(c => c.is_active !== false);
-        
-        setCommunities(filteredCommunities);
+        setCommunities(communitiesData || []);
         return;
       }
       
       // If community_members exists, proceed with the original query
-      // Filter out suspended communities (is_active = true or null for backward compatibility)
+      // Always filter out suspended communities (is_active = true or null for backward compatibility)
       const { data, error } = await supabase
         .from('community_members')
         .select(`
@@ -101,11 +92,8 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       }
 
       const communitiesList = data?.map(item => item.communities).filter(Boolean) || [];
-      // Filter out suspended communities for non-admins
-      // Admins can see all communities including suspended ones
-      const activeCommunities = adminStatus 
-        ? communitiesList 
-        : communitiesList.filter(c => c.is_active !== false);
+      // Always filter out suspended communities for everyone (including admins)
+      const activeCommunities = communitiesList.filter(c => c.is_active !== false);
       // Enrich with actual member counts
       const enrichedCommunities = await enrichCommunitiesWithActualCounts(activeCommunities);
       
@@ -485,7 +473,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     return (
       <div className="mobile-app mobile-safe-area flex items-center justify-center animate-fade-in" style={{ backgroundColor: '#252526' }}>
         <div className="text-center animate-bounce-in">
-          <div className="w-8 h-8 border-4 border-[#00d4ff] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-8 h-8 border-4 border-accent-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="minimal-text">Loading Send Train...</p>
         </div>
       </div>
@@ -545,7 +533,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           ) : (
           <button
             onClick={() => showLoginModal()}
-            className="mobile-btn-secondary text-xs px-1 py-1.5 whitespace-nowrap"
+            className="mobile-btn-secondary text-xs px-5 py-1 border-0 whitespace-nowrap"
           >
             Sign In
           </button>
@@ -574,6 +562,18 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
         >
           <ChevronLeft className={`w-5 h-5 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} />
         </button>
+
+        {/* Logo Section - Mobile & Desktop */}
+        <div className={`sidebar-logo-section mobile-only ${sidebarCollapsed ? 'collapsed' : ''}`}>
+          <div className="sidebar-logo-full">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-accent-blue to-accent-blue-hover rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-xl">S</span>
+              </div>
+              <h1 className="sidebar-logo-text">Send Train</h1>
+            </div>
+          </div>
+        </div>
 
         {/* Logo Section - Desktop Only */}
         <div className="sidebar-logo-section desktop-only">
@@ -773,7 +773,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                             : ''
                         } ${
                           community.hasNewPosts && currentCommunityId !== community.id
-                            ? 'ring-1 ring-[#00d4ff]/50'
+                            ? 'ring-1 ring-accent-blue/50'
                             : ''
                         }`}
                         style={
@@ -823,8 +823,14 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
 
             {/* Empty state for unauthenticated users */}
             {!user && (
-              <div className="flex-1 flex items-center justify-center p-4">
-                <p className="text-sm text-gray-400 text-center">Sign in to see your communities</p>
+              <div className="flex-1 flex flex-col items-center justify-center p-4 gap-3">
+                <p className="text-sm text-gray-400 text-center">Sign in to joins and save your communities</p>
+                <button
+                  onClick={() => showLoginModal()}
+                  className="mobile-btn-primary text-xs mt-5 px-7 py-0 whitespace-nowrap"
+                >
+                  Sign In
+                </button>
               </div>
             )}
           </div>
@@ -902,6 +908,13 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               </button>
             </>
           )}
+          
+          {/* Signature */}
+          <div className={`text-center pt-4 pb-2 ${sidebarCollapsed ? 'hidden' : ''}`}>
+            <p className="text-xs" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
+              Created by Rami El-Daoud
+            </p>
+          </div>
         </div>
       </div>
 
