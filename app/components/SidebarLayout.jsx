@@ -46,17 +46,29 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       if (testError) {
         console.error('Table test error:', testError);
         // If community_members doesn't exist, try communities directly
-        const { data: communitiesData, error: communitiesError } = await supabase
+        let communitiesQuery = supabase
           .from('communities')
-          .select('id, name, description, member_count')
+          .select('id, name, description, member_count, is_active')
           .limit(10);
+        
+        // Filter out suspended communities for non-admins
+        if (!adminStatus) {
+          communitiesQuery = communitiesQuery.eq('is_active', true);
+        }
+        
+        const { data: communitiesData, error: communitiesError } = await communitiesQuery;
         
         if (communitiesError) {
           console.error('Communities table error:', communitiesError);
           return;
         }
         
-        setCommunities(communitiesData || []);
+        // Double-check filter for non-admins
+        const filteredCommunities = adminStatus 
+          ? (communitiesData || [])
+          : (communitiesData || []).filter(c => c.is_active !== false);
+        
+        setCommunities(filteredCommunities);
         return;
       }
       

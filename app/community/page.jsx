@@ -302,8 +302,14 @@ export default function CommunitiesPage() {
 
       // Enrich communities with actual member counts
       const enrichedCommunities = await enrichCommunitiesWithActualCounts(data || []);
-      console.log('Enriched communities:', enrichedCommunities?.length || 0, enrichedCommunities);
-      setCommunities(enrichedCommunities);
+      
+      // Final safety filter: Remove suspended communities for non-admins
+      const finalCommunities = isAdmin 
+        ? enrichedCommunities 
+        : enrichedCommunities.filter(c => c.is_active !== false);
+      
+      console.log('Enriched communities:', finalCommunities?.length || 0, finalCommunities);
+      setCommunities(finalCommunities);
     } catch (error) {
       console.error('Error loading communities:', error);
       showToast('error', 'Error', `Something went wrong: ${error.message}`);
@@ -470,8 +476,11 @@ export default function CommunitiesPage() {
       }
     });
     
-    return combined;
-  }, [communities, myCommunities, recommendedCommunities]);
+    // Final safety filter: Remove suspended communities for non-admins
+    return isAdmin 
+      ? combined 
+      : combined.filter(c => c.is_active !== false);
+  }, [communities, myCommunities, recommendedCommunities, isAdmin]);
   
   // Get unique countries and cities from all communities
   const availableCountries = useMemo(() => {
@@ -507,7 +516,11 @@ export default function CommunitiesPage() {
       if (!community || !community.name) {
         return false;
       }
-      return true; // Include all communities now
+      // Filter out suspended communities for non-admins (double-check safety measure)
+      if (!isAdmin && community.is_active === false) {
+        return false;
+      }
+      return true;
     });
     
     // Search filter
