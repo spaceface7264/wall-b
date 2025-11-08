@@ -563,18 +563,6 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           <ChevronLeft className={`w-5 h-5 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} />
         </button>
 
-        {/* Logo Section - Mobile & Desktop */}
-        <div className={`sidebar-logo-section mobile-only ${sidebarCollapsed ? 'collapsed' : ''}`}>
-          <div className="sidebar-logo-full">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-accent-blue to-accent-blue-hover rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-bold text-xl">S</span>
-              </div>
-              <h1 className="sidebar-logo-text">Send Train</h1>
-            </div>
-          </div>
-        </div>
-
         {/* Logo Section - Desktop Only */}
         <div className="sidebar-logo-section desktop-only">
           {!sidebarCollapsed ? (
