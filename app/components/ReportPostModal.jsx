@@ -139,7 +139,7 @@ export default function ReportPostModal({ isOpen, onClose, postId, postTitle }) 
             <select
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00d4ff] focus:border-transparent"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent"
               disabled={submitting}
             >
               <option value="">Select a reason...</option>
@@ -159,7 +159,7 @@ export default function ReportPostModal({ isOpen, onClose, postId, postTitle }) 
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Please provide any additional information that might help us review this report..."
               rows={4}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00d4ff] focus:border-transparent resize-none"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent resize-none"
               disabled={submitting}
               maxLength={500}
             />

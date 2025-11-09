@@ -309,12 +309,12 @@ export default function CreateCommunityPage() {
                     />
                     <div className={`p-4 rounded-xl border-2 transition-all duration-200 ${
                       formData.community_type === 'gym' 
-                        ? 'bg-[#00d4ff]/15 border-[#00d4ff] shadow-lg shadow-[#00d4ff]/20' 
+                        ? 'bg-accent-blue/15 border-accent-blue shadow-lg shadow-accent-blue/20' 
                         : 'bg-gray-800/40 border-gray-700/50 text-gray-300 hover:border-gray-600 hover:bg-gray-800/60 active:scale-[0.98]'
                     }`}>
                       <div className="flex items-center gap-3">
                         <Building className={`w-5 h-5 transition-colors duration-200 ${
-                          formData.community_type === 'gym' ? 'text-[#00d4ff]' : 'text-gray-400'
+                          formData.community_type === 'gym' ? 'text-accent-blue' : 'text-gray-400'
                         }`} />
                         <div className="flex-1">
                           <div className={`font-semibold mb-1 transition-colors duration-200 ${
@@ -343,12 +343,12 @@ export default function CreateCommunityPage() {
                     />
                     <div className={`p-4 rounded-xl border-2 transition-all duration-200 ${
                       formData.community_type === 'general' 
-                        ? 'bg-[#00d4ff]/15 border-[#00d4ff] shadow-lg shadow-[#00d4ff]/20' 
+                        ? 'bg-accent-blue/15 border-accent-blue shadow-lg shadow-accent-blue/20' 
                         : 'bg-gray-800/40 border-gray-700/50 text-gray-300 hover:border-gray-600 hover:bg-gray-800/60 active:scale-[0.98]'
                     }`}>
                       <div className="flex items-center gap-3">
                         <Users className={`w-5 h-5 transition-colors duration-200 ${
-                          formData.community_type === 'general' ? 'text-[#00d4ff]' : 'text-gray-400'
+                          formData.community_type === 'general' ? 'text-accent-blue' : 'text-gray-400'
                         }`} />
                         <div className="flex-1">
                           <div className={`font-semibold mb-1 transition-colors duration-200 ${
@@ -426,7 +426,7 @@ export default function CreateCommunityPage() {
                   placeholder="Name your community"
                   maxLength={50}
                   className={`minimal-input w-full transition-all duration-200 ${
-                    errors.name ? 'border-red-500 focus:border-red-500' : 'focus:border-[#00d4ff]'
+                    errors.name ? 'border-red-500 focus:border-red-500' : 'focus:border-accent-blue'
                   }`}
                 />
                 <div className="flex items-center justify-between mt-1">
@@ -460,7 +460,7 @@ export default function CreateCommunityPage() {
                   rows={5}
                   maxLength={500}
                   className={`minimal-input w-full resize-none transition-all duration-200 ${
-                    errors.description ? 'border-red-500 focus:border-red-500' : 'focus:border-[#00d4ff]'
+                    errors.description ? 'border-red-500 focus:border-red-500' : 'focus:border-accent-blue'
                   }`}
                 />
                 <div className="flex items-center justify-between mt-1">
@@ -493,7 +493,7 @@ export default function CreateCommunityPage() {
                   placeholder="Set guidelines for community members."
                   rows={4}
                   maxLength={1000}
-                  className="minimal-input w-full resize-none transition-all duration-200 focus:border-[#00d4ff]"
+                  className="minimal-input w-full resize-none transition-all duration-200 focus:border-accent-blue"
                 />
                 <div className="flex items-center justify-between mt-1">
                   <p className="text-xs text-gray-500">
@@ -521,10 +521,10 @@ export default function CreateCommunityPage() {
                       className="sr-only"
                     />
                     <div className={`p-2 rounded-lg transition-colors duration-200 ${
-                      !formData.is_private ? 'bg-[#00d4ff]/20' : 'bg-gray-700/50'
+                      !formData.is_private ? 'bg-accent-blue/20' : 'bg-gray-700/50'
                     }`}>
                       <Globe className={`w-5 h-5 transition-colors duration-200 ${
-                        !formData.is_private ? 'text-[#00d4ff]' : 'text-gray-400'
+                        !formData.is_private ? 'text-accent-blue' : 'text-gray-400'
                       }`} />
                     </div>
                     <div className="flex-1">
@@ -541,7 +541,7 @@ export default function CreateCommunityPage() {
                     </div>
                     {!formData.is_private && (
                       <div className="flex-shrink-0">
-                        <div className="w-5 h-5 rounded-full bg-[#00d4ff] flex items-center justify-center">
+                        <div className="w-5 h-5 rounded-full bg-accent-blue flex items-center justify-center">
                           <CheckCircle className="w-3 h-3 text-white" />
                         </div>
                       </div>
@@ -557,10 +557,10 @@ export default function CreateCommunityPage() {
                       className="sr-only"
                     />
                     <div className={`p-2 rounded-lg transition-colors duration-200 ${
-                      formData.is_private ? 'bg-[#00d4ff]/20' : 'bg-gray-700/50'
+                      formData.is_private ? 'bg-accent-blue/20' : 'bg-gray-700/50'
                     }`}>
                       <Lock className={`w-5 h-5 transition-colors duration-200 ${
-                        formData.is_private ? 'text-[#00d4ff]' : 'text-gray-400'
+                        formData.is_private ? 'text-accent-blue' : 'text-gray-400'
                       }`} />
                     </div>
                     <div className="flex-1">
@@ -577,7 +577,7 @@ export default function CreateCommunityPage() {
                     </div>
                     {formData.is_private && (
                       <div className="flex-shrink-0">
-                        <div className="w-5 h-5 rounded-full bg-[#00d4ff] flex items-center justify-center">
+                        <div className="w-5 h-5 rounded-full bg-accent-blue flex items-center justify-center">
                           <CheckCircle className="w-3 h-3 text-white" />
                         </div>
                       </div>
@@ -612,26 +612,26 @@ export default function CreateCommunityPage() {
           {/* Info Card */}
           <div className="mobile-card p-5 mt-6 bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-gray-700/50">
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-[#00d4ff]/20 flex-shrink-0">
-                <Info className="w-5 h-5 text-[#00d4ff]" />
+              <div className="p-2 rounded-lg bg-accent-blue/20 flex-shrink-0">
+                <Info className="w-5 h-5 text-accent-blue" />
               </div>
               <div className="flex-1">
                 <h4 className="text-sm font-semibold text-white mb-2">Tips for Creating a Great Community</h4>
                 <ul className="text-sm text-gray-300 space-y-2">
                   <li className="flex items-start gap-2">
-                    <span className="text-[#00d4ff] mt-0.5">•</span>
+                    <span className="text-accent-blue mt-0.5">•</span>
                     <span>Choose a clear, descriptive name that reflects your community's purpose</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-[#00d4ff] mt-0.5">•</span>
+                    <span className="text-accent-blue mt-0.5">•</span>
                     <span>Write a detailed description to help members understand what to expect</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-[#00d4ff] mt-0.5">•</span>
+                    <span className="text-accent-blue mt-0.5">•</span>
                     <span>Set clear rules to maintain a positive environment</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-[#00d4ff] mt-0.5">•</span>
+                    <span className="text-accent-blue mt-0.5">•</span>
                     <span>As the admin, you can moderate content and manage members</span>
                   </li>
                 </ul>

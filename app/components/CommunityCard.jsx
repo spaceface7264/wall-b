@@ -60,7 +60,7 @@ const CommunityCard = React.memo(function CommunityCard({
     if (community.tag_colors && community.tag_colors[tag]) {
       return community.tag_colors[tag];
     }
-    return '#00d4ff'; // Default accent color
+    return 'var(--accent-blue)'; // Default accent color
   };
   
   const handleCardClick = (e) => {

@@ -2534,31 +2534,174 @@ export default function AdminPage() {
         return;
       }
 
-      // Call Edge Function - this is required because auth.admin.deleteUser() needs service role
+      // Get session token - try multiple methods to ensure we get it
+      let accessToken = null;
+      
+      // Method 1: Try getSession()
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('getSession() result:', { session: session ? 'exists' : 'null', error: sessionError });
+      
+      if (session?.access_token) {
+        accessToken = session.access_token;
+        console.log('✅ Got token from getSession()');
+      } else {
+        // Method 2: Try to find session in localStorage (Supabase stores it with a specific key format)
+        try {
+          // Supabase stores sessions with keys like: sb-<project-ref>-auth-token
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const projectRef = supabaseUrl?.match(/https?:\/\/([^.]+)\.supabase\.co/)?.[1];
+          
+          if (projectRef) {
+            // Try the standard Supabase storage key format
+            const storageKeys = [
+              `sb-${projectRef}-auth-token`,
+              `supabase.auth.token`,
+              ...Object.keys(localStorage).filter(key => key.includes('supabase') || key.includes('auth'))
+            ];
+            
+            for (const key of storageKeys) {
+              try {
+                const stored = localStorage.getItem(key);
+                if (stored) {
+                  const parsed = JSON.parse(stored);
+                  if (parsed?.access_token) {
+                    accessToken = parsed.access_token;
+                    console.log(`✅ Got token from localStorage key: ${key}`);
+                    break;
+                  } else if (parsed?.currentSession?.access_token) {
+                    accessToken = parsed.currentSession.access_token;
+                    console.log(`✅ Got token from localStorage (nested): ${key}`);
+                    break;
+                  }
+                }
+              } catch (e) {
+                // Continue to next key
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Could not get token from localStorage:', e);
+        }
+        
+        // Method 3: If still no token, try refreshing
+        if (!accessToken) {
+          console.warn('No token found, attempting to refresh session...');
+          const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshedSession?.access_token) {
+            accessToken = refreshedSession.access_token;
+            console.log('✅ Got token from refreshSession()');
+          } else {
+            console.error('Failed to get token:', refreshError);
+            console.error('Available localStorage keys:', Object.keys(localStorage).filter(k => k.includes('supabase') || k.includes('auth')));
+            showToast('error', 'Authentication Error', 'Unable to get authentication token. Please refresh the page and try again.');
+            return;
+          }
+        }
+      }
+
+      if (!accessToken) {
+        console.error('No access token available');
+        showToast('error', 'Authentication Error', 'Invalid session. Please refresh the page and try again.');
+        return;
+      }
+
+      console.log('✅ Token retrieved, calling Edge Function...');
+
+      // Use supabase.functions.invoke() which handles CORS and headers automatically
+      // This avoids CORS issues that occur with direct fetch calls
       const { data, error } = await supabase.functions.invoke('delete-users', {
         body: { userIds }
       });
 
       if (error) {
         console.error('Edge Function error:', error);
-        const errorMsg = error.message || error.toString() || '';
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        console.error('Error name:', error.name);
+        console.error('Error context:', error.context);
         
+        // Try to extract the actual error message from the response
+        let errorMsg = error.message || error.toString() || '';
+        
+        // For FunctionsHttpError, try to get the response body
+        if (error.name === 'FunctionsHttpError' && error.context) {
+          // error.context is a Response object, so we can read its body
+          try {
+            // Clone the response so we can read it (responses can only be read once)
+            const responseClone = error.context.clone();
+            const responseText = await responseClone.text();
+            console.error('Response text:', responseText);
+            
+            try {
+              const responseJson = JSON.parse(responseText);
+              if (responseJson.error) {
+                errorMsg = responseJson.error;
+                console.error('Extracted error message:', errorMsg);
+              }
+            } catch (e) {
+              // If not JSON, use the text
+              if (responseText) {
+                errorMsg = responseText;
+              }
+            }
+          } catch (e) {
+            console.error('Could not read response body:', e);
+          }
+        }
+        
+        // Supabase functions.invoke may return error with response data
+        // Check if data contains error information (sometimes non-2xx responses still have data)
+        if (data && data.error) {
+          errorMsg = data.error;
+        }
+        
+        // If error has context with message, use that
+        if (error.context && error.context.message) {
+          errorMsg = error.context.message;
+        }
+        
+        // Check for specific error types
         if (errorMsg.includes('Failed to send') || 
-            errorMsg.includes('Failed to fetch') || 
-            errorMsg.includes('NetworkError') ||
-            errorMsg.includes('not found') ||
-            errorMsg.includes('404')) {
-          showToast('error', 'Function Not Deployed', 
-            'User deletion requires the Edge Function to be deployed. ' +
-            'Run: supabase functions deploy delete-users');
+            errorMsg.includes('Failed to fetch') ||
+            errorMsg.includes('NetworkError')) {
+          showToast('error', 'Network Error', 
+            'Unable to connect to the Edge Function. Please check your internet connection and try again.');
+        } else if ((errorMsg.includes('not found') || errorMsg.includes('404')) && error.context?.status === 404) {
+          showToast('error', 'Function Not Found', 
+            'The Edge Function was not found. Please verify it is deployed: supabase functions deploy delete-users');
+        } else if (errorMsg.includes('Missing SUPABASE_URL') || errorMsg.includes('SERVICE_ROLE_KEY')) {
+          showToast('error', 'Configuration Error', 
+            'Edge Function is missing required secrets. ' +
+            'Run: supabase secrets set SERVICE_ROLE_KEY=your-service-role-key');
+        } else if (errorMsg.includes('Missing authorization header') || errorMsg.includes('Unauthorized')) {
+          showToast('error', 'Authentication Error', 
+            'You must be logged in to delete users.');
+        } else if (errorMsg.includes('Admin access required') || errorMsg.includes('Forbidden')) {
+          showToast('error', 'Permission Denied', 
+            'You must be an admin to delete users.');
         } else {
           showToast('error', 'Error', errorMsg || 'Failed to delete users');
         }
         return;
       }
-
-      if (!data) {
-        showToast('error', 'Error', 'No response from server');
+      
+      // Also check if data contains an error (non-2xx responses might still have data)
+      if (data && data.error && !data.results) {
+        console.error('Error in response data:', data.error);
+        const errorMsg = data.error;
+        
+        if (errorMsg.includes('Missing SUPABASE_URL') || errorMsg.includes('SERVICE_ROLE_KEY')) {
+          showToast('error', 'Configuration Error', 
+            'Edge Function is missing required secrets. ' +
+            'Run: supabase secrets set SERVICE_ROLE_KEY=your-service-role-key');
+        } else if (errorMsg.includes('Missing authorization header') || errorMsg.includes('Unauthorized')) {
+          showToast('error', 'Authentication Error', 
+            'You must be logged in to delete users.');
+        } else if (errorMsg.includes('Admin access required') || errorMsg.includes('Forbidden')) {
+          showToast('error', 'Permission Denied', 
+            'You must be an admin to delete users.');
+        } else {
+          showToast('error', 'Error', errorMsg || 'Failed to delete users');
+        }
         return;
       }
 
@@ -2581,10 +2724,9 @@ export default function AdminPage() {
       console.error('Error deleting users:', error);
       const errorMsg = error.message || error.toString() || '';
       
-      if (errorMsg.includes('Failed to send') || errorMsg.includes('Failed to fetch')) {
-        showToast('error', 'Function Not Deployed', 
-          'User deletion requires the Edge Function to be deployed. ' +
-          'Run: supabase functions deploy delete-users');
+      if (errorMsg.includes('Failed to send') || errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+        showToast('error', 'Network Error', 
+          'Unable to connect to the Edge Function. Please check your internet connection and try again.');
       } else {
         showToast('error', 'Error', errorMsg || 'Failed to delete users');
       }
@@ -2995,7 +3137,7 @@ export default function AdminPage() {
               <p className="text-sm text-gray-400 mb-6">You need admin access to view this page.</p>
               <button
                 onClick={() => navigate('/communities')}
-                className="px-4 py-2 bg-[#00d4ff] text-white text-sm hover:bg-[#00b8e6] transition-colors"
+                className="px-4 py-2 bg-accent-blue text-white text-sm hover:bg-accent-blue-hover transition-colors"
               >
                 Go to Dashboard
               </button>
@@ -3016,7 +3158,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('overview')}
               className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'overview'
-                  ? 'bg-[#00d4ff] text-white'
+                  ? 'bg-accent-blue text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -3027,7 +3169,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('users')}
               className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'users'
-                  ? 'bg-[#00d4ff] text-white'
+                  ? 'bg-accent-blue text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -3038,7 +3180,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('communities')}
               className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'communities'
-                  ? 'bg-[#00d4ff] text-white'
+                  ? 'bg-accent-blue text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -3049,7 +3191,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('gyms')}
               className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors relative ${
                 activeTab === 'gyms'
-                  ? 'bg-[#00d4ff] text-white'
+                  ? 'bg-accent-blue text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -3065,7 +3207,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('reports')}
               className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'reports'
-                  ? 'bg-[#00d4ff] text-white'
+                  ? 'bg-accent-blue text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -3076,7 +3218,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('moderation')}
               className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'moderation'
-                  ? 'bg-[#00d4ff] text-white'
+                  ? 'bg-accent-blue text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -3087,7 +3229,7 @@ export default function AdminPage() {
               onClick={() => setActiveTab('feedback')}
               className={`flex-shrink-0 py-2 px-3 text-xs font-medium transition-colors ${
                 activeTab === 'feedback'
-                  ? 'bg-[#00d4ff] text-white'
+                  ? 'bg-accent-blue text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
               }`}
               style={{ borderRadius: 0 }}
@@ -3180,7 +3322,7 @@ export default function AdminPage() {
                     className="bg-gray-900/50 p-4 border border-gray-700/50 hover:bg-gray-900/70 transition-colors text-left"
                     style={{ borderRadius: 2 }}
                   >
-                    <MessageSquare className="w-5 h-5 text-[#00d4ff] mb-2" />
+                    <MessageSquare className="w-5 h-5 text-accent-blue mb-2" />
                     <p className="text-xs text-gray-400 mb-1">Open Feedback</p>
                     <p className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
                       {feedback.filter(f => f.status === 'open').length}
@@ -3218,7 +3360,7 @@ export default function AdminPage() {
                       className="p-3 bg-gray-900/50 border border-gray-700/50 hover:bg-gray-900/70 transition-colors text-left"
                       style={{ borderRadius: 2 }}
                     >
-                      <Users className="w-4 h-4 text-[#00d4ff] mb-1" />
+                      <Users className="w-4 h-4 text-accent-blue mb-1" />
                       <p className="text-xs text-white font-medium">Manage Users</p>
                       <p className="text-xs text-gray-400 mt-1">View and manage all users</p>
                     </button>
@@ -3255,7 +3397,7 @@ export default function AdminPage() {
                     <button
                       onClick={() => setShowFilters(!showFilters)}
                       className={`px-3 py-1.5 text-xs transition-colors flex items-center gap-1.5 ${
-                        showFilters ? 'bg-[#00d4ff] text-white' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+                        showFilters ? 'bg-accent-blue text-white' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
                       }`}
                       style={{ borderRadius: 2 }}
                     >
@@ -3273,7 +3415,7 @@ export default function AdminPage() {
                     placeholder="Search users by name or email..."
                     value={userSearchQuery}
                     onChange={(e) => setUserSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#00d4ff]/50"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-accent-blue/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -3323,7 +3465,7 @@ export default function AdminPage() {
                           onClick={() => setDateFilter({ ...dateFilter, type: 'registration' })}
                           className={`px-3 py-1.5 text-xs transition-colors ${
                             dateFilter.type === 'registration'
-                              ? 'bg-[#00d4ff] text-white'
+                              ? 'bg-accent-blue text-white'
                               : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
                           }`}
                           style={{ borderRadius: 2 }}
@@ -3334,7 +3476,7 @@ export default function AdminPage() {
                           onClick={() => setDateFilter({ ...dateFilter, type: 'lastActive' })}
                           className={`px-3 py-1.5 text-xs transition-colors ${
                             dateFilter.type === 'lastActive'
-                              ? 'bg-[#00d4ff] text-white'
+                              ? 'bg-accent-blue text-white'
                               : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
                           }`}
                           style={{ borderRadius: 2 }}
@@ -3349,7 +3491,7 @@ export default function AdminPage() {
                             type="date"
                             value={dateFilter.from}
                             onChange={(e) => setDateFilter({ ...dateFilter, from: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#00d4ff]/50"
+                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-accent-blue/50"
                             style={{ borderRadius: 2 }}
                           />
                         </div>
@@ -3359,7 +3501,7 @@ export default function AdminPage() {
                             type="date"
                             value={dateFilter.to}
                             onChange={(e) => setDateFilter({ ...dateFilter, to: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#00d4ff]/50"
+                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-accent-blue/50"
                             style={{ borderRadius: 2 }}
                           />
                         </div>
@@ -3435,8 +3577,8 @@ export default function AdminPage() {
                             checked={selectedUsers.has(user.id)}
                             onChange={() => handleSelectUser(user.id)}
                           />
-                          <div className="w-8 h-8 bg-[#00d4ff]/20 rounded-full flex items-center justify-center border border-gray-700/50 flex-shrink-0">
-                            <span className="text-xs font-semibold text-[#00d4ff]">
+                          <div className="w-8 h-8 bg-accent-blue/20 rounded-full flex items-center justify-center border border-gray-700/50 flex-shrink-0">
+                            <span className="text-xs font-semibold text-accent-blue">
                               {user.full_name?.charAt(0) || '?'}
                             </span>
                           </div>
@@ -3651,7 +3793,7 @@ export default function AdminPage() {
                     <button
                       onClick={() => setShowCommunityFilters(!showCommunityFilters)}
                       className={`px-3 py-1.5 text-xs transition-colors flex items-center gap-1.5 ${
-                        showCommunityFilters ? 'bg-[#00d4ff] text-white' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+                        showCommunityFilters ? 'bg-accent-blue text-white' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
                       }`}
                       style={{ borderRadius: 2 }}
                     >
@@ -3669,7 +3811,7 @@ export default function AdminPage() {
                     placeholder="Search communities by name, description, or gym..."
                     value={communitySearchQuery}
                     onChange={(e) => setCommunitySearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#00d4ff]/50"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-accent-blue/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -3683,7 +3825,7 @@ export default function AdminPage() {
                         <select
                           value={communityFilters.type}
                           onChange={(e) => setCommunityFilters({ ...communityFilters, type: e.target.value })}
-                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#00d4ff]/50"
+                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-accent-blue/50"
                           style={{ borderRadius: 2 }}
                         >
                           <option value="">All Types</option>
@@ -3696,7 +3838,7 @@ export default function AdminPage() {
                         <select
                           value={communityFilters.hasGym}
                           onChange={(e) => setCommunityFilters({ ...communityFilters, hasGym: e.target.value })}
-                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#00d4ff]/50"
+                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-accent-blue/50"
                           style={{ borderRadius: 2 }}
                         >
                           <option value="">All Communities</option>
@@ -3714,7 +3856,7 @@ export default function AdminPage() {
                             type="date"
                             value={communityFilters.dateFrom}
                             onChange={(e) => setCommunityFilters({ ...communityFilters, dateFrom: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#00d4ff]/50"
+                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-accent-blue/50"
                             style={{ borderRadius: 2 }}
                           />
                         </div>
@@ -3724,7 +3866,7 @@ export default function AdminPage() {
                             type="date"
                             value={communityFilters.dateTo}
                             onChange={(e) => setCommunityFilters({ ...communityFilters, dateTo: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#00d4ff]/50"
+                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-accent-blue/50"
                             style={{ borderRadius: 2 }}
                           />
                         </div>
@@ -3735,7 +3877,7 @@ export default function AdminPage() {
                       <select
                         value={communityFilters.status}
                         onChange={(e) => setCommunityFilters({ ...communityFilters, status: e.target.value })}
-                        className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#00d4ff]/50"
+                        className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-accent-blue/50"
                         style={{ borderRadius: 2 }}
                       >
                         <option value="">All Statuses</option>
@@ -3815,7 +3957,7 @@ export default function AdminPage() {
                         checked={selectedCommunities.size === filteredCommunities.length && filteredCommunities.length > 0}
                         onChange={handleSelectAllCommunities}
                         className="w-4 h-4 rounded border-gray-600 cursor-pointer"
-                        style={{ accentColor: '#00d4ff' }}
+                        style={{ accentColor: 'var(--accent-blue)' }}
                       />
                       <span className="text-xs text-gray-400">Select All ({filteredCommunities.length})</span>
                     </label>
@@ -3834,7 +3976,7 @@ export default function AdminPage() {
                             checked={selectedCommunities.has(community.id)}
                             onChange={() => handleSelectCommunity(community.id)}
                             className="mt-1 w-4 h-4 rounded border-gray-600 cursor-pointer flex-shrink-0"
-                            style={{ accentColor: '#00d4ff' }}
+                            style={{ accentColor: 'var(--accent-blue)' }}
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
@@ -4042,7 +4184,7 @@ export default function AdminPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => navigate('/gyms/request')}
-                      className="px-3 py-1.5 text-xs bg-[#00d4ff] text-white hover:bg-[#00b8e6] transition-colors flex items-center gap-1.5"
+                      className="px-3 py-1.5 text-xs bg-accent-blue text-white hover:bg-accent-blue-hover transition-colors flex items-center gap-1.5"
                       style={{ borderRadius: 2 }}
                     >
                       <MapPin className="w-3.5 h-3.5" />
@@ -4059,7 +4201,7 @@ export default function AdminPage() {
                     <button
                       onClick={() => setShowGymFilters(!showGymFilters)}
                       className={`px-3 py-1.5 text-xs transition-colors flex items-center gap-1.5 ${
-                        showGymFilters ? 'bg-[#00d4ff] text-white' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+                        showGymFilters ? 'bg-accent-blue text-white' : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
                       }`}
                       style={{ borderRadius: 2 }}
                     >
@@ -4084,7 +4226,7 @@ export default function AdminPage() {
                         onClick={() => setGymFilters({ ...gymFilters, viewType: option.value })}
                         className={`px-3 py-1 text-xs transition-colors ${
                           gymFilters.viewType === option.value
-                            ? 'bg-[#00d4ff] text-white'
+                            ? 'bg-accent-blue text-white'
                             : 'text-gray-400 hover:text-white'
                         }`}
                         style={{ borderRadius: 2 }}
@@ -4103,7 +4245,7 @@ export default function AdminPage() {
                     placeholder="Search gyms by name, city, country, or address..."
                     value={gymSearchQuery}
                     onChange={(e) => setGymSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#00d4ff]/50"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-accent-blue/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -4117,7 +4259,7 @@ export default function AdminPage() {
                         <select
                           value={gymFilters.country}
                           onChange={(e) => setGymFilters({ ...gymFilters, country: e.target.value })}
-                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#00d4ff]/50"
+                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-accent-blue/50"
                           style={{ borderRadius: 2 }}
                         >
                           <option value="">All Countries</option>
@@ -4131,7 +4273,7 @@ export default function AdminPage() {
                         <select
                           value={gymFilters.city}
                           onChange={(e) => setGymFilters({ ...gymFilters, city: e.target.value })}
-                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#00d4ff]/50"
+                          className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-accent-blue/50"
                           style={{ borderRadius: 2 }}
                         >
                           <option value="">All Cities</option>
@@ -4149,7 +4291,7 @@ export default function AdminPage() {
                       <select
                         value={gymFilters.visibility}
                         onChange={(e) => setGymFilters({ ...gymFilters, visibility: e.target.value })}
-                        className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#00d4ff]/50"
+                        className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-accent-blue/50"
                         style={{ borderRadius: 2 }}
                       >
                         <option value="">All Gyms</option>
@@ -4166,7 +4308,7 @@ export default function AdminPage() {
                             type="date"
                             value={gymFilters.dateFrom}
                             onChange={(e) => setGymFilters({ ...gymFilters, dateFrom: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#00d4ff]/50"
+                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-accent-blue/50"
                             style={{ borderRadius: 2 }}
                           />
                         </div>
@@ -4176,7 +4318,7 @@ export default function AdminPage() {
                             type="date"
                             value={gymFilters.dateTo}
                             onChange={(e) => setGymFilters({ ...gymFilters, dateTo: e.target.value })}
-                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-[#00d4ff]/50"
+                            className="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-700/50 text-white text-xs focus:outline-none focus:border-accent-blue/50"
                             style={{ borderRadius: 2 }}
                           />
                         </div>
@@ -4306,7 +4448,7 @@ export default function AdminPage() {
                             })()}
                             onChange={handleSelectAllGyms}
                             className="w-4 h-4 rounded border-gray-600 cursor-pointer"
-                            style={{ accentColor: '#00d4ff' }}
+                            style={{ accentColor: 'var(--accent-blue)' }}
                           />
                           <span className="text-xs text-gray-400">
                             Select All ({selectableCount} selectable)
@@ -4346,7 +4488,7 @@ export default function AdminPage() {
                                 }
                               }}
                               className="mt-1 w-4 h-4 rounded border-gray-600 cursor-pointer flex-shrink-0"
-                              style={{ accentColor: '#00d4ff' }}
+                              style={{ accentColor: 'var(--accent-blue)' }}
                             />
                           ) : (
                             <div className="w-4 h-4 flex-shrink-0" /> // Spacer for alignment
@@ -4391,7 +4533,7 @@ export default function AdminPage() {
                                     href={item.website} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="text-xs text-[#00d4ff] hover:underline flex items-center gap-1"
+                                    className="text-xs text-accent-blue hover:underline flex items-center gap-1"
                                   >
                                     <ExternalLink className="w-3 h-3" />
                                     Website
@@ -4478,7 +4620,7 @@ export default function AdminPage() {
                                   setGymRequestNotes(item.admin_notes || '');
                                   await loadGymRequestHistory(itemId);
                                 }}
-                                className="px-3 py-1.5 text-xs bg-[#00d4ff] text-white hover:bg-[#00b8e6] transition-colors flex items-center gap-1.5"
+                                className="px-3 py-1.5 text-xs bg-accent-blue text-white hover:bg-accent-blue-hover transition-colors flex items-center gap-1.5"
                                 style={{ borderRadius: 2 }}
                               >
                                 <Eye className="w-3 h-3" />
@@ -4750,7 +4892,7 @@ export default function AdminPage() {
                     placeholder="Search posts and comments by keywords..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-[#00d4ff]/50"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-accent-blue/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -4761,7 +4903,7 @@ export default function AdminPage() {
                     onClick={() => setModerationView('reports')}
                     className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                       moderationView === 'reports'
-                        ? 'bg-[#00d4ff] text-white'
+                        ? 'bg-accent-blue text-white'
                         : 'bg-gray-700/50 text-gray-400 hover:text-white'
                     }`}
                     style={{ borderRadius: 2 }}
@@ -4773,7 +4915,7 @@ export default function AdminPage() {
                     onClick={() => setModerationView('posts')}
                     className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                       moderationView === 'posts'
-                        ? 'bg-[#00d4ff] text-white'
+                        ? 'bg-accent-blue text-white'
                         : 'bg-gray-700/50 text-gray-400 hover:text-white'
                     }`}
                     style={{ borderRadius: 2 }}
@@ -4785,7 +4927,7 @@ export default function AdminPage() {
                     onClick={() => setModerationView('comments')}
                     className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                       moderationView === 'comments'
-                        ? 'bg-[#00d4ff] text-white'
+                        ? 'bg-accent-blue text-white'
                         : 'bg-gray-700/50 text-gray-400 hover:text-white'
                     }`}
                     style={{ borderRadius: 2 }}
@@ -4797,7 +4939,7 @@ export default function AdminPage() {
                     onClick={() => setModerationView('queue')}
                     className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                       moderationView === 'queue'
-                        ? 'bg-[#00d4ff] text-white'
+                        ? 'bg-accent-blue text-white'
                         : 'bg-gray-700/50 text-gray-400 hover:text-white'
                     }`}
                     style={{ borderRadius: 2 }}
@@ -5023,7 +5165,7 @@ export default function AdminPage() {
                     value={feedbackSearchQuery}
                     onChange={(e) => setFeedbackSearchQuery(e.target.value)}
                     placeholder="Search feedback..."
-                    className="w-full pl-8 pr-3 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+                    className="w-full pl-8 pr-3 py-2 bg-gray-900/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-accent-blue"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -5036,7 +5178,7 @@ export default function AdminPage() {
                       <select
                         value={feedbackFilters.type}
                         onChange={(e) => setFeedbackFilters({ ...feedbackFilters, type: e.target.value })}
-                        className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none focus:border-[#00d4ff]"
+                        className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none focus:border-accent-blue"
                         style={{ borderRadius: 2 }}
                       >
                         <option value="">All Types</option>
@@ -5051,7 +5193,7 @@ export default function AdminPage() {
                       <select
                         value={feedbackFilters.status}
                         onChange={(e) => setFeedbackFilters({ ...feedbackFilters, status: e.target.value })}
-                        className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none focus:border-[#00d4ff]"
+                        className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none focus:border-accent-blue"
                         style={{ borderRadius: 2 }}
                       >
                         <option value="">All Status</option>
@@ -5066,7 +5208,7 @@ export default function AdminPage() {
                       <select
                         value={feedbackFilters.priority}
                         onChange={(e) => setFeedbackFilters({ ...feedbackFilters, priority: e.target.value })}
-                        className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none focus:border-[#00d4ff]"
+                        className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 text-white text-xs focus:outline-none focus:border-accent-blue"
                         style={{ borderRadius: 2 }}
                       >
                         <option value="">All Priorities</option>
@@ -5129,7 +5271,7 @@ export default function AdminPage() {
                           checked={selectedFeedback.size === filteredFeedback.length && filteredFeedback.length > 0}
                           onChange={handleSelectAllFeedback}
                           className="w-4 h-4 rounded border-gray-600 cursor-pointer"
-                          style={{ accentColor: '#00d4ff' }}
+                          style={{ accentColor: 'var(--accent-blue)' }}
                         />
                         <span className="text-xs text-gray-400">Select All ({filteredFeedback.length})</span>
                       </label>
@@ -5167,7 +5309,7 @@ export default function AdminPage() {
                               checked={selectedFeedback.has(item.id)}
                               onChange={() => handleSelectFeedback(item.id)}
                               className="mt-1 w-4 h-4 rounded border-gray-600 cursor-pointer flex-shrink-0"
-                              style={{ accentColor: '#00d4ff' }}
+                              style={{ accentColor: 'var(--accent-blue)' }}
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2 mb-2">
@@ -5203,7 +5345,7 @@ export default function AdminPage() {
                                   </button>
                                   <button
                                     onClick={() => setEditingFeedback(item)}
-                                    className="px-2 py-1 text-xs bg-[#00d4ff] text-white hover:bg-[#00b8e6] transition-colors"
+                                    className="px-2 py-1 text-xs bg-accent-blue text-white hover:bg-accent-blue-hover transition-colors"
                                     style={{ borderRadius: 2 }}
                                   >
                                     Edit
@@ -5264,7 +5406,7 @@ export default function AdminPage() {
               {viewingFeedback.page_url && (
                 <div>
                   <label className="block text-xs text-gray-400 mb-1">Page URL</label>
-                  <a href={viewingFeedback.page_url} target="_blank" rel="noopener noreferrer" className="text-sm text-[#00d4ff] hover:underline flex items-center gap-1">
+                  <a href={viewingFeedback.page_url} target="_blank" rel="noopener noreferrer" className="text-sm text-accent-blue hover:underline flex items-center gap-1">
                     {viewingFeedback.page_url} <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
@@ -5291,7 +5433,7 @@ export default function AdminPage() {
                   setEditingFeedback(viewingFeedback);
                   setViewingFeedback(null);
                 }}
-                className="flex-1 px-4 py-2 bg-[#00d4ff] text-white hover:bg-[#00b8e6] transition-colors"
+                className="flex-1 px-4 py-2 bg-accent-blue text-white hover:bg-accent-blue-hover transition-colors"
                 style={{ borderRadius: 2 }}
               >
                 Edit Feedback
@@ -5329,7 +5471,7 @@ export default function AdminPage() {
                   <select
                     value={editingFeedback.status}
                     onChange={(e) => setEditingFeedback({ ...editingFeedback, status: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
                     style={{ borderRadius: 2 }}
                   >
                     <option value="open">Open</option>
@@ -5343,7 +5485,7 @@ export default function AdminPage() {
                   <select
                     value={editingFeedback.priority}
                     onChange={(e) => setEditingFeedback({ ...editingFeedback, priority: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
                     style={{ borderRadius: 2 }}
                   >
                     <option value="low">Low</option>
@@ -5359,7 +5501,7 @@ export default function AdminPage() {
                 <textarea
                   value={editingFeedback.admin_response || ''}
                   onChange={(e) => setEditingFeedback({ ...editingFeedback, admin_response: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
                   style={{ borderRadius: 2 }}
                   rows={4}
                   placeholder="Add a response to the user..."
@@ -5388,7 +5530,7 @@ export default function AdminPage() {
                   editingFeedback.priority,
                   editingFeedback.admin_response || null
                 )}
-                className="flex-1 px-4 py-2 bg-[#00d4ff] text-white hover:bg-[#00b8e6] transition-colors"
+                className="flex-1 px-4 py-2 bg-accent-blue text-white hover:bg-accent-blue-hover transition-colors"
                 style={{ borderRadius: 2 }}
               >
                 Save Changes
@@ -5781,7 +5923,7 @@ export default function AdminPage() {
                     showToast('error', 'Error', 'Failed to save notes');
                   }
                 }}
-                className="flex-1 px-4 py-2 text-sm bg-[#00d4ff] text-white hover:bg-[#00b8e6] transition-colors"
+                className="flex-1 px-4 py-2 text-sm bg-accent-blue text-white hover:bg-accent-blue-hover transition-colors"
                 style={{ borderRadius: 2 }}
               >
                 Save Notes
@@ -5794,7 +5936,7 @@ export default function AdminPage() {
                       setViewingGymRequest(null);
                       setGymRequestNotes('');
                     }}
-                    className="px-4 py-2 text-sm bg-[#00d4ff] text-white hover:bg-[#00b8e6] transition-colors flex items-center gap-2"
+                    className="px-4 py-2 text-sm bg-accent-blue text-white hover:bg-accent-blue-hover transition-colors flex items-center gap-2"
                     style={{ borderRadius: 2 }}
                   >
                     <Edit className="w-4 h-4" />
@@ -5900,7 +6042,7 @@ export default function AdminPage() {
                       name="gym_name"
                       defaultValue={editingGymRequest.gym_name}
                       required
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#00d4ff]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-accent-blue"
                       style={{ borderRadius: 2 }}
                     />
                   </div>
@@ -5912,7 +6054,7 @@ export default function AdminPage() {
                         name="country"
                         defaultValue={editingGymRequest.country}
                         required
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#00d4ff]"
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-accent-blue"
                         style={{ borderRadius: 2 }}
                       />
                     </div>
@@ -5923,7 +6065,7 @@ export default function AdminPage() {
                         name="city"
                         defaultValue={editingGymRequest.city}
                         required
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#00d4ff]"
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-accent-blue"
                         style={{ borderRadius: 2 }}
                       />
                     </div>
@@ -5934,7 +6076,7 @@ export default function AdminPage() {
                       type="text"
                       name="address"
                       defaultValue={editingGymRequest.address || ''}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#00d4ff]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-accent-blue"
                       style={{ borderRadius: 2 }}
                     />
                   </div>
@@ -5951,7 +6093,7 @@ export default function AdminPage() {
                       type="tel"
                       name="phone"
                       defaultValue={editingGymRequest.phone || ''}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#00d4ff]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-accent-blue"
                       style={{ borderRadius: 2 }}
                     />
                   </div>
@@ -5961,7 +6103,7 @@ export default function AdminPage() {
                       type="email"
                       name="email"
                       defaultValue={editingGymRequest.email || ''}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#00d4ff]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-accent-blue"
                       style={{ borderRadius: 2 }}
                     />
                   </div>
@@ -5972,7 +6114,7 @@ export default function AdminPage() {
                       name="website"
                       defaultValue={editingGymRequest.website || ''}
                       placeholder="https://example.com"
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#00d4ff]"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-accent-blue"
                       style={{ borderRadius: 2 }}
                     />
                   </div>
@@ -5986,7 +6128,7 @@ export default function AdminPage() {
                   name="description"
                   defaultValue={editingGymRequest.description || ''}
                   rows={4}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#00d4ff] resize-none"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-accent-blue resize-none"
                   style={{ borderRadius: 2 }}
                   placeholder="Describe the gym..."
                 />
@@ -5999,7 +6141,7 @@ export default function AdminPage() {
                   name="admin_notes"
                   defaultValue={editingGymRequest.admin_notes || ''}
                   rows={3}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-[#00d4ff] resize-none"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-sm text-gray-300 rounded focus:outline-none focus:border-accent-blue resize-none"
                   style={{ borderRadius: 2 }}
                   placeholder="Internal notes about this request..."
                 />
@@ -6027,7 +6169,7 @@ export default function AdminPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 text-sm bg-[#00d4ff] text-white hover:bg-[#00b8e6] transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 text-sm bg-accent-blue text-white hover:bg-accent-blue-hover transition-colors flex items-center justify-center gap-2"
                   style={{ borderRadius: 2 }}
                 >
                   <CheckCircle className="w-4 h-4" />
@@ -6102,7 +6244,7 @@ export default function AdminPage() {
                   }
                 }}
                 disabled={isUpdatingCommunity}
-                className="flex-1 px-4 py-2 bg-[#00d4ff] text-white rounded hover:bg-[#00b8e6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-accent-blue text-white rounded hover:bg-accent-blue-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isUpdatingCommunity ? 'Saving...' : 'Confirm & Save'}
               </button>
@@ -6168,7 +6310,7 @@ export default function AdminPage() {
                   type="text"
                   name="name"
                   defaultValue={editingCommunity.name}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-accent-blue"
                   style={{ borderRadius: 2 }}
                   required
                 />
@@ -6180,7 +6322,7 @@ export default function AdminPage() {
                   name="description"
                   defaultValue={editingCommunity.description || ''}
                   rows={3}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-[#00d4ff] resize-none"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-accent-blue resize-none"
                   style={{ borderRadius: 2 }}
                 />
               </div>
@@ -6191,7 +6333,7 @@ export default function AdminPage() {
                   name="rules"
                   defaultValue={editingCommunity.rules || ''}
                   rows={4}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-[#00d4ff] resize-none"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 text-white text-sm focus:outline-none focus:border-accent-blue resize-none"
                   style={{ borderRadius: 2 }}
                   placeholder="Community guidelines and rules..."
                 />
@@ -6252,7 +6394,7 @@ export default function AdminPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 text-sm bg-[#00d4ff] text-white hover:bg-[#00b8e6] transition-colors"
+                  className="flex-1 px-4 py-2 text-sm bg-accent-blue text-white hover:bg-accent-blue-hover transition-colors"
                   style={{ borderRadius: 2 }}
                 >
                   Save Changes
@@ -6357,7 +6499,7 @@ export default function AdminPage() {
                           setAssigningModerator(viewingCommunity);
                           setViewingCommunity(null);
                         }}
-                        className="text-xs text-[#00d4ff] hover:text-[#00d4ff] flex items-center gap-1"
+                        className="text-xs text-accent-blue hover:text-accent-blue flex items-center gap-1"
                       >
                         <Shield className="w-3 h-3" />
                         Assign Moderator
@@ -6377,7 +6519,7 @@ export default function AdminPage() {
                           <div key={member.id} className="flex items-center justify-between p-2 bg-gray-900/30 rounded hover:bg-gray-900/50 transition-colors" style={{ borderRadius: 2 }}>
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                               {isModerator ? (
-                                <Shield className="w-3.5 h-3.5 text-[#00d4ff] flex-shrink-0" />
+                                <Shield className="w-3.5 h-3.5 text-accent-blue flex-shrink-0" />
                               ) : (
                                 <Users className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
                               )}
@@ -6421,7 +6563,7 @@ export default function AdminPage() {
                     navigate(`/community/${viewingCommunity.id}`);
                     setViewingCommunity(null);
                   }}
-                  className="flex-1 px-4 py-2 text-sm bg-[#00d4ff] text-white hover:bg-[#00b8e6] transition-colors"
+                  className="flex-1 px-4 py-2 text-sm bg-accent-blue text-white hover:bg-accent-blue-hover transition-colors"
                   style={{ borderRadius: 2 }}
                 >
                   View Community
@@ -6509,7 +6651,7 @@ export default function AdminPage() {
                     type="text"
                     value={editingUser.full_name || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, full_name: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#00d4ff]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-accent-blue/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6519,7 +6661,7 @@ export default function AdminPage() {
                     type="email"
                     value={editingUser.email || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#00d4ff]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-accent-blue/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6531,7 +6673,7 @@ export default function AdminPage() {
                   value={editingUser.bio || ''}
                   onChange={(e) => setEditingUser({ ...editingUser, bio: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#00d4ff]/50"
+                  className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-accent-blue/50"
                   style={{ borderRadius: 2 }}
                 />
               </div>
@@ -6543,7 +6685,7 @@ export default function AdminPage() {
                     type="text"
                     value={editingUser.company || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, company: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#00d4ff]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-accent-blue/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6553,7 +6695,7 @@ export default function AdminPage() {
                     type="text"
                     value={editingUser.role || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#00d4ff]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-accent-blue/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6566,7 +6708,7 @@ export default function AdminPage() {
                     type="text"
                     value={editingUser.climbing_grade || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, climbing_grade: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#00d4ff]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-accent-blue/50"
                     style={{ borderRadius: 2 }}
                     placeholder="e.g., 5.12a"
                   />
@@ -6577,7 +6719,7 @@ export default function AdminPage() {
                     type="number"
                     value={editingUser.years_climbing || 0}
                     onChange={(e) => setEditingUser({ ...editingUser, years_climbing: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#00d4ff]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-accent-blue/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6587,7 +6729,7 @@ export default function AdminPage() {
                     type="text"
                     value={editingUser.favorite_style || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, favorite_style: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#00d4ff]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-accent-blue/50"
                     style={{ borderRadius: 2 }}
                     placeholder="e.g., bouldering"
                   />
@@ -6601,7 +6743,7 @@ export default function AdminPage() {
                     type="url"
                     value={editingUser.instagram_url || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, instagram_url: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#00d4ff]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-accent-blue/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6611,7 +6753,7 @@ export default function AdminPage() {
                     type="url"
                     value={editingUser.twitter_url || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, twitter_url: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#00d4ff]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-accent-blue/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6621,7 +6763,7 @@ export default function AdminPage() {
                     type="url"
                     value={editingUser.website_url || ''}
                     onChange={(e) => setEditingUser({ ...editingUser, website_url: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-[#00d4ff]/50"
+                    className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700/50 text-white text-sm focus:outline-none focus:border-accent-blue/50"
                     style={{ borderRadius: 2 }}
                   />
                 </div>
@@ -6657,7 +6799,7 @@ export default function AdminPage() {
               <div className="flex gap-2 pt-2 border-t border-gray-700/50">
                 <button
                   onClick={() => handleUpdateUser(editingUser)}
-                  className="flex-1 px-4 py-2 text-sm bg-[#00d4ff] text-white hover:bg-[#00b8e6] transition-colors"
+                  className="flex-1 px-4 py-2 text-sm bg-accent-blue text-white hover:bg-accent-blue-hover transition-colors"
                   style={{ borderRadius: 2 }}
                 >
                   Save Changes
@@ -6789,7 +6931,7 @@ export default function AdminPage() {
                     handleEditUser(viewingUser);
                     setViewingUser(null);
                   }}
-                  className="flex-1 px-4 py-2 text-sm bg-[#00d4ff] text-white hover:bg-[#00b8e6] transition-colors"
+                  className="flex-1 px-4 py-2 text-sm bg-accent-blue text-white hover:bg-accent-blue-hover transition-colors"
                   style={{ borderRadius: 2 }}
                 >
                   Edit Profile
@@ -6852,7 +6994,7 @@ export default function AdminPage() {
                 {viewingGym.website && (
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">Website</label>
-                    <a href={viewingGym.website} target="_blank" rel="noopener noreferrer" className="text-sm text-[#00d4ff] hover:underline flex items-center gap-1">
+                    <a href={viewingGym.website} target="_blank" rel="noopener noreferrer" className="text-sm text-accent-blue hover:underline flex items-center gap-1">
                       {viewingGym.website} <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
@@ -6981,7 +7123,7 @@ export default function AdminPage() {
                   setEditingGym(viewingGym);
                   setViewingGym(null);
                 }}
-                className="flex-1 px-4 py-2 text-sm bg-[#00d4ff] text-white hover:bg-[#00b8e6] transition-colors"
+                className="flex-1 px-4 py-2 text-sm bg-accent-blue text-white hover:bg-accent-blue-hover transition-colors"
                 style={{ borderRadius: 2 }}
               >
                 Edit Gym
@@ -7107,7 +7249,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="text"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
             style={{ borderRadius: 2 }}
             required
           />
@@ -7118,7 +7260,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="text"
             value={formData.country}
             onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
             style={{ borderRadius: 2 }}
             required
           />
@@ -7129,7 +7271,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="text"
             value={formData.city}
             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
             style={{ borderRadius: 2 }}
             required
           />
@@ -7140,7 +7282,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="text"
             value={formData.address}
             onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
             style={{ borderRadius: 2 }}
             required
           />
@@ -7151,7 +7293,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="text"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7161,7 +7303,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="email"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7171,7 +7313,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="url"
             value={formData.website}
             onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7182,7 +7324,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             value={formData.single_entry_price}
             onChange={(e) => setFormData({ ...formData, single_entry_price: e.target.value })}
             placeholder="e.g., $20, €15-25"
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7193,7 +7335,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             value={formData.membership_price}
             onChange={(e) => setFormData({ ...formData, membership_price: e.target.value })}
             placeholder="e.g., $80/month, €50/month"
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7204,7 +7346,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             step="any"
             value={formData.latitude}
             onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7215,7 +7357,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             step="any"
             value={formData.longitude}
             onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7225,7 +7367,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             type="url"
             value={formData.image_url}
             onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
             style={{ borderRadius: 2 }}
           />
         </div>
@@ -7237,7 +7379,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           rows={4}
-          className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+          className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
           style={{ borderRadius: 2 }}
         />
       </div>
@@ -7261,7 +7403,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             onChange={(e) => setNewFacility(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFacility())}
             placeholder="Add facility"
-            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
             style={{ borderRadius: 2 }}
           />
           <button type="button" onClick={addFacility} className="px-3 py-2 bg-gray-700 text-white text-sm hover:bg-gray-600" style={{ borderRadius: 2 }}>
@@ -7289,7 +7431,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             onChange={(e) => setNewDifficulty(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addDifficulty())}
             placeholder="Add difficulty level"
-            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+            className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 text-white text-sm focus:outline-none focus:border-accent-blue"
             style={{ borderRadius: 2 }}
           />
           <button type="button" onClick={addDifficulty} className="px-3 py-2 bg-gray-700 text-white text-sm hover:bg-gray-600" style={{ borderRadius: 2 }}>
@@ -7305,7 +7447,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
             checked={formData.is_hidden}
             onChange={(e) => setFormData({ ...formData, is_hidden: e.target.checked })}
             className="w-4 h-4 rounded border-gray-600"
-            style={{ accentColor: '#00d4ff' }}
+            style={{ accentColor: 'var(--accent-blue)' }}
           />
           <span className="text-xs text-gray-400">Hide from public listing</span>
         </label>
@@ -7314,7 +7456,7 @@ function EditGymForm({ gym, onSave, onCancel }) {
       <div className="flex gap-2 pt-4 border-t border-gray-700/50">
         <button
           type="submit"
-          className="flex-1 px-4 py-2 text-sm bg-[#00d4ff] text-white hover:bg-[#00b8e6] transition-colors"
+          className="flex-1 px-4 py-2 text-sm bg-accent-blue text-white hover:bg-accent-blue-hover transition-colors"
           style={{ borderRadius: 2 }}
         >
           Save Changes

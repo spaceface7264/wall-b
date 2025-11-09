@@ -24,21 +24,14 @@ export function useNotifications(userId) {
       // Get current timestamp for filtering expired notifications
       const currentTime = new Date().toISOString();
       
+      // Note: PostgREST doesn't support joining via JSONB fields directly
+      // We'll fetch notifications first, then enrich with events in the code below
+      // Use proper PostgREST syntax for OR conditions
       const { data, error } = await supabase
         .from('notifications')
-        .select(`
-          *,
-          events:data->event_id (
-            id,
-            title,
-            description,
-            event_date,
-            location,
-            event_type
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id) // Use the authenticated user's ID
-        .or(`expires_at.is.null,expires_at.gt.${currentTime}`) // Exclude expired notifications
+        .or(`expires_at.is.null,expires_at.gt."${currentTime}"`) // Exclude expired notifications (quoted timestamp)
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -127,7 +120,7 @@ export function useNotifications(userId) {
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id) // Use the authenticated user's ID
         .eq('is_read', false)
-        .or(`expires_at.is.null,expires_at.gt.${now}`); // Exclude expired notifications
+        .or(`expires_at.is.null,expires_at.gt."${now}"`); // Exclude expired notifications (quoted timestamp)
       
       if (error) {
         console.error('Error loading unread count:', error);

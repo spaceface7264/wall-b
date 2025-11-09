@@ -462,7 +462,7 @@ export default function CommunitySettingsPage() {
     return (
       <SidebarLayout currentPage="community" pageTitle="Settings">
         <div className="mobile-container flex items-center justify-center" style={{ minHeight: '50vh' }}>
-          <div className="w-8 h-8 border-2 border-[#00d4ff] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-2 border-accent-blue border-t-transparent rounded-full animate-spin"></div>
         </div>
       </SidebarLayout>
     );
@@ -512,7 +512,7 @@ export default function CommunitySettingsPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     disabled={!canEdit}
-                    className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded text-sm focus:outline-none focus:border-[#00d4ff] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded text-sm focus:outline-none focus:border-accent-blue disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     style={{ 
                       borderRadius: 2,
                       color: 'var(--text-primary)',
@@ -535,7 +535,7 @@ export default function CommunitySettingsPage() {
                         type="button"
                         onClick={() => setShowGymSelector(true)}
                         disabled={!canEdit}
-                        className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded text-sm focus:outline-none focus:border-[#00d4ff] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-between text-left"
+                        className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded text-sm focus:outline-none focus:border-accent-blue disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-between text-left"
                         style={{ 
                           borderRadius: 2,
                           color: selectedGym ? 'var(--text-primary)' : 'var(--text-muted)',
@@ -546,7 +546,7 @@ export default function CommunitySettingsPage() {
                         <span className="flex items-center gap-2 flex-1 min-w-0">
                           {selectedGym ? (
                             <>
-                              <Building className="w-4 h-4 flex-shrink-0 text-[#00d4ff]" />
+                              <Building className="w-4 h-4 flex-shrink-0 text-accent-blue" />
                               <span className="truncate">{selectedGym.name}</span>
                               <span className="text-xs text-gray-400 truncate ml-2">
                                 - {selectedGym.city}, {selectedGym.country}
@@ -578,7 +578,7 @@ export default function CommunitySettingsPage() {
                     <div className="px-4 py-2 bg-gray-800/30 border border-gray-700/30 rounded" style={{ borderRadius: 2 }}>
                       {selectedGym ? (
                         <div className="flex items-center gap-2">
-                          <Building className="w-4 h-4 text-[#00d4ff]" />
+                          <Building className="w-4 h-4 text-accent-blue" />
                           <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
                             {selectedGym.name} - {selectedGym.city}, {selectedGym.country}
                           </span>
@@ -599,7 +599,7 @@ export default function CommunitySettingsPage() {
                     onChange={(e) => setDescription(e.target.value)}
                     disabled={!canEdit}
                     rows={4}
-                    className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded text-sm focus:outline-none focus:border-[#00d4ff] resize-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded text-sm focus:outline-none focus:border-accent-blue resize-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     style={{ 
                       borderRadius: 2,
                       color: 'var(--text-primary)',
@@ -619,7 +619,7 @@ export default function CommunitySettingsPage() {
                     onChange={(e) => setRules(e.target.value)}
                     disabled={!canEdit}
                     rows={6}
-                    className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded text-sm focus:outline-none focus:border-[#00d4ff] resize-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700/50 rounded text-sm focus:outline-none focus:border-accent-blue resize-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     style={{ 
                       borderRadius: 2,
                       color: 'var(--text-primary)',
@@ -673,7 +673,7 @@ export default function CommunitySettingsPage() {
                 <button
                   onClick={handleSave}
                   disabled={saving || calculateChanges().length === 0}
-                  className="mt-4 w-full px-4 py-2 bg-[#00d4ff] text-white rounded hover:bg-[#00b8e6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+                  className="mt-4 w-full px-4 py-2 bg-accent-blue text-white rounded hover:bg-accent-blue-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
                   style={{ borderRadius: 2 }}
                 >
                   {saving ? (
@@ -701,7 +701,7 @@ export default function CommunitySettingsPage() {
                   </h2>
                   <button
                     onClick={() => setShowAddModeratorModal(true)}
-                    className="px-3 py-1.5 bg-[#00d4ff] text-white text-sm rounded hover:bg-[#00b8e6] transition-colors flex items-center gap-2"
+                    className="px-3 py-1.5 bg-accent-blue text-white text-sm rounded hover:bg-accent-blue-hover transition-colors flex items-center gap-2"
                     style={{ borderRadius: 4 }}
                   >
                     <UserPlus className="w-4 h-4" />
@@ -720,7 +720,7 @@ export default function CommunitySettingsPage() {
                         style={{ borderRadius: 4 }}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-[#00d4ff] rounded-full flex items-center justify-center text-white font-medium">
+                          <div className="w-10 h-10 bg-accent-blue rounded-full flex items-center justify-center text-white font-medium">
                             {moderator.displayName.charAt(0).toUpperCase()}
                           </div>
                           <div>
@@ -775,7 +775,7 @@ export default function CommunitySettingsPage() {
                   setModeratorSearchQuery(e.target.value);
                   searchMembers(e.target.value);
                 }}
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-[#00d4ff]"
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-accent-blue"
                 style={{ borderRadius: 4 }}
                 autoFocus
               />
@@ -783,7 +783,7 @@ export default function CommunitySettingsPage() {
               <div className="mt-4 max-h-60 overflow-y-auto">
                 {searchingModerators ? (
                   <div className="text-center py-4">
-                    <div className="w-6 h-6 border-2 border-[#00d4ff] border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <div className="w-6 h-6 border-2 border-accent-blue border-t-transparent rounded-full animate-spin mx-auto"></div>
                   </div>
                 ) : availableMembers.length === 0 ? (
                   <p className="text-sm text-gray-400 text-center py-4">
@@ -798,7 +798,7 @@ export default function CommunitySettingsPage() {
                         className="w-full flex items-center gap-3 p-3 bg-gray-800/50 border border-gray-700 rounded hover:bg-gray-700/50 transition-colors text-left"
                         style={{ borderRadius: 4 }}
                       >
-                        <div className="w-10 h-10 bg-[#00d4ff] rounded-full flex items-center justify-center text-white font-medium">
+                        <div className="w-10 h-10 bg-accent-blue rounded-full flex items-center justify-center text-white font-medium">
                           {(member.nickname || member.full_name || member.email || 'U').charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">

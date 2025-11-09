@@ -98,7 +98,7 @@ export default function ModerationQueue({ onAction }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="w-8 h-8 border-2 border-[#00d4ff] border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-2 border-accent-blue border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -112,7 +112,7 @@ export default function ModerationQueue({ onAction }) {
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
+            className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-blue"
           >
             <option value="all">All</option>
             <option value="pending">Pending</option>
@@ -127,7 +127,7 @@ export default function ModerationQueue({ onAction }) {
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00d4ff]"
+            className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-blue"
           >
             <option value="all">All</option>
             <option value="urgent">Urgent</option>

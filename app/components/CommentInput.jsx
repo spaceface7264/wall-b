@@ -97,7 +97,7 @@ export default function CommentInput({
               onKeyDown={handleKeyPress}
               placeholder={placeholder}
               autoFocus={autoFocus}
-              className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00d4ff] focus:border-transparent resize-none pr-12"
+              className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent resize-none pr-12"
               rows={1}
               disabled={submitting}
               style={{ minHeight: '44px', maxHeight: '120px' }}
@@ -112,7 +112,7 @@ export default function CommentInput({
                 content.trim().length < 10 || 
                 submitting
               }
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-[#00d4ff] hover:text-[#00d4ff] disabled:text-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-accent-blue hover:text-accent-blue-hover disabled:text-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               type="button"
             >
               {submitting ? (

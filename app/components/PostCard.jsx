@@ -102,7 +102,7 @@ export default function PostCard({
       parts.push(
         <span
           key={match.index}
-          className="inline-flex items-center gap-1 px-2 py-1 bg-[#00d4ff]30 text-[#00d4ff] rounded text-sm font-medium hover:bg-[#00d4ff]40 transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1 px-2 py-1 bg-accent-blue/30 text-accent-blue rounded text-sm font-medium hover:bg-accent-blue/40 transition-colors cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             console.log('Event mentioned:', eventTitle);

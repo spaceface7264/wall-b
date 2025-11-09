@@ -290,7 +290,7 @@ export default function InviteMembersModal({ isOpen, onClose, communityId, commu
                           className="w-11 h-11 rounded-full object-cover border-2 border-gray-600"
                         />
                       ) : (
-                        <div className="w-11 h-11 bg-[#00d4ff] rounded-full flex items-center justify-center text-white font-medium text-sm border-2 border-gray-600">
+                        <div className="w-11 h-11 bg-accent-blue rounded-full flex items-center justify-center text-white font-medium text-sm border-2 border-gray-600">
                           {getInitials(displayName)}
                         </div>
                       )}

@@ -179,7 +179,7 @@ export default function ModerationActionModal({ isOpen, onClose, queueItem, onRe
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any additional notes about this action..."
               rows={3}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00d4ff] focus:border-transparent resize-none"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent resize-none"
               disabled={submitting}
               maxLength={500}
             />
@@ -199,7 +199,7 @@ export default function ModerationActionModal({ isOpen, onClose, queueItem, onRe
             <button
               type="submit"
               disabled={submitting || !action}
-              className="flex-1 px-4 py-2 bg-[#00d4ff] hover:bg-[#00b8e6] text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-accent-blue hover:bg-accent-blue-hover text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>

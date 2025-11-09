@@ -118,7 +118,7 @@ export default function LoginOverlay({ isOpen, onClose, communityName, redirectT
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-[#00d4ff] rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-accent-blue rounded-full flex items-center justify-center">
               <Users className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -147,7 +147,7 @@ export default function LoginOverlay({ isOpen, onClose, communityName, redirectT
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
-                className="w-full px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00d4ff] focus:border-transparent"
+                className="w-full px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent"
                 required
               />
             </div>
@@ -163,7 +163,7 @@ export default function LoginOverlay({ isOpen, onClose, communityName, redirectT
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-2.5 pr-10 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00d4ff] focus:border-transparent"
+                  className="w-full px-4 py-2.5 pr-10 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent"
                   required
                   minLength={6}
                 />
@@ -188,11 +188,11 @@ export default function LoginOverlay({ isOpen, onClose, communityName, redirectT
                   id="terms"
                   checked={acceptedTerms}
                   onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="mt-1 w-4 h-4 text-[#00d4ff] bg-gray-700 border-gray-600 rounded focus:ring-[#00d4ff]"
+                  className="mt-1 w-4 h-4 text-accent-blue bg-gray-700 border-gray-600 rounded focus:ring-accent-blue"
                 />
                 <label htmlFor="terms" className="text-sm text-gray-300">
                   I accept the{' '}
-                  <a href="/terms" target="_blank" className="text-[#00d4ff] hover:underline">
+                  <a href="/terms" target="_blank" className="text-accent-blue hover:underline">
                     Terms & Conditions
                   </a>
                 </label>
@@ -208,7 +208,7 @@ export default function LoginOverlay({ isOpen, onClose, communityName, redirectT
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full px-4 py-3 bg-[#00d4ff] hover:bg-[#00b8e6] text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3 bg-accent-blue hover:bg-accent-blue-hover text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
             </button>
@@ -217,7 +217,7 @@ export default function LoginOverlay({ isOpen, onClose, communityName, redirectT
               <button
                 type="button"
                 onClick={() => setIsSignUp(!isSignUp)}
-                className="text-sm text-[#00d4ff] hover:underline"
+                className="text-sm text-accent-blue hover:underline"
               >
                 {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
               </button>

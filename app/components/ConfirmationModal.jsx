@@ -44,9 +44,9 @@ export default function ConfirmationModal({
         };
       default:
         return {
-          iconBg: 'bg-[#00d4ff]/20',
-          iconColor: 'text-[#00d4ff]',
-          confirmBg: 'bg-[#00d4ff] hover:bg-[#00b8e6]',
+          iconBg: 'bg-accent-blue/20',
+          iconColor: 'text-accent-blue',
+          confirmBg: 'bg-accent-blue hover:bg-accent-blue-hover',
           confirmText: 'text-white'
         };
     }

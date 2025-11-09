@@ -23,6 +23,12 @@
   --accent-primary-light: #2663EB40; /* Primary accent with 25% opacity */
   --accent-primary-lighter: #2663EB30; /* Primary accent with 20% opacity */
   
+  /* Blue accent color (used for buttons, highlights) */
+  --accent-blue: #3B83F6;
+  --accent-blue-hover: #2563EB;
+  --accent-blue-light: rgba(59, 131, 246, 0.25); /* 25% opacity */
+  --accent-blue-lighter: rgba(59, 131, 246, 0.15); /* 15% opacity */
+  
   /* Button colors */
   --button-primary-bg: #3b82f6;
   --button-primary-hover: #2563eb;
@@ -108,6 +114,12 @@
   --accent-primary-hover: #1e4fd4; /* Primary accent hover */
   --accent-primary-light: #2663EB40; /* Primary accent with 25% opacity */
   --accent-primary-lighter: #2663EB30; /* Primary accent with 20% opacity */
+  
+  /* Blue accent color (used for buttons, highlights) */
+  --accent-blue: #3B83F6;
+  --accent-blue-hover: #2563EB;
+  --accent-blue-light: rgba(59, 131, 246, 0.25); /* 25% opacity */
+  --accent-blue-lighter: rgba(59, 131, 246, 0.15); /* 15% opacity */
   
   /* Button colors - use accent for consistency */
   --button-primary-bg: #2663EB;
@@ -431,6 +443,21 @@
 
   .mobile-drawer.open {
     transform: translateX(0);
+  }
+  
+  /* Mobile Logo Section */
+  .mobile-drawer .sidebar-logo-section.mobile-only {
+    padding: var(--spacing-base);
+    border-bottom: 1px solid var(--divider-color);
+    flex-shrink: 0;
+  }
+  
+  .mobile-drawer .sidebar-logo-section.mobile-only .sidebar-logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    letter-spacing: -0.5px;
   }
   
   /* Desktop Sidebar - Persistent on desktop */

@@ -97,7 +97,7 @@ export default function AgeVerificationModal({ isOpen, onClose, requiredAge = 13
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-[#00d4ff]" />
+            <Shield className="w-5 h-5 text-accent-blue" />
             <h2 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>Age Verification</h2>
           </div>
           <button 
@@ -134,7 +134,7 @@ export default function AgeVerificationModal({ isOpen, onClose, requiredAge = 13
               checked={ageConfirmed}
               onChange={(e) => setAgeConfirmed(e.target.checked)}
               disabled={submitting}
-              className="mt-1 w-4 h-4 rounded border-gray-600 bg-gray-800 text-[#00d4ff] focus:ring-[#00d4ff] focus:ring-offset-gray-900 disabled:opacity-50"
+              className="mt-1 w-4 h-4 rounded border-gray-600 bg-gray-800 text-accent-blue focus:ring-accent-blue focus:ring-offset-gray-900 disabled:opacity-50"
             />
             <label htmlFor="age-confirm" className="text-sm text-gray-300 cursor-pointer">
               I confirm that I am {requiredAge} years of age or older
@@ -150,7 +150,7 @@ export default function AgeVerificationModal({ isOpen, onClose, requiredAge = 13
                 checked={useDOB}
                 onChange={(e) => setUseDOB(e.target.checked)}
                 disabled={submitting}
-                className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-[#00d4ff] focus:ring-[#00d4ff] focus:ring-offset-gray-900 disabled:opacity-50"
+                className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-accent-blue focus:ring-accent-blue focus:ring-offset-gray-900 disabled:opacity-50"
               />
               <label htmlFor="use-dob" className="text-sm text-gray-400 cursor-pointer">
                 Optional: Enter date of birth for strict verification
@@ -166,7 +166,7 @@ export default function AgeVerificationModal({ isOpen, onClose, requiredAge = 13
                   onChange={(e) => setDateOfBirth(e.target.value)}
                   max={maxDateString}
                   disabled={submitting}
-                  className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00d4ff] focus:border-transparent disabled:opacity-50"
+                  className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent disabled:opacity-50"
                 />
               </div>
             )}
@@ -185,7 +185,7 @@ export default function AgeVerificationModal({ isOpen, onClose, requiredAge = 13
             <button
               type="submit"
               disabled={submitting || !ageConfirmed}
-              className="flex-1 px-4 py-2 bg-[#00d4ff] hover:bg-[#00b8e6] text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-accent-blue hover:bg-accent-blue-hover text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>

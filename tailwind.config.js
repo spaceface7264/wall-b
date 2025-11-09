@@ -9,7 +9,45 @@ module.exports = {
     extend: {
       // Design Tokens - Borderless Flex Layout
       colors: {
-        // Primary colors
+        // Use CSS variables for theme-aware colors
+        accent: {
+          primary: 'var(--accent-primary)',
+          'primary-hover': 'var(--accent-primary-hover)',
+          'primary-light': 'var(--accent-primary-light)',
+          'primary-lighter': 'var(--accent-primary-lighter)',
+          blue: 'var(--accent-blue)',
+          'blue-hover': 'var(--accent-blue-hover)',
+          'blue-light': 'var(--accent-blue-light)',
+          'blue-lighter': 'var(--accent-blue-lighter)',
+          red: '#ef4444',
+          green: '#10b981',
+          amber: '#f59e0b',
+          indigo: '#818cf8',
+        },
+        
+        // Background colors using CSS variables
+        bg: {
+          primary: 'var(--bg-primary)',
+          surface: 'var(--bg-surface)',
+          header: 'var(--bg-header)',
+        },
+        
+        // Text colors using CSS variables
+        text: {
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          muted: 'var(--text-muted)',
+          subtle: 'var(--text-subtle)',
+        },
+        
+        // Border colors using CSS variables
+        border: {
+          DEFAULT: 'var(--border-color)',
+          hover: 'var(--border-hover)',
+          divider: 'var(--divider-color)',
+        },
+        
+        // Primary colors (keeping for backward compatibility)
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',
@@ -43,22 +81,6 @@ module.exports = {
           surface: '#252526',    // No visual separation
           surfaceHover: '#2a2a2b', // Subtle hover state
           divider: '#333333',    // Subtle dividers only
-        },
-        
-        // Text colors
-        text: {
-          primary: '#ffffff',
-          secondary: '#d1d5db',
-          muted: '#a1a8b3',
-          subtle: '#9ca3af',
-        },
-        
-        // Accent colors
-        accent: {
-          red: '#ef4444',
-          green: '#10b981',
-          amber: '#f59e0b',
-          indigo: '#818cf8',
         },
       },
       

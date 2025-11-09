@@ -215,7 +215,7 @@ export default function GymSelectorModal({
               onClick={() => setSortBy('name')}
               className={`flex-1 px-3 py-2 rounded text-sm transition-colors ${
                 sortBy === 'name'
-                  ? 'bg-[#00d4ff] text-white'
+                  ? 'bg-accent-blue text-white'
                   : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
               }`}
             >
@@ -227,7 +227,7 @@ export default function GymSelectorModal({
                 disabled={locationLoading}
                 className={`flex-1 px-3 py-2 rounded text-sm transition-colors flex items-center justify-center gap-2 ${
                   sortBy === 'distance' && location
-                    ? 'bg-[#00d4ff] text-white'
+                    ? 'bg-accent-blue text-white'
                     : locationLoading
                     ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
                     : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
@@ -265,7 +265,7 @@ export default function GymSelectorModal({
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="p-8 text-center">
-              <div className="w-8 h-8 border-2 border-[#00d4ff] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+              <div className="w-8 h-8 border-2 border-accent-blue border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
               <p className="text-sm text-gray-400">Loading gyms...</p>
             </div>
           ) : filteredAndSortedGyms.length === 0 ? (
@@ -288,7 +288,7 @@ export default function GymSelectorModal({
                     key={gym.id}
                     onClick={() => handleSelectGym(gym)}
                     className={`cursor-pointer transition-colors p-4 hover:bg-gray-800/50 ${
-                      isSelected ? 'bg-[#00d4ff]/20 border-l-2 border-[#00d4ff]' : ''
+                      isSelected ? 'bg-accent-blue/20 border-l-2 border-accent-blue' : ''
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -317,7 +317,7 @@ export default function GymSelectorModal({
                           />
                         ) : null}
                         <div 
-                          className="w-full h-full bg-gradient-to-br from-[#00d4ff] to-[#00d4ff] flex items-center justify-center"
+                          className="w-full h-full bg-gradient-to-br from-accent-blue to-accent-blue-hover flex items-center justify-center"
                           style={{ display: (gym.logo_url || gym.logo) ? 'none' : 'flex' }}
                         >
                           <span className="text-white font-semibold text-lg">
@@ -339,7 +339,7 @@ export default function GymSelectorModal({
                             )}
                           </div>
                           {isSelected && (
-                            <Check className="w-5 h-5 text-[#00d4ff] flex-shrink-0" />
+                            <Check className="w-5 h-5 text-accent-blue flex-shrink-0" />
                           )}
                         </div>
                         
@@ -364,8 +364,8 @@ export default function GymSelectorModal({
 
                         {gym.distance_km !== null && gym.distance_km !== undefined && (
                           <div className="flex items-center gap-1 mt-1">
-                            <Navigation className="w-3 h-3 text-[#00d4ff]" />
-                            <span className="text-xs text-[#00d4ff] font-medium">
+                            <Navigation className="w-3 h-3 text-accent-blue" />
+                            <span className="text-xs text-accent-blue font-medium">
                               {formatDistance(gym.distance_km)} away
                             </span>
                           </div>

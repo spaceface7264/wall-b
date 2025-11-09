@@ -167,7 +167,7 @@ export default function ChatNotification({ userId }) {
     <div className="fixed top-4 right-4 z-50 max-w-sm">
       <div className="bg-gray-800 border border-gray-600 rounded-lg shadow-lg p-4 animate-slide-in">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 bg-[#00d4ff] rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 bg-accent-blue rounded-full flex items-center justify-center flex-shrink-0">
             <MessageCircle className="w-5 h-5 text-white" />
           </div>
           
@@ -190,7 +190,7 @@ export default function ChatNotification({ userId }) {
             
             <button
               onClick={() => handleNotificationClick(latestNotification.conversationId)}
-              className="text-xs text-[#00d4ff] hover:text-[#00d4ff] transition-colors"
+              className="text-xs text-accent-blue hover:text-accent-blue-hover transition-colors"
             >
               View conversation →
             </button>

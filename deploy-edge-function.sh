@@ -1,21 +1,65 @@
 #!/bin/bash
-# Commands to deploy Supabase Edge Function for user deletion
-# Run these after: supabase login
+# Deploy Supabase Edge Function for user deletion
+# This script will guide you through deploying the delete-users function
 
-cd /Users/rami/Desktop/html/Proj/proj
+set -e  # Exit on error
 
-# Step 1: Link your project
-echo "Linking project..."
-supabase link --project-ref xnxdxuoecnulcoapawtu
+cd "$(dirname "$0")"
 
-# Step 2: Set service role key (you'll need to get this from Supabase Dashboard → Settings → API)
-# Replace YOUR_SERVICE_ROLE_KEY with your actual service role key
+PROJECT_REF="xnxdxuoecnulcoapawtu"
+FUNCTION_NAME="delete-users"
+
+echo "🚀 Deploying Supabase Edge Function: $FUNCTION_NAME"
 echo ""
-echo "Next, set your service role key:"
-echo "supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here"
+
+# Step 1: Check if logged in
+echo "Step 1: Checking Supabase CLI authentication..."
+if ! supabase projects list &>/dev/null; then
+    echo "❌ Not logged in. Please login first:"
+    echo "   supabase login"
+    echo ""
+    echo "This will open your browser to authenticate."
+    exit 1
+fi
+echo "✅ Authenticated"
 echo ""
-echo "Get your service role key from: https://supabase.com/dashboard/project/xnxdxuoecnulcoapawtu/settings/api"
+
+# Step 2: Link project
+echo "Step 2: Linking project..."
+if supabase link --project-ref "$PROJECT_REF" 2>&1 | grep -q "already linked"; then
+    echo "✅ Project already linked"
+else
+    supabase link --project-ref "$PROJECT_REF"
+    echo "✅ Project linked"
+fi
 echo ""
-echo "Then deploy the function:"
-echo "supabase functions deploy delete-users"
+
+# Step 3: Check if service role key is set
+echo "Step 3: Checking service role key secret..."
+if supabase secrets list 2>&1 | grep -q "SERVICE_ROLE_KEY"; then
+    echo "✅ Service role key secret is set"
+else
+    echo "⚠️  Service role key secret not found"
+    echo ""
+    echo "Please set it with:"
+    echo "   supabase secrets set SERVICE_ROLE_KEY=your-service-role-key"
+    echo ""
+    echo "Get your service role key from:"
+    echo "   https://supabase.com/dashboard/project/$PROJECT_REF/settings/api"
+    echo ""
+    read -p "Press Enter after you've set the secret, or Ctrl+C to cancel..."
+fi
+echo ""
+
+# Step 4: Deploy function
+echo "Step 4: Deploying function..."
+supabase functions deploy "$FUNCTION_NAME"
+echo ""
+
+echo "✅ Deployment complete!"
+echo ""
+echo "The function is now available at:"
+echo "   https://$PROJECT_REF.supabase.co/functions/v1/$FUNCTION_NAME"
+echo ""
+echo "You can now use user deletion in the admin panel."
 

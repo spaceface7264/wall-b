@@ -254,7 +254,7 @@ export default function GroupMembersModal({ isOpen, onClose, conversation, curre
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#00d4ff] rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-accent-blue rounded-lg flex items-center justify-center">
               <Users className="w-4 h-4 text-white" />
             </div>
             <div>
@@ -279,7 +279,7 @@ export default function GroupMembersModal({ isOpen, onClose, conversation, curre
               placeholder="Search members..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00d4ff] focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent"
             />
           </div>
         </div>
@@ -289,7 +289,7 @@ export default function GroupMembersModal({ isOpen, onClose, conversation, curre
           <div className="p-4 border-b border-slate-700">
             <button
               onClick={handleShowAddMembers}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#00d4ff] text-white rounded-lg hover:bg-[#00b8e6] transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-accent-blue text-white rounded-lg hover:bg-accent-blue-hover transition-colors"
             >
               <UserPlus className="w-4 h-4" />
               Add Members
@@ -350,7 +350,7 @@ export default function GroupMembersModal({ isOpen, onClose, conversation, curre
                       <button
                         onClick={() => handleAddMember(user)}
                         disabled={addingMember === user.id}
-                        className="p-2 bg-[#00d4ff] text-white rounded-lg hover:bg-[#00b8e6] disabled:opacity-50 transition-colors"
+                        className="p-2 bg-accent-blue text-white rounded-lg hover:bg-accent-blue-hover disabled:opacity-50 transition-colors"
                       >
                         {addingMember === user.id ? (
                           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

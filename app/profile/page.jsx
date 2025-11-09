@@ -671,7 +671,7 @@ export default function Profile() {
           {/* Communities */}
           <div className="pt-8 mt-8">
             <h2 className="profile-section-header minimal-flex gap-2 mb-4">
-              <Users className="minimal-icon text-[#00d4ff]" />
+              <Users className="minimal-icon text-accent-blue" />
               Communities ({communities.length})
             </h2>
             
@@ -681,7 +681,7 @@ export default function Profile() {
                 <p className="text-gray-400 text-sm mb-2">No communities yet</p>
                 <button
                   onClick={() => navigate('/communities')}
-                  className="text-[#00d4ff] text-sm hover:underline"
+                  className="text-accent-blue text-sm hover:underline"
                 >
                   Explore communities
                 </button>
@@ -717,7 +717,7 @@ export default function Profile() {
           {/* Favorite Gyms */}
           <div className="pt-8 mt-8">
             <h2 className="profile-section-header minimal-flex gap-2 mb-4">
-              <Building className="minimal-icon text-[#00d4ff]" />
+              <Building className="minimal-icon text-accent-blue" />
               Favorite Gyms ({favoriteGyms.filter(g => !g.hidden).length})
               {favoriteGyms.filter(g => g.hidden).length > 0 && (
                 <span className="text-xs text-gray-400 font-normal">
@@ -744,7 +744,7 @@ export default function Profile() {
                 <p className="text-gray-400 text-sm mb-2">No favorite gyms yet</p>
                 <button
                   onClick={() => navigate('/gyms')}
-                  className="text-[#00d4ff] text-sm hover:underline"
+                  className="text-accent-blue text-sm hover:underline"
                 >
                   Explore gyms
                 </button>
@@ -774,7 +774,7 @@ export default function Profile() {
                               }}
                             />
                           ) : (
-                            <div className="w-full h-full minimal-flex-center bg-[#00d4ff]">
+                            <div className="w-full h-full minimal-flex-center bg-accent-blue">
                               <span className="text-white font-semibold text-lg">
                                 {gym.name?.charAt(0).toUpperCase() || 'G'}
                               </span>

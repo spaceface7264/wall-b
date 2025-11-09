@@ -22,8 +22,10 @@ This Edge Function allows admins to delete users from the Supabase auth system. 
 4. **Set environment variables**:
    The Edge Function needs access to your Supabase service role key. Set it as a secret:
    ```bash
-   supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   supabase secrets set SERVICE_ROLE_KEY=your-service-role-key
    ```
+
+   **Important:** Use `SERVICE_ROLE_KEY` (not `SUPABASE_SERVICE_ROLE_KEY`) because Supabase CLI doesn't allow secret names starting with `SUPABASE_`.
 
    You can find your service role key in your Supabase project settings under API.
 
@@ -34,9 +36,9 @@ This Edge Function allows admins to delete users from the Supabase auth system. 
 
 ## Environment Variables
 
-The function requires these environment variables (set via `supabase secrets`):
-- `SUPABASE_URL` - Your Supabase project URL (usually auto-detected)
-- `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key (required)
+The function requires these environment variables:
+- `SUPABASE_URL` - Your Supabase project URL (automatically provided by Supabase Edge Functions)
+- `SERVICE_ROLE_KEY` - Your Supabase service role key (set via `supabase secrets set SERVICE_ROLE_KEY=your-key`)
 
 ## Usage
 
@@ -59,6 +61,10 @@ If you get "Edge Function Not Found" error:
 - Check that your Supabase URL is correct in your environment variables
 
 If you get permission errors:
-- Verify your service role key is set correctly
+- Verify your service role key is set correctly: `supabase secrets list`
 - Check that the requesting user has `is_admin: true` in their profile
+
+If you get "Env name cannot start with SUPABASE_":
+- Use `SERVICE_ROLE_KEY` instead of `SUPABASE_SERVICE_ROLE_KEY`
+- Supabase CLI blocks secrets starting with `SUPABASE_` for security reasons
 

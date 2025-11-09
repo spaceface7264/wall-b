@@ -24,7 +24,7 @@ export default function ConversationMessageSkeleton({ count = 5 }) {
               
               {/* Message content */}
               <div className={`p-3 rounded-lg ${
-                isSent ? 'bg-[#00d4ff]/20' : 'bg-slate-700/50'
+                isSent ? 'bg-accent-blue/20' : 'bg-slate-700/50'
               }`}>
                 <Skeleton width={`${60 + (i * 10) % 40}%`} height={16} className="mb-1" />
                 <Skeleton width={`${50 + (i * 15) % 35}%`} height={16} />

@@ -195,7 +195,7 @@ export default function JoinRequestsList({ communityId, communityName = 'Communi
           <input
             type="text"
             placeholder="Search requests..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-[#00d4ff]"
+            className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-accent-blue"
             disabled
           />
         </div>
