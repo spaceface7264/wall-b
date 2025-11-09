@@ -8,18 +8,24 @@
 -- Ensure RLS is enabled on community_members table
 ALTER TABLE community_members ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policy if it exists (to recreate it)
+-- Drop ALL existing DELETE policies to avoid conflicts
 DROP POLICY IF EXISTS "Allow users to leave communities" ON community_members;
+DROP POLICY IF EXISTS "Admins and moderators can remove members" ON community_members;
+DROP POLICY IF EXISTS "community_members_delete_policy" ON community_members;
+DROP POLICY IF EXISTS "Users can delete their own memberships" ON community_members;
+DROP POLICY IF EXISTS "Users can leave communities" ON community_members;
+
+-- Grant necessary permissions (ensure authenticated role has DELETE permission)
+GRANT DELETE ON community_members TO authenticated;
+GRANT DELETE ON community_members TO anon; -- Sometimes needed for service role operations
 
 -- Create policy that allows users to delete their own membership records
+-- This is the primary policy for users leaving communities
 CREATE POLICY "Allow users to leave communities" ON community_members
   FOR DELETE 
   USING (auth.uid() = user_id);
 
 -- Also ensure admins and moderators can remove members (optional but useful)
--- Drop existing policy if it exists
-DROP POLICY IF EXISTS "Admins and moderators can remove members" ON community_members;
-
 -- Create policy for admins/moderators to remove members from their communities
 CREATE POLICY "Admins and moderators can remove members" ON community_members
   FOR DELETE
@@ -32,10 +38,7 @@ CREATE POLICY "Admins and moderators can remove members" ON community_members
     )
   );
 
--- Grant necessary permissions
-GRANT DELETE ON community_members TO authenticated;
-
--- Test query to verify the policy exists
+-- Test query to verify the policy exists (fixed the OR condition with parentheses)
 SELECT 
   schemaname,
   tablename,
@@ -47,8 +50,9 @@ SELECT
   with_check
 FROM pg_policies
 WHERE tablename = 'community_members'
-AND policyname LIKE '%leave%' OR policyname LIKE '%remove%';
+AND (policyname LIKE '%leave%' OR policyname LIKE '%remove%' OR cmd = 'DELETE');
 
 -- Success message
 SELECT 'Leave community RLS policy created successfully!' as status;
+SELECT 'Users can now leave communities by deleting their own membership records' as info;
 

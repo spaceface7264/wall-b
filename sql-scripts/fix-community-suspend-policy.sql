@@ -9,7 +9,7 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
 CREATE INDEX IF NOT EXISTS profiles_is_admin_idx ON profiles(is_admin) WHERE is_admin = TRUE;
 
 -- Drop ALL existing policies on communities to avoid conflicts
--- We'll recreate SELECT, UPDATE, and DELETE policies
+-- We'll recreate SELECT, INSERT, UPDATE, and DELETE policies
 DO $$ 
 DECLARE
   r RECORD;
@@ -23,13 +23,17 @@ BEGIN
   END LOOP;
 END $$;
 
--- Also explicitly drop known policy names
+-- Also explicitly drop known policy names (in case DO block didn't catch them)
 DROP POLICY IF EXISTS "Allow admins to update communities" ON communities;
 DROP POLICY IF EXISTS "Users can update their own communities" ON communities;
 DROP POLICY IF EXISTS "Allow authenticated users to update communities" ON communities;
 DROP POLICY IF EXISTS "Allow admins and moderators to update communities" ON communities;
 DROP POLICY IF EXISTS "Allow admins to update all community fields" ON communities;
 DROP POLICY IF EXISTS "Allow admins to delete communities" ON communities;
+DROP POLICY IF EXISTS "Allow admins to read all communities" ON communities;
+DROP POLICY IF EXISTS "Allow authenticated users to create communities" ON communities;
+DROP POLICY IF EXISTS "Allow authenticated users to read communities" ON communities;
+DROP POLICY IF EXISTS "Anyone can view community basic info" ON communities;
 
 -- Verify RLS is enabled
 ALTER TABLE communities ENABLE ROW LEVEL SECURITY;
@@ -75,14 +79,17 @@ GRANT EXECUTE ON FUNCTION public.is_admin_user() TO anon;
 -- Add comment for documentation
 COMMENT ON FUNCTION public.is_admin_user() IS 'Returns TRUE if the current authenticated user is an admin. Uses SECURITY DEFINER to bypass RLS on profiles table.';
 
--- First, ensure SELECT policy allows admins to read all communities
--- This is needed for the admin panel and for UPDATE operations to work
+-- First, ensure SELECT policy allows everyone to read communities (for public access)
+-- Admins can read all, authenticated users can read all, and anon can read public info
+CREATE POLICY "Allow public read of communities" ON communities
+  FOR SELECT 
+  USING (true); -- Allow everyone to read communities
+
+-- Also create a more specific policy for admins (though the above covers it)
+-- This ensures admins can definitely read everything
 CREATE POLICY "Allow admins to read all communities" ON communities
   FOR SELECT 
-  USING (
-    public.is_admin_user() OR 
-    auth.role() = 'authenticated'
-  );
+  USING (public.is_admin_user() OR auth.role() = 'authenticated');
 
 -- Create INSERT policy (allow authenticated users to create communities)
 CREATE POLICY "Allow authenticated users to create communities" ON communities
@@ -99,9 +106,13 @@ CREATE POLICY "Allow admins to update communities" ON communities
 
 -- Create DELETE policy for admins only
 -- Uses the same SECURITY DEFINER function for consistency
+-- IMPORTANT: This policy MUST exist for admins to delete communities
 CREATE POLICY "Allow admins to delete communities" ON communities
   FOR DELETE 
   USING (public.is_admin_user());
+
+-- Grant DELETE permission to authenticated role (required for RLS policies to work)
+GRANT DELETE ON communities TO authenticated;
 
 -- Diagnostic queries to help troubleshoot
 -- Check if user is authenticated and is an admin

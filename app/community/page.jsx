@@ -654,6 +654,34 @@ export default function CommunitiesPage() {
       return;
     }
 
+    // Prevent multiple simultaneous join attempts for the same community
+    if (joiningCommunity === communityId) {
+      return;
+    }
+
+    // Defensive check: verify user is not already a member before attempting to join
+    try {
+      const { data: existingMember } = await supabase
+        .from('community_members')
+        .select('id')
+        .eq('community_id', communityId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (existingMember) {
+        // User is already a member
+        showToast('info', 'Already a Member', 'You are already a member of this community');
+        await loadCommunities(); // Refresh to update UI
+        return;
+      }
+    } catch (error) {
+      // If error is PGRST116 (no rows returned), that's fine - user is not a member
+      if (error.code !== 'PGRST116') {
+        console.warn('Error checking existing membership:', error);
+        // Continue with join attempt - the database constraint will catch duplicates
+      }
+    }
+
     setJoiningCommunity(communityId);
     try {
       const { error } = await supabase
@@ -665,7 +693,13 @@ export default function CommunitiesPage() {
 
       if (error) {
         console.error('Error joining community:', error);
-        showToast('error', 'Error', 'Failed to join community');
+        if (error.code === '23505') {
+          // Duplicate key violation - user is already a member (race condition occurred)
+          showToast('info', 'Already a Member', 'You are already a member of this community');
+          await loadCommunities(); // Refresh to update UI
+        } else {
+          showToast('error', 'Error', `Failed to join community: ${error.message || 'Unknown error'}`);
+        }
         return;
       }
 
@@ -719,6 +753,11 @@ export default function CommunitiesPage() {
 
   const handleConfirmLeave = async () => {
     if (!user || !leavingCommunityId) {
+      return;
+    }
+
+    // Prevent multiple simultaneous leave attempts
+    if (leavingCommunity === leavingCommunityId) {
       return;
     }
 

@@ -8,10 +8,12 @@ import { enrichCommunitiesWithActualCounts } from '../../lib/community-utils';
 import CommunityCard from '../components/CommunityCard';
 import GymCard from '../components/GymCard';
 import ListSkeleton from '../components/ListSkeleton';
+import { useToast } from '../providers/ToastProvider';
 import { Users, MapPin, ArrowRight, Sparkles, PlusCircle, Compass } from 'lucide-react';
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [user, setUser] = useState(null);
   const [userIntent, setUserIntent] = useState([]);
   const [recommendedCommunities, setRecommendedCommunities] = useState([]);
@@ -193,6 +195,30 @@ export default function HomePage() {
   const handleJoinCommunity = async (communityId) => {
     if (!user) return;
 
+    // Defensive check: verify user is not already a member before attempting to join
+    try {
+      const { data: existingMember } = await supabase
+        .from('community_members')
+        .select('id')
+        .eq('community_id', communityId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (existingMember) {
+        // User is already a member
+        showToast('info', 'Already a Member', 'You are already a member of this community');
+        // Remove from recommended list since user is already a member
+        setRecommendedCommunities(prev => prev.filter(c => c.id !== communityId));
+        return;
+      }
+    } catch (error) {
+      // If error is PGRST116 (no rows returned), that's fine - user is not a member
+      if (error.code !== 'PGRST116') {
+        console.warn('Error checking existing membership:', error);
+        // Continue with join attempt - the database constraint will catch duplicates
+      }
+    }
+
     try {
       const { error } = await supabase
         .from('community_members')
@@ -203,13 +229,23 @@ export default function HomePage() {
 
       if (error) {
         console.error('Error joining community:', error);
+        if (error.code === '23505') {
+          // Duplicate key violation - user is already a member (race condition occurred)
+          showToast('info', 'Already a Member', 'You are already a member of this community');
+          // Remove from recommended list
+          setRecommendedCommunities(prev => prev.filter(c => c.id !== communityId));
+        } else {
+          showToast('error', 'Error', `Failed to join community: ${error.message || 'Unknown error'}`);
+        }
         return;
       }
 
+      showToast('success', 'Success', 'Joined community successfully!');
       // Remove from recommended list
       setRecommendedCommunities(prev => prev.filter(c => c.id !== communityId));
     } catch (error) {
       console.error('Error joining community:', error);
+      showToast('error', 'Error', 'Something went wrong');
     }
   };
 

@@ -99,7 +99,22 @@ export default function CommunityPage() {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
       if (user) {
-        checkMembership(user.id);
+        // Check membership after community loads to ensure communityId is available
+        // Also add a small delay to ensure auth is fully ready
+        const checkMembershipAfterLoad = async () => {
+          // Wait for community to load first
+          if (!community) {
+            // If community not loaded yet, wait a bit and retry
+            setTimeout(checkMembershipAfterLoad, 200);
+            return;
+          }
+          // Small delay to ensure auth is ready
+          setTimeout(() => {
+            checkMembership(user.id);
+          }, 100);
+        };
+        checkMembershipAfterLoad();
+        
         checkAdminStatus(user.id);
         checkJoinRequest(user.id);
         // Load user profile for display name
@@ -111,12 +126,28 @@ export default function CommunityPage() {
         if (profile) {
           setUserProfile(profile);
         }
+      } else {
+        // User not logged in - ensure membership state is false
+        setIsMember(false);
+        setUserCommunityRole(null);
       }
     };
     getUser();
     loadCommunity();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [communityId]);
+
+  // Re-check membership when user or community changes
+  useEffect(() => {
+    if (user?.id && communityId && community) {
+      // Re-check membership when community loads
+      checkMembership(user.id);
+    } else if (!user) {
+      setIsMember(false);
+      setUserCommunityRole(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, communityId, community?.id]);
 
   // Track last visited community and update last_viewed_at
   useEffect(() => {
@@ -419,28 +450,81 @@ export default function CommunityPage() {
     }
   };
 
-  const checkMembership = async (userId) => {
+  const checkMembership = async (userId, retryCount = 0) => {
+    if (!userId || !communityId) {
+      setIsMember(false);
+      setUserCommunityRole(null);
+      return;
+    }
+
     try {
+      // Use maybeSingle() instead of single() to handle no-rows case better
       const { data, error } = await supabase
         .from('community_members')
         .select('id, role')
         .eq('community_id', communityId)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle(); // Returns null instead of error when no rows found
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error checking membership:', error);
-        setIsMember(false);
-        setUserCommunityRole(null);
+        console.warn('Membership check error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        
+        // If it's a permission error and we haven't retried, try again after a delay
+        if ((error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) && retryCount < 2) {
+          console.log('Retrying membership check after permission error...');
+          setTimeout(() => {
+            checkMembership(userId, retryCount + 1);
+          }, 500);
+          return;
+        }
+        
+        // If error persists, try alternative query method
+        if (retryCount < 1) {
+          console.log('Trying alternative membership check...');
+          try {
+            // Try without maybeSingle - just check if any rows exist
+            const { data: altData, error: altError } = await supabase
+              .from('community_members')
+              .select('id, role')
+              .eq('community_id', communityId)
+              .eq('user_id', userId)
+              .limit(1);
+            
+            if (!altError && altData && altData.length > 0) {
+              setIsMember(true);
+              setUserCommunityRole(altData[0]?.role || null);
+              console.log('✅ Alternative check: User is a member');
+              return;
+            }
+          } catch (altErr) {
+            console.warn('Alternative check also failed:', altErr);
+          }
+        }
+        
+        // If all checks fail, don't update state - might be RLS issue
         return;
       }
 
-      setIsMember(!!data);
+      // Update state based on whether data exists
+      const isMemberValue = !!data;
+      setIsMember(isMemberValue);
       setUserCommunityRole(data?.role || null);
+      
+      // Debug logging
+      if (isMemberValue) {
+        console.log('✅ User is a member of community:', communityId, 'Role:', data?.role);
+      } else {
+        console.log('ℹ️ User is not a member of community:', communityId);
+      }
     } catch (error) {
-      console.error('Error checking membership:', error);
-      setIsMember(false);
-      setUserCommunityRole(null);
+      console.error('Unexpected error checking membership:', error);
+      // Don't set isMember to false on unexpected errors
     }
   };
 
@@ -490,6 +574,38 @@ export default function CommunityPage() {
     if (!user) {
       showLoginModal({ subtitle: 'Sign in to join communities' });
       return;
+    }
+
+    // Prevent multiple simultaneous join attempts
+    if (joining) {
+      return;
+    }
+
+    // Defensive check: verify user is not already a member before attempting to join
+    try {
+      const { data: existingMember } = await supabase
+        .from('community_members')
+        .select('id, role')
+        .eq('community_id', communityId)
+        .eq('user_id', user.id)
+        .maybeSingle(); // Use maybeSingle to avoid error when no rows
+
+      if (existingMember) {
+        // User is already a member - refresh state and show info
+        console.log('🔄 Found existing membership, updating state...');
+        setIsMember(true);
+        setUserCommunityRole(existingMember?.role || null);
+        await checkMembership(user.id); // Refresh to get latest data
+        showToast('info', 'Already a Member', 'You are already a member of this community');
+        // Force component to recognize the state change
+        return;
+      }
+    } catch (error) {
+      // If error is PGRST116 (no rows returned), that's fine - user is not a member
+      if (error.code !== 'PGRST116') {
+        console.warn('Error checking existing membership:', error);
+        // Continue with join attempt - the database constraint will catch duplicates
+      }
     }
 
     // Check if community is private
@@ -550,15 +666,28 @@ export default function CommunityPage() {
 
       if (error) {
         console.error('Error joining community:', error);
+        if (error.code === '23505') {
+          // Duplicate key violation - user is already a member (race condition occurred)
+          // Refresh membership status to sync UI
+          setIsMember(true); // Set immediately to update UI
+          await checkMembership(user.id); // Then refresh to get role
+          showToast('info', 'Already a Member', 'You are already a member of this community');
+          return;
+        } else {
+          showToast('error', 'Error', `Failed to join community: ${error.message || 'Unknown error'}`);
+        }
         return;
       }
 
+      // Successfully joined - update state
       setIsMember(true);
+      await checkMembership(user.id); // Refresh to get role
       setCommunity(prev => ({ ...prev, member_count: (prev.member_count || 0) + 1 }));
       // Show welcome modal instead of success message
       setShowWelcomeModal(true);
     } catch (error) {
       console.error('Error joining community:', error);
+      showToast('error', 'Error', 'Something went wrong while joining the community');
     } finally {
       setJoining(false);
     }
@@ -566,6 +695,11 @@ export default function CommunityPage() {
 
   const handleLeaveCommunity = async () => {
     if (!user) return;
+
+    // Prevent multiple simultaneous leave attempts
+    if (leaving) {
+      return;
+    }
 
     setLeaving(true);
     try {
@@ -587,7 +721,9 @@ export default function CommunityPage() {
         return;
       }
 
+      // Successfully left - update state
       setIsMember(false);
+      setUserCommunityRole(null);
       setCommunity(prev => ({ ...prev, member_count: Math.max(0, (prev.member_count || 0) - 1) }));
       showToast('success', 'Success', 'You have left the community');
       
@@ -1294,9 +1430,10 @@ export default function CommunityPage() {
               ) : (
                 <button
                   onClick={handleLeaveCommunity}
-                  className="px-2.5 py-1 text-sm rounded-full bg-[#FF5A5F] text-white hover:bg-[#e04a4e] transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                  disabled={leaving}
+                  className="px-2.5 py-1 text-sm rounded-full bg-[#FF5A5F] text-white hover:bg-[#e04a4e] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
                 >
-                  Joined
+                  {leaving ? 'Leaving...' : 'Joined'}
                 </button>
               )}
 
