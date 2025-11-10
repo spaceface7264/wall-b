@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, MessageSquare, MapPin, Lock, Globe } from 'lucide-react';
+import { Users, MessageSquare, MapPin, Lock, Globe, CheckCircle2 } from 'lucide-react';
 
 const CommunityCard = React.memo(function CommunityCard({
   community,
@@ -53,7 +53,8 @@ const CommunityCard = React.memo(function CommunityCard({
 
   return (
     <div 
-      className="touch-feedback transition-all duration-200 relative w-full cursor-pointer"
+      className="touch-feedback transition-all duration-200 relative w-full cursor-pointer flex flex-col"
+      style={{ minHeight: '100%', height: '100%' }}
       onClick={handleCardClick}
     >
       {/* Privacy Indicator - Top Right */}
@@ -73,44 +74,61 @@ const CommunityCard = React.memo(function CommunityCard({
         </div>
       )}
       
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div className="flex-1 min-w-0" style={{ paddingRight: community.is_private !== undefined ? '80px' : '0' }}>
-              {/* Community Title */}
-              <div className="mb-1">
-                <h3 className="mobile-subheading truncate" style={{ 
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  maxWidth: '100%'
-                }}>{community.name}</h3>
-              </div>
-              
-              {/* City and Gym - Below Title */}
-              {gym && (gym.city || gym.name) && (
-                <div className="flex items-center gap-1.5 flex-wrap" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  {gym.city && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3 flex-shrink-0" style={{ width: '12px', height: '12px', color: 'var(--text-muted)' }} />
-                      <span className="truncate" title={gym.city} style={{ color: 'var(--text-secondary)' }}>{gym.city}</span>
-                    </div>
-                  )}
-                  {gym.city && gym.name && (
-                    <span className="flex-shrink-0" style={{ color: 'var(--text-subtle)' }}>·</span>
-                  )}
-                  {gym.name && (
-                    <span className="truncate" title={gym.name} style={{ color: 'var(--text-secondary)' }}>{gym.name}</span>
-                  )}
+      {/* Joined Indicator - Bottom Right */}
+      {isMember && (
+        <div className="absolute bottom-0 right-0 z-10" style={{ paddingBottom: '8px', paddingRight: '8px' }} onClick={(e) => e.stopPropagation()}>
+          <CheckCircle2 
+            className="flex-shrink-0" 
+            style={{ 
+              width: '16px', 
+              height: '16px', 
+              color: 'var(--accent-blue)',
+              opacity: 0.7
+            }} 
+          />
+        </div>
+      )}
+      
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flex: '1 1 auto', minHeight: 0 }}>
+        <div className="flex-1 min-w-0 flex flex-col" style={{ minHeight: '100%', height: '100%' }}>
+          <div className="flex-shrink-0">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="flex-1 min-w-0" style={{ paddingRight: community.is_private !== undefined ? '80px' : '0' }}>
+                {/* Community Title */}
+                <div className="mb-1">
+                  <h3 className="mobile-subheading truncate" style={{ 
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '100%'
+                  }}>{community.name}</h3>
                 </div>
-              )}
+                
+                {/* City and Gym - Below Title */}
+                {gym && (gym.city || gym.name) && (
+                  <div className="flex items-center gap-1.5 flex-wrap" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                    {gym.city && (
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3 flex-shrink-0" style={{ width: '12px', height: '12px', color: 'var(--text-muted)' }} />
+                        <span className="truncate" title={gym.city} style={{ color: 'var(--text-secondary)' }}>{gym.city}</span>
+                      </div>
+                    )}
+                    {gym.city && gym.name && (
+                      <span className="flex-shrink-0" style={{ color: 'var(--text-subtle)' }}>·</span>
+                    )}
+                    {gym.name && (
+                      <span className="truncate" title={gym.name} style={{ color: 'var(--text-secondary)' }}>{gym.name}</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
+            <p className="mobile-text-xs line-clamp-2 mb-3 leading-relaxed flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>
+              {community.description}
+            </p>
           </div>
-          <p className="mobile-text-xs line-clamp-2 mb-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-            {community.description}
-          </p>
           
-          <div className="flex items-center gap-4 mb-2">
+          <div className="flex items-center gap-4 mb-2 mt-auto flex-shrink-0" style={{ marginTop: 'auto', paddingBottom: '8px', paddingRight: isMember ? '32px' : '0' }}>
             <div className="flex items-center gap-1.5">
               <Users className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
               <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{community.member_count || 0}</span>
