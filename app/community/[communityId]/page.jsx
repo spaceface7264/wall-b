@@ -555,6 +555,12 @@ export default function CommunityPage() {
 
       setIsMember(true);
       setCommunity(prev => ({ ...prev, member_count: (prev.member_count || 0) + 1 }));
+      
+      // Dispatch event to update drawer immediately
+      window.dispatchEvent(new CustomEvent('communityJoined', { 
+        detail: { communityId, userId: user.id } 
+      }));
+      
       // Show welcome modal instead of success message
       setShowWelcomeModal(true);
     } catch (error) {
@@ -589,6 +595,12 @@ export default function CommunityPage() {
 
       setIsMember(false);
       setCommunity(prev => ({ ...prev, member_count: Math.max(0, (prev.member_count || 0) - 1) }));
+      
+      // Dispatch event to update drawer immediately
+      window.dispatchEvent(new CustomEvent('communityLeft', { 
+        detail: { communityId, userId: user.id } 
+      }));
+      
       showToast('success', 'Success', 'You have left the community');
       
       // Redirect to communities page after leaving

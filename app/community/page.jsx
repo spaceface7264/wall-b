@@ -658,6 +658,11 @@ export default function CommunitiesPage() {
 
       showToast('success', 'Success', 'Joined community successfully!');
       
+      // Dispatch event to update drawer immediately
+      window.dispatchEvent(new CustomEvent('communityJoined', { 
+        detail: { communityId, userId: user.id } 
+      }));
+      
       // Remove from recommended if it was there
       setRecommendedCommunities(prev => prev.filter(c => c.id !== communityId));
       
@@ -730,6 +735,12 @@ export default function CommunitiesPage() {
       }
 
       showToast('success', 'Success', 'You have left the community');
+      
+      // Dispatch event to update drawer immediately
+      window.dispatchEvent(new CustomEvent('communityLeft', { 
+        detail: { communityId: leavingCommunityId, userId: user.id } 
+      }));
+      
       await loadCommunities();
       if (user) {
         await loadMyCommunities(user.id);

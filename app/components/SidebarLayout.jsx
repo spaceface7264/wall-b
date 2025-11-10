@@ -294,6 +294,25 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     }
   }, [isAdmin]);
 
+  // Listen for community join/leave events to update drawer immediately
+  useEffect(() => {
+    const handleCommunityChange = () => {
+      if (user?.id) {
+        console.log('🔄 Community changed, reloading drawer communities...');
+        loadUserCommunities(user.id, isAdmin);
+      }
+    };
+
+    // Listen for custom events when communities are joined/left
+    window.addEventListener('communityJoined', handleCommunityChange);
+    window.addEventListener('communityLeft', handleCommunityChange);
+
+    return () => {
+      window.removeEventListener('communityJoined', handleCommunityChange);
+      window.removeEventListener('communityLeft', handleCommunityChange);
+    };
+  }, [user?.id, isAdmin]);
+
   useEffect(() => {
     // Only redirect to login if we're not already on the login page
     // and only after loading is complete and user is confirmed null

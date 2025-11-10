@@ -606,6 +606,14 @@ export default function GymDetail() {
       }
 
       showToast('success', 'Joined!', 'You have joined the community');
+      
+      // Dispatch event to update drawer immediately
+      if (user) {
+        window.dispatchEvent(new CustomEvent('communityJoined', { 
+          detail: { communityId, userId: user.id } 
+        }));
+      }
+      
       loadCommunities(gym.id); // Reload communities
     } catch (error) {
       console.error('Error joining community:', error);
