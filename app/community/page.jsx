@@ -327,6 +327,7 @@ export default function CommunitiesPage() {
             member_count,
             created_at,
             gym_id,
+            is_private,
             gyms (
               name,
               city,
@@ -359,7 +360,7 @@ export default function CommunitiesPage() {
 
         const { data: communitiesData, error: communitiesError } = await supabase
           .from('communities')
-          .select('id, name, description, community_type, member_count, created_at, gym_id, is_active')
+          .select('id, name, description, community_type, member_count, created_at, gym_id, is_active, is_private')
           .in('id', communityIds);
         
         // Filter out suspended communities for non-admins
