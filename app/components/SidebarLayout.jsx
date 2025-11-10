@@ -737,7 +737,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                   : ''
               }`}
             >
-              <MapPin className="mobile-drawer-icon" />
+              <Building className="mobile-drawer-icon" />
               <span className="mobile-drawer-text">Find Gyms</span>
             </button>
             
@@ -751,7 +751,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               className={`sidebar-icon-button desktop-only ${location.pathname === '/gyms' || location.pathname.startsWith('/gyms/') ? 'active' : ''}`}
               title="Find Gyms"
             >
-              <MapPin className="w-5 h-5" />
+              <Building className="w-5 h-5" />
             </button>
 
             {/* Communities List - Only show if user is authenticated */}
