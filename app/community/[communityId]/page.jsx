@@ -1395,22 +1395,6 @@ export default function CommunityPage() {
                 <div className="flex items-center gap-2 flex-wrap mb-2">
                   <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{community?.name}</h1>
                 </div>
-                {/* Privacy Indicator */}
-                {community?.is_private !== undefined && (
-                  <div className="mb-2 mt-1">
-                    {community.is_private ? (
-                      <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md w-fit" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-                        <Lock className="w-3 h-3" style={{ color: '#ef4444' }} />
-                        <span className="text-xs font-medium" style={{ color: '#ef4444' }}>Private</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md w-fit" style={{ backgroundColor: 'rgba(59, 131, 246, 0.1)', border: '1px solid rgba(59, 131, 246, 0.3)' }}>
-                        <Globe className="w-3 h-3" style={{ color: '#3b82f6' }} />
-                        <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>Public</span>
-                      </div>
-                    )}
-                  </div>
-                )}
                 <div className="flex flex-col gap-1 text-sm text-gray-400 mb-3">
                   {(() => {
                     // Extract gym data (handle both array and object formats from Supabase)
@@ -1433,6 +1417,22 @@ export default function CommunityPage() {
                       </div>
                     ) : null;
                   })()}
+                  {/* Privacy Indicator */}
+                  {community?.is_private !== undefined && (
+                    <div className="mb-2 mt-3">
+                      {community.is_private ? (
+                        <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md w-fit" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                          <Lock className="w-3 h-3" style={{ color: '#ef4444' }} />
+                          <span className="text-xs font-medium" style={{ color: '#ef4444' }}>Private</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md w-fit" style={{ backgroundColor: 'rgba(59, 131, 246, 0.1)', border: '1px solid rgba(59, 131, 246, 0.3)' }}>
+                          <Globe className="w-3 h-3" style={{ color: '#3b82f6' }} />
+                          <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>Public</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {creator && (
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 flex-shrink-0" />
