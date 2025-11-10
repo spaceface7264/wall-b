@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe, MessageSquare, MapPin, ChevronLeft } from 'lucide-react';
+import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe, MessageSquare, MapPin, ChevronLeft, Building } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { useLoginModal } from '../providers/LoginModalProvider';
 import { useToast } from '../providers/ToastProvider';

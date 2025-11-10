@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Home, MapPin, MessageCircle, User, Lock } from 'lucide-react';
+import { Home, MapPin, MessageCircle, User, Lock, Building } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useLoginModal } from '../providers/LoginModalProvider';
 import UnreadBadge from './UnreadBadge';
@@ -39,7 +39,7 @@ export default function BottomNav() {
     {
       id: 'gyms',
       label: 'Gyms',
-      icon: MapPin,
+      icon: Building,
       path: '/gyms'
     },
     {
