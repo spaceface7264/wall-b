@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { Users, MessageCircle, Plus, MessageSquare, Clock, X, ThumbsUp, MapPin, UserPlus, TrendingUp, Calendar, Settings, ArrowLeft, Shield, Info, MoreHorizontal, RefreshCw, Heart, Flag, AlertTriangle, UserMinus, Lock } from 'lucide-react';
+import { Users, MessageCircle, Plus, MessageSquare, Clock, X, ThumbsUp, MapPin, UserPlus, TrendingUp, Calendar, Settings, ArrowLeft, Shield, Info, MoreHorizontal, RefreshCw, Heart, Flag, AlertTriangle, UserMinus, Lock, Globe } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
 import ReportCommunityModal from '../../components/ReportCommunityModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -1220,7 +1220,23 @@ export default function CommunityPage() {
           <div className="mb-1 animate-fade-in pt-4">
             <div className="flex items-start justify-between gap-4 mb-3">
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>{community?.name}</h1>
+                <div className="flex items-center gap-2 flex-wrap mb-2">
+                  <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{community?.name}</h1>
+                  {/* Privacy Indicator */}
+                  {community?.is_private !== undefined && (
+                    community.is_private ? (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-md" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                        <Lock className="w-4 h-4" style={{ color: '#ef4444' }} />
+                        <span className="text-sm font-medium" style={{ color: '#ef4444' }}>Private</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-md" style={{ backgroundColor: 'rgba(59, 131, 246, 0.1)', border: '1px solid rgba(59, 131, 246, 0.3)' }}>
+                        <Globe className="w-4 h-4" style={{ color: '#3b82f6' }} />
+                        <span className="text-sm font-medium" style={{ color: '#3b82f6' }}>Public</span>
+                      </div>
+                    )
+                  )}
+                </div>
                 <div className="flex flex-col gap-1 text-sm text-gray-400 mb-3">
                   {(() => {
                     // Extract gym data (handle both array and object formats from Supabase)

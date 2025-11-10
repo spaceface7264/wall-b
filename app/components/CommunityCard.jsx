@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Users, MessageSquare, Check, MoreVertical, LogOut, Flag, MapPin } from 'lucide-react';
+import { Users, MessageSquare, Check, MoreVertical, LogOut, Flag, MapPin, Lock, Globe } from 'lucide-react';
 
 const CommunityCard = React.memo(function CommunityCard({
   community,
@@ -105,6 +105,18 @@ const CommunityCard = React.memo(function CommunityCard({
               {/* Community Title - Own Line */}
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <h3 className="mobile-subheading truncate">{community.name}</h3>
+                {/* Privacy Indicator */}
+                {community.is_private ? (
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                    <Lock className="w-3 h-3" style={{ color: '#ef4444' }} />
+                    <span className="text-xs font-medium" style={{ color: '#ef4444' }}>Private</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(59, 131, 246, 0.1)', border: '1px solid rgba(59, 131, 246, 0.3)' }}>
+                    <Globe className="w-3 h-3" style={{ color: '#3b82f6' }} />
+                    <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>Public</span>
+                  </div>
+                )}
               </div>
               
               {/* City and Gym - Below Title */}

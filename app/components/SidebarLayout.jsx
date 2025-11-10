@@ -48,7 +48,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
         // If community_members doesn't exist, try communities directly
         const { data: communitiesData, error: communitiesError } = await supabase
           .from('communities')
-          .select('id, name, description, member_count')
+          .select('id, name, description, member_count, is_private')
           .limit(10);
         
         if (communitiesError) {
@@ -71,6 +71,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
             description,
             member_count,
             is_active,
+            is_private,
             gym_id,
             gyms (
               id,
