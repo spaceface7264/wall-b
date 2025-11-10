@@ -88,10 +88,15 @@ const CommunityCard = React.memo(function CommunityCard({
       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-2">
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0" style={{ paddingRight: community.is_private !== undefined ? '80px' : '0' }}>
               {/* Community Title */}
               <div className="mb-1">
-                <h3 className="mobile-subheading truncate">{community.name}</h3>
+                <h3 className="mobile-subheading truncate" style={{ 
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '100%'
+                }}>{community.name}</h3>
               </div>
               
               {/* City and Gym - Below Title */}
