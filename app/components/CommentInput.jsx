@@ -20,7 +20,7 @@ export default function CommentInput({
   // Blocked words checking is disabled
 
   const handleSubmit = async () => {
-    if (content.trim().length < 10) {
+    if (content.trim().length < 2) {
       return;
     }
 
@@ -109,7 +109,7 @@ export default function CommentInput({
             <button
               onClick={handleSubmit}
               disabled={
-                content.trim().length < 10 || 
+                content.trim().length < 2 || 
                 submitting
               }
               className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-accent-blue hover:text-accent-blue-hover disabled:text-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -123,7 +123,7 @@ export default function CommentInput({
             </button>
           </div>
         </div>
-        {(showCharCount || (content.length > 0 && content.length < 10) || contentWarning) && (
+        {(showCharCount || (content.length > 0 && content.length < 2) || contentWarning) && (
           <div className="text-xs text-gray-400 flex items-center justify-end gap-2">
             {contentWarning && (
               <span className="text-yellow-400">
@@ -135,9 +135,9 @@ export default function CommentInput({
                 {content.length}/{maxLength}
               </span>
             )}
-            {!showCharCount && content.length > 0 && content.length < 10 && (
+            {!showCharCount && content.length > 0 && content.length < 2 && (
               <span className="text-yellow-400">
-                Min 10
+                Min 2
               </span>
             )}
           </div>
@@ -172,9 +172,9 @@ export default function CommentInput({
               {content.length}/{maxLength}
             </span>
           )}
-          {!contentWarning && !showCharCount && content.length > 0 && content.length < 10 && (
+          {!contentWarning && !showCharCount && content.length > 0 && content.length < 2 && (
             <span className="text-yellow-400">
-              Minimum 10 characters
+              Minimum 2 characters
             </span>
           )}
         </div>
@@ -192,7 +192,7 @@ export default function CommentInput({
           <button
             onClick={handleSubmit}
             disabled={
-              content.trim().length < 10 || 
+              content.trim().length < 2 || 
               submitting
             }
             className={`mobile-btn-primary minimal-flex gap-2 ${compact ? 'px-4 py-1.5 text-sm' : ''}`}

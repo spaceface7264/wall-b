@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, ChevronRight, EyeOff } from 'lucide-react';
+import { MapPin, EyeOff, Users } from 'lucide-react';
 import { formatDistance } from '../../lib/geolocation';
 
 const GymCard = React.memo(function GymCard({
@@ -9,31 +9,63 @@ const GymCard = React.memo(function GymCard({
 }) {
   const facilities = Array.isArray(gym.facilities) ? gym.facilities : JSON.parse(gym.facilities || '[]');
 
+  const handleCardClick = (e) => {
+    // Don't navigate if clicking on buttons - stop propagation so wrapper doesn't handle it
+    if (e.target.closest('button')) {
+      e.stopPropagation();
+      return;
+    }
+    // For normal clicks, let the event bubble to the wrapper which handles navigation
+    if (onOpen) {
+      onOpen(gym);
+    }
+  };
 
   return (
-    <div
-      className="cursor-pointer touch-feedback transition-all duration-200 w-full border-b border-gray-700/50 last:border-b-0 hover:bg-gray-800/30"
-      onClick={() => onOpen(gym)}
-      style={{ padding: '16px 0', position: 'relative' }}
+    <div 
+      className="touch-feedback transition-all duration-200 relative w-full cursor-pointer flex flex-col"
+      style={{ minHeight: '100%', height: '100%' }}
+      onClick={handleCardClick}
     >
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '0 16px' }}>
+      {/* Community Count Indicator - Top Right */}
+      {(gym.community_count !== undefined && gym.community_count > 0) && (
+        <div className="absolute top-0 right-0 z-10" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(59, 131, 246, 0.1)', border: '1px solid rgba(59, 131, 246, 0.3)' }}>
+            <Users className="w-3 h-3" style={{ color: '#3b82f6' }} />
+            <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>{gym.community_count}</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Hidden Indicator - Below Community Count or Top Right */}
+      {gym.is_hidden && isAdmin && (
+        <div className="absolute z-10" style={{ top: (gym.community_count !== undefined && gym.community_count > 0) ? '28px' : '0', right: '0' }} onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-center px-1 py-0.5 rounded" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+            <EyeOff className="w-3 h-3" style={{ color: '#f59e0b' }} />
+          </div>
+        </div>
+      )}
+      
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flex: '1 1 auto', minHeight: 0 }}>
         {/* Gym Logo */}
-          <div style={{ 
+        <div 
+          style={{ 
             flexShrink: 0, 
-          width: '70px', 
-          height: '70px',
-          minWidth: '70px',
-          minHeight: '70px',
+            width: '60px', 
+            height: '60px',
+            minWidth: '60px',
+            minHeight: '60px',
             backgroundColor: '#1e1e1e',
-            borderRadius: '4px',
-            border: '1px solid #333333',
-          overflow: 'hidden',
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '8px'
-          }}>
+            borderRadius: '8px',
+            border: '1px solid var(--border-color)',
+            overflow: 'hidden',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '8px'
+          }}
+        >
           {(gym.logo_url || gym.logo) ? (
             <img
               src={gym.logo_url || gym.logo}
@@ -58,65 +90,81 @@ const GymCard = React.memo(function GymCard({
             className="w-full h-full bg-gradient-to-br from-accent-blue to-accent-blue-hover minimal-flex-center"
             style={{ display: (gym.logo_url || gym.logo) ? 'none' : 'flex' }}
           >
-            <span className="text-white font-semibold text-2xl">
+            <span className="text-white font-semibold text-xl">
               {gym.name ? gym.name.charAt(0).toUpperCase() : 'G'}
             </span>
           </div>
         </div>
         
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="flex items-center gap-2" style={{ marginBottom: '6px', flexWrap: 'wrap' }}>
-            <h3 className="mobile-subheading truncate" style={{ margin: 0, flex: '1 1 auto', minWidth: 0 }}>{gym.name}</h3>
-            {gym.is_hidden && isAdmin && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 flex-shrink-0 rounded">
-                <EyeOff className="w-3 h-3" />
-                Hidden
-              </span>
-            )}
-            {typeof gym.distance_km === 'number' && (
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded-md whitespace-nowrap flex-shrink-0" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}>
-                <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{formatDistance(gym.distance_km)}</span>
+        <div className="flex-1 min-w-0 flex flex-col" style={{ minHeight: '100%', height: '100%' }}>
+          <div className="flex-shrink-0">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="flex-1 min-w-0" style={{ paddingRight: ((gym.community_count !== undefined && gym.community_count > 0) || (gym.is_hidden && isAdmin)) ? '80px' : '0' }}>
+                {/* Gym Title */}
+                <div className="mb-1">
+                  <h3 className="mobile-subheading truncate" style={{ 
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '100%'
+                  }}>{gym.name}</h3>
+                </div>
+                
+                {/* Location - Below Title */}
+                <div className="flex items-center gap-1.5 flex-wrap" style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                  <MapPin className="w-3 h-3 flex-shrink-0" style={{ width: '12px', height: '12px', color: 'var(--text-muted)' }} />
+                  <span className="truncate" style={{ color: 'var(--text-secondary)' }}>
+                    {gym.city}{gym.country ? `, ${gym.country}` : ''}
+                  </span>
+                  {typeof gym.distance_km === 'number' && (
+                    <>
+                      <span className="flex-shrink-0" style={{ color: 'var(--text-subtle)' }}>·</span>
+                      <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                        {formatDistance(gym.distance_km)}
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
-            )}
+            </div>
+            
+            <p className="mobile-text-xs line-clamp-2 mb-3 leading-relaxed flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>
+              {gym.description}
+            </p>
           </div>
-
-          <div className="minimal-flex mobile-text-xs text-gray-400 items-center" style={{ marginBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
-            <MapPin className="minimal-icon flex-shrink-0" style={{ marginRight: '4px' }} />
-            <span className="truncate">{gym.city}, {gym.country}</span>
-          </div>
-
-          <p className="mobile-text-xs text-gray-300 line-clamp-2" style={{ lineHeight: '1.6', marginBottom: '6px' }}>
-            {gym.description}
-          </p>
-
-          {/* Facilities */}
+          
+          {/* Facilities - Bottom */}
           {facilities.length > 0 && (
-            <div className="minimal-flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1 flex-shrink-0 mt-auto" style={{ paddingBottom: '8px' }}>
               {facilities.slice(0, 3).map((facility, index) => (
                 <span 
                   key={index} 
-                  className="mobile-text-xs bg-gray-800/50 px-2 py-1 rounded text-gray-300"
-                  style={{ fontSize: '10px' }}
+                  className="mobile-text-xs px-2 py-1 rounded"
+                  style={{ 
+                    fontSize: '10px',
+                    backgroundColor: 'var(--hover-bg)',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--border-color)'
+                  }}
                 >
                   {facility}
                 </span>
               ))}
               {facilities.length > 3 && (
                 <span 
-                  className="mobile-text-xs bg-gray-800/50 px-2 py-1 rounded text-gray-300"
-                  style={{ fontSize: '10px' }}
+                  className="mobile-text-xs px-2 py-1 rounded"
+                  style={{ 
+                    fontSize: '10px',
+                    backgroundColor: 'var(--hover-bg)',
+                    color: 'var(--text-muted)',
+                    border: '1px solid var(--border-color)'
+                  }}
                 >
                   +{facilities.length - 3} more
                 </span>
               )}
             </div>
           )}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-            <ChevronRight className="minimal-icon text-gray-400" style={{ width: '16px', height: '16px' }} />
-          </div>
         </div>
       </div>
     </div>

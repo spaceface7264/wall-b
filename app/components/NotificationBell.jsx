@@ -190,8 +190,14 @@ export default function NotificationBell({ userId }) {
 
   // Handle notification click with navigation
   const handleNotificationClick = (notification) => {
-    // Don't navigate if it's a community invite (user should use buttons)
+    // For community invites, navigate to the community page
     if (notification.type === 'community_invite') {
+      const data = notification.data || {};
+      if (data.community_id) {
+        markAsRead(notification.id);
+        navigate(`/community/${data.community_id}?invite=true`);
+        setIsOpen(false);
+      }
       return;
     }
 

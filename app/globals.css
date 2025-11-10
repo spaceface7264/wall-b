@@ -1207,6 +1207,7 @@
   @media (min-width: 1024px) {
     .desktop-only {
       display: block;
+      width: 100%;
     }
   }
   
@@ -1236,6 +1237,14 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: var(--spacing-lg);
+      width: 100%;
+      box-sizing: border-box;
+      max-width: 100%;
+    }
+    
+    .desktop-grid-3 > * {
+      min-width: 0;
+      overflow: hidden;
     }
   }
   

@@ -221,7 +221,10 @@ export default function Gyms() {
       // We'll filter hidden gyms in code to ensure it works correctly
       const { data, error } = await supabase
         .from('gyms')
-        .select('*')
+        .select(`
+          *,
+          communities(gym_id)
+        `)
         .order('name', { ascending: true });
       
       if (error) {
@@ -331,7 +334,21 @@ export default function Gyms() {
         const visibleGyms = isAdmin 
           ? data 
           : data.filter(gym => !gym.is_hidden);
-        setGyms(visibleGyms);
+        
+        // Process community count from Supabase relation query
+        const processedGyms = visibleGyms.map(gym => {
+          let communityCount = 0;
+          if (gym.communities && Array.isArray(gym.communities)) {
+            // Count communities associated with this gym
+            communityCount = gym.communities.length;
+          }
+          return {
+            ...gym,
+            community_count: communityCount
+          };
+        });
+        
+        setGyms(processedGyms);
       } else {
         setGyms(data || []);
       }
@@ -1380,14 +1397,32 @@ export default function Gyms() {
                 </div>
               </div>
             ) : (
-              <div className="desktop-grid-3">
+              <div className="desktop-grid-3 px-3">
                 {filteredGyms.map((gym, index) => (
-                <GymCard
-                  key={gym.id}
-                  gym={gym}
-                  onOpen={openGym}
-                  isAdmin={isAdmin}
-                />
+                  <div
+                    key={gym.id}
+                    className="rounded-lg transition-all duration-200 cursor-pointer"
+                    style={{
+                      backgroundColor: 'var(--bg-surface)',
+                      border: '1px solid var(--border-color)',
+                      padding: 'var(--card-padding-mobile)',
+                      minWidth: 0,
+                      overflow: 'hidden'
+                    }}
+                    onClick={() => openGym(gym)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+                    }}
+                  >
+                    <GymCard
+                      gym={gym}
+                      onOpen={openGym}
+                      isAdmin={isAdmin}
+                    />
+                  </div>
                 ))}
               </div>
             )}

@@ -15,6 +15,7 @@ import MembersList from '../../components/MembersList';
 import CalendarView from '../../components/CalendarView';
 import LoginOverlay from '../../components/LoginOverlay';
 import JoinRequestsList from '../../components/JoinRequestsList';
+import CommunityInviteShareModal from '../../components/CommunityInviteShareModal';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getActualMemberCount, updateLastViewedAt } from '../../../lib/community-utils';
 import { useToast } from '../../providers/ToastProvider';
@@ -55,6 +56,8 @@ export default function CommunityPage() {
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
   const [showLoginOverlay, setShowLoginOverlay] = useState(false);
   const [joinRequestStatus, setJoinRequestStatus] = useState(null); // 'pending', 'approved', 'rejected', or null
+  const [showInviteShareModal, setShowInviteShareModal] = useState(false);
+  const [showInviteBanner, setShowInviteBanner] = useState(false);
   const menuRef = useRef(null);
   const menuButtonRef = useRef(null);
   const navigate = useNavigate();
@@ -135,19 +138,37 @@ export default function CommunityPage() {
         // Show login overlay for non-logged-in users
         setShowLoginOverlay(true);
       } else if (user && !isMember && !loading && community) {
-        // User logged in - close overlay and show toast
+        // User logged in - show invite banner
         setShowLoginOverlay(false);
+        setShowInviteBanner(true);
         showToast('info', 'You\'re Invited!', `Join ${community.name} to connect with other climbers`);
-        // Remove the invite parameter from URL
-        navigate(`/community/${communityId}`, { replace: true });
+        // Remove the invite parameter from URL after a delay
+        setTimeout(() => {
+          navigate(`/community/${communityId}`, { replace: true });
+        }, 100);
       } else if (user && isMember) {
         // User is already a member - close overlay
         setShowLoginOverlay(false);
+        setShowInviteBanner(false);
         // Remove the invite parameter from URL
         navigate(`/community/${communityId}`, { replace: true });
       }
+    } else {
+      // Hide banner if invite parameter is removed
+      setShowInviteBanner(false);
     }
   }, [searchParams, user, isMember, loading, community, showToast, navigate, communityId]);
+
+  // Handle new community parameter - show invite/share modal
+  useEffect(() => {
+    const newParam = searchParams.get('new');
+    if (newParam === 'true' && community && user && !loading) {
+      // Show the invite/share modal
+      setShowInviteShareModal(true);
+      // Remove the parameter from URL
+      navigate(`/community/${communityId}`, { replace: true });
+    }
+  }, [searchParams, community, user, loading, navigate, communityId]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -555,6 +576,9 @@ export default function CommunityPage() {
 
       setIsMember(true);
       setCommunity(prev => ({ ...prev, member_count: (prev.member_count || 0) + 1 }));
+      
+      // Hide invite banner if it was showing
+      setShowInviteBanner(false);
       
       // Dispatch event to update drawer immediately
       window.dispatchEvent(new CustomEvent('communityJoined', { 
@@ -1216,6 +1240,50 @@ export default function CommunityPage() {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-md z-10 pointer-events-none" />
         )}
         <div className={`mobile-section ${showLoginOverlay ? 'blur-sm' : ''}`} style={{ filter: showLoginOverlay ? 'blur(8px)' : 'none', pointerEvents: showLoginOverlay ? 'none' : 'auto' }}>
+          {/* Invite Banner */}
+          {showInviteBanner && user && !isMember && (
+            <div className="mb-4 p-4 rounded-lg border-2 animate-fade-in" style={{ backgroundColor: 'rgba(0, 212, 255, 0.1)', borderColor: 'rgba(0, 212, 255, 0.3)' }}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                    You're Invited!
+                  </h3>
+                  <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
+                    You've been invited to join this community. Click below to accept or decline.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleJoinCommunity}
+                      disabled={joining || joinRequestStatus === 'pending'}
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ backgroundColor: 'var(--accent-blue)', color: 'white' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-blue-hover)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-blue)'}
+                    >
+                      {joining ? 'Joining...' : joinRequestStatus === 'pending' ? 'Request Sent' : community?.is_private ? 'Request to Join' : 'Accept & Join'}
+                    </button>
+                    <button
+                      onClick={() => setShowInviteBanner(false)}
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                      style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowInviteBanner(false)}
+                  className="flex-shrink-0 p-1 rounded hover:bg-gray-700/50 transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Community Header */}
           <div className="mb-1 animate-fade-in pt-4">
             <div className="flex items-start justify-between gap-4 mb-3">
@@ -1680,6 +1748,18 @@ export default function CommunityPage() {
           }}
           communityName={community?.name || 'this community'}
           redirectTo={`/community/${communityId}?invite=true`}
+        />
+      )}
+
+      {/* Community Invite/Share Modal */}
+      {community && user && (
+        <CommunityInviteShareModal
+          isOpen={showInviteShareModal}
+          onClose={() => setShowInviteShareModal(false)}
+          communityId={communityId}
+          communityName={community.name}
+          currentUserId={user.id}
+          isPrivate={community.is_private}
         />
       )}
     </SidebarLayout>

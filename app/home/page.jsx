@@ -148,7 +148,10 @@ export default function HomePage() {
           // General gyms for unauthenticated users (popular/nearby)
           const { data: gyms, error } = await supabase
             .from('gyms')
-            .select('*')
+            .select(`
+              *,
+              communities(gym_id)
+            `)
             .eq('is_hidden', false)
             .limit(8);
 
@@ -156,8 +159,21 @@ export default function HomePage() {
             console.error('Error loading gyms:', error);
             setRecommendedGyms([]);
           } else {
+            // Process community count from Supabase relation query
+            const processedGyms = (gyms || []).map(gym => {
+              let communityCount = 0;
+              if (gym.communities && Array.isArray(gym.communities)) {
+                // Count communities associated with this gym
+                communityCount = gym.communities.length;
+              }
+              return {
+                ...gym,
+                community_count: communityCount
+              };
+            });
+            
             // Sort by location if available, otherwise just return first 8
-            let sortedGyms = gyms || [];
+            let sortedGyms = processedGyms || [];
             if (location) {
               sortedGyms = sortedGyms.map(gym => {
                 if (gym.latitude && gym.longitude) {
@@ -367,11 +383,27 @@ export default function HomePage() {
           <div style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
             <div className="desktop-grid-3 px-3">
               {recommendedGyms.map((gym) => (
-                <GymCard
+                <div
                   key={gym.id}
-                  gym={gym}
-                  onOpen={(gym) => navigate(`/gyms/${gym.id}`)}
-                />
+                  className="rounded-lg transition-all duration-200 cursor-pointer"
+                  style={{
+                    backgroundColor: 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    padding: 'var(--card-padding-mobile)'
+                  }}
+                  onClick={() => navigate(`/gyms/${gym.id}`)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+                  }}
+                >
+                  <GymCard
+                    gym={gym}
+                    onOpen={(gym) => navigate(`/gyms/${gym.id}`)}
+                  />
+                </div>
               ))}
             </div>
           </div>

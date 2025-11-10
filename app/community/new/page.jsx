@@ -201,11 +201,8 @@ export default function CreateCommunityPage() {
 
       showToast('success', 'Community Created!', 'Your community has been created successfully!');
       
-      // Wait a moment for database to be ready, then navigate to the newly created community
-      // This prevents race condition where community page tries to load before data is available
-      setTimeout(() => {
-        navigate(`/community/${data.id}`);
-      }, 500);
+      // Navigate to the community page with a parameter to show the invite modal
+      navigate(`/community/${data.id}?new=true`);
     } catch (error) {
       console.error('Error creating community:', error);
       showToast('error', 'Error', 'Something went wrong. Please try again.');

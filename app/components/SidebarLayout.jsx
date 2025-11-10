@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe, MessageSquare, MapPin, ChevronLeft, Building } from 'lucide-react';
+import { Users, Plus, LogOut, Shield, Search, X, Compass, PlusCircle, Globe, MessageSquare, MapPin, ChevronLeft, LogIn } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { useLoginModal } from '../providers/LoginModalProvider';
 import { useToast } from '../providers/ToastProvider';
@@ -737,7 +737,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                   : ''
               }`}
             >
-              <Building className="mobile-drawer-icon" />
+              <MapPin className="mobile-drawer-icon" />
               <span className="mobile-drawer-text">Find Gyms</span>
             </button>
             
@@ -751,7 +751,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               className={`sidebar-icon-button desktop-only ${location.pathname === '/gyms' || location.pathname.startsWith('/gyms/') ? 'active' : ''}`}
               title="Find Gyms"
             >
-              <Building className="w-5 h-5" />
+              <MapPin className="w-5 h-5" />
             </button>
 
             {/* Communities List - Only show if user is authenticated */}
@@ -830,7 +830,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
             )}
 
             {/* Empty state for unauthenticated users */}
-            {!user && (
+            {!user && !sidebarCollapsed && (
               <div className="flex-1 flex items-center justify-center p-4">
                 <p className="text-sm text-gray-400 text-center">Sign in to see your communities</p>
               </div>
@@ -840,6 +840,35 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
 
         {/* Drawer Footer */}
         <div className={`mobile-drawer-footer ${sidebarCollapsed ? 'collapsed' : ''}`}>
+          {/* Sign In Button - Show for guests */}
+          {!user && (
+            <>
+              <button
+                onClick={() => {
+                  showLoginModal();
+                  closeDrawer();
+                }}
+                onMouseDown={createRipple}
+                className="mobile-drawer-item ripple-effect w-full"
+              >
+                <LogIn className="mobile-drawer-icon" />
+                <span className="mobile-drawer-text">Sign In</span>
+              </button>
+              {/* Desktop collapsed icon version */}
+              <button
+                onClick={() => {
+                  showLoginModal();
+                  closeDrawer();
+                }}
+                onMouseDown={createRipple}
+                className="sidebar-icon-button desktop-only"
+                title="Sign In"
+              >
+                <LogIn className="w-5 h-5" />
+              </button>
+            </>
+          )}
+          
           {/* Admin Panel - Only show if user is admin */}
           {user && isAdmin && (
             <>
