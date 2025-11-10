@@ -29,23 +29,11 @@ const CommunityCard = React.memo(function CommunityCard({
     });
   }
   
-  // Get tags from community tags or post tags
-  const tags = community.tags || [];
-  
   // Post count (might come from query)
   const postCount = community.post_count || community.posts_count || 0;
   
   // Check if community is connected to a gym
   const gym = gymData;
-  const isGymCommunity = (gym && gym.name) || community.gym_id || community.community_type === 'gym';
-  
-  // Get tag colors if available
-  const getTagColor = (tag) => {
-    if (community.tag_colors && community.tag_colors[tag]) {
-      return community.tag_colors[tag];
-    }
-    return 'var(--accent-blue)'; // Default accent color
-  };
   
   const handleCardClick = (e) => {
     // Don't navigate if clicking on buttons - stop propagation so wrapper doesn't handle it
@@ -132,38 +120,6 @@ const CommunityCard = React.memo(function CommunityCard({
               <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{postCount || 0}</span>
             </div>
           </div>
-
-          {/* Tags */}
-          {tags.length > 0 && (
-            <div className="minimal-flex flex-wrap gap-1 mt-2">
-              {tags.slice(0, 3).map((tag, index) => (
-                <span 
-                  key={index} 
-                  className="mobile-text-xs px-2 py-1 rounded"
-                  style={{ 
-                    fontSize: '10px',
-                    backgroundColor: `${getTagColor(tag)}20`,
-                    border: `1px solid ${getTagColor(tag)}40`,
-                    color: getTagColor(tag)
-                  }}
-                >
-                  #{tag}
-                </span>
-              ))}
-              {tags.length > 3 && (
-                <span 
-                  className="mobile-text-xs px-2 py-1 rounded"
-                  style={{ 
-                    fontSize: '10px', 
-                    backgroundColor: 'var(--hover-bg)',
-                    color: 'var(--text-muted)'
-                  }}
-                >
-                  +{tags.length - 3} more
-                </span>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>
