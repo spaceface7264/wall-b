@@ -128,7 +128,7 @@ const CommunityCard = React.memo(function CommunityCard({
             </p>
           </div>
           
-          <div className="flex items-center gap-4 mb-2 mt-auto flex-shrink-0" style={{ marginTop: 'auto', paddingBottom: '8px', paddingRight: isMember ? '32px' : '0' }}>
+          <div className="flex items-center gap-4 mt-auto flex-shrink-0" style={{ marginTop: 'auto', paddingRight: isMember ? '32px' : '0' }}>
             <div className="flex items-center gap-1.5">
               <Users className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
               <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{community.member_count || 0}</span>
