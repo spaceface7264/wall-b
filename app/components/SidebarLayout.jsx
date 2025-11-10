@@ -26,6 +26,12 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     const saved = localStorage.getItem('sidebarCollapsed');
     return saved === 'true';
   });
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    // Initialize sidebar width from localStorage or default to 200px
+    const saved = localStorage.getItem('sidebarWidth');
+    return saved ? parseInt(saved, 10) : 200;
+  });
+  const [isResizing, setIsResizing] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { showLoginModal } = useLoginModal();
@@ -129,6 +135,48 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       return newState;
     });
   };
+
+  // Handle sidebar resize on desktop
+  useEffect(() => {
+    if (sidebarCollapsed) return; // Don't allow resizing when collapsed
+
+    const handleMouseDown = (e) => {
+      if (e.target.classList.contains('sidebar-resize-handle')) {
+        setIsResizing(true);
+        e.preventDefault();
+      }
+    };
+
+    const handleMouseMove = (e) => {
+      if (!isResizing) return;
+      
+      const newWidth = e.clientX;
+      const minWidth = 150;
+      const maxWidth = 300;
+      
+      if (newWidth >= minWidth && newWidth <= maxWidth) {
+        setSidebarWidth(newWidth);
+        localStorage.setItem('sidebarWidth', String(newWidth));
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    document.addEventListener('mousedown', handleMouseDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, sidebarCollapsed]);
 
   useEffect(() => {
     let mounted = true;
@@ -572,7 +620,37 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       )}
 
       {/* Drawer - Mobile: Sliding drawer, Desktop: Persistent sidebar */}
-      <div className={`mobile-drawer desktop-sidebar ${drawerOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} style={{ overflowX: 'hidden' }}>
+      <div 
+        className={`mobile-drawer desktop-sidebar ${drawerOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} 
+        style={{ 
+          overflowX: 'hidden',
+          width: sidebarCollapsed ? '72px' : `${sidebarWidth}px`,
+          transition: isResizing ? 'none' : 'width 0.3s ease'
+        }}
+      >
+        {/* Resize Handle - Desktop Only */}
+        {!sidebarCollapsed && (
+          <div 
+            className="sidebar-resize-handle desktop-only"
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: '8px',
+              cursor: 'col-resize',
+              zIndex: 10,
+              backgroundColor: 'transparent',
+              transition: 'background-color 0.2s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-blue)'}
+            onMouseLeave={(e) => {
+              if (!isResizing) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
+          />
+        )}
         {/* Collapse Toggle Button - Desktop Only */}
         <button
           onClick={toggleSidebar}
@@ -943,7 +1021,13 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       </div>
 
       {/* Main Content Area */}
-      <div className={`mobile-content desktop-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${currentPage === 'chat' ? 'mobile-content-chat' : 'mobile-content-with-cards'}`}>
+      <div 
+        className={`mobile-content desktop-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${currentPage === 'chat' ? 'mobile-content-chat' : 'mobile-content-with-cards'}`}
+        style={{ 
+          marginLeft: sidebarCollapsed ? '72px' : `${sidebarWidth}px`,
+          transition: isResizing ? 'none' : 'margin-left 0.3s ease'
+        }}
+      >
           {children}
       </div>
 

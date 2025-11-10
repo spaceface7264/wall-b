@@ -164,6 +164,29 @@
 
   * {
     box-sizing: border-box;
+    /* Firefox scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: #4a4a4a var(--bg-surface);
+  }
+  
+  /* Custom Scrollbar Styling - Dark Theme */
+  /* Webkit browsers (Chrome, Safari, Edge) */
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  *::-webkit-scrollbar-track {
+    background: var(--bg-surface);
+  }
+  
+  *::-webkit-scrollbar-thumb {
+    background: #4a4a4a;
+    border-radius: 4px;
+  }
+  
+  *::-webkit-scrollbar-thumb:hover {
+    background: #5a5a5a;
   }
   
   /* Prevent h1 from breaking flex layouts in headers */
@@ -468,13 +491,15 @@
       z-index: 1000;
       padding-top: calc(env(safe-area-inset-top, 0px) + var(--spacing-sm) + 1px);
       transition: width 0.3s ease;
-      width: 200px;
+      width: 200px; /* Default, will be overridden by inline style */
       top: 0; /* Start at top of page */
       height: 100vh; /* Full viewport height */
+      max-width: 300px; /* Maximum width */
     }
     
     .desktop-sidebar.collapsed {
       width: 72px;
+      max-width: 72px;
     }
     
     /* Hide text and adjust layout when collapsed */
@@ -854,7 +879,7 @@
     
     /* Desktop Content - Add left margin for sidebar */
     .desktop-content {
-      margin-left: 200px; /* Sidebar width */
+      margin-left: 200px; /* Default, will be overridden by inline style */
       transition: margin-left 0.3s ease;
     }
     
