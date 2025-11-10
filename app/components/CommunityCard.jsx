@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Users, MessageSquare, Check, MoreVertical, LogOut, Flag, MapPin, Lock, Globe } from 'lucide-react';
+import React from 'react';
+import { Users, MessageSquare, MapPin, Lock, Globe } from 'lucide-react';
 
 const CommunityCard = React.memo(function CommunityCard({
   community,
@@ -11,22 +11,6 @@ const CommunityCard = React.memo(function CommunityCard({
   joining = false,
   leaving = false
 }) {
-  const [showMenu, setShowMenu] = useState(false);
-  const menuRef = useRef(null);
-
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowMenu(false);
-      }
-    };
-
-    if (showMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showMenu]);
   // Get gym data - Supabase returns nested relations as arrays
   // If gyms is an array, get the first element; otherwise use it directly if it's an object
   const gymData = community.gyms 
@@ -64,8 +48,8 @@ const CommunityCard = React.memo(function CommunityCard({
   };
   
   const handleCardClick = (e) => {
-    // Don't navigate if clicking on buttons or menu - stop propagation so wrapper doesn't handle it
-    if (e.target.closest('button') || e.target.closest('[role="menu"]')) {
+    // Don't navigate if clicking on buttons - stop propagation so wrapper doesn't handle it
+    if (e.target.closest('button')) {
       e.stopPropagation();
       return;
     }
@@ -79,50 +63,36 @@ const CommunityCard = React.memo(function CommunityCard({
     }
   };
 
-  const handleLeave = () => {
-    setShowMenu(false);
-    if (onLeave) {
-      onLeave(community.id);
-    }
-  };
-
-  const handleReport = () => {
-    setShowMenu(false);
-    if (onReport) {
-      onReport(community.id);
-    }
-  };
-
   return (
     <div 
       className="touch-feedback transition-all duration-200 relative w-full cursor-pointer"
       onClick={handleCardClick}
     >
+      {/* Privacy Indicator - Top Right */}
+      {community.is_private !== undefined && (
+        <div className="absolute top-0 right-0 z-10" onClick={(e) => e.stopPropagation()}>
+          {community.is_private ? (
+            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+              <Lock className="w-3 h-3" style={{ color: '#ef4444' }} />
+              <span className="text-xs font-medium" style={{ color: '#ef4444' }}>Private</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(59, 131, 246, 0.1)', border: '1px solid rgba(59, 131, 246, 0.3)' }}>
+              <Globe className="w-3 h-3" style={{ color: '#3b82f6' }} />
+              <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>Public</span>
+            </div>
+          )}
+        </div>
+      )}
+      
       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex-1 min-w-0">
-              {/* Community Title - Own Line */}
+              {/* Community Title */}
               <div className="mb-1">
                 <h3 className="mobile-subheading truncate">{community.name}</h3>
               </div>
-              
-              {/* Privacy Indicator - Under Title */}
-              {community.is_private !== undefined && (
-                <div className="mb-1">
-                  {community.is_private ? (
-                    <div className="flex items-center gap-1 w-fit px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-                      <Lock className="w-3 h-3" style={{ color: '#ef4444' }} />
-                      <span className="text-xs font-medium" style={{ color: '#ef4444' }}>Private</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 w-fit px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(59, 131, 246, 0.1)', border: '1px solid rgba(59, 131, 246, 0.3)' }}>
-                      <Globe className="w-3 h-3" style={{ color: '#3b82f6' }} />
-                      <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>Public</span>
-                    </div>
-                  )}
-                </div>
-              )}
               
               {/* City and Gym - Below Title */}
               {gym && (gym.city || gym.name) && (
@@ -142,77 +112,6 @@ const CommunityCard = React.memo(function CommunityCard({
                 </div>
               )}
             </div>
-            
-            {/* Action Buttons - 3-Dot Menu */}
-            <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-              {/* 3-Dot Menu */}
-              <div className="relative flex-shrink-0" ref={menuRef}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(!showMenu);
-                }}
-                className="p-1.5 rounded-md transition-colors"
-                style={{ color: 'var(--text-muted)' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-                aria-label="More options"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
-
-              {/* Dropdown Menu */}
-              {showMenu && (
-                <div
-                  role="menu"
-                  className="absolute right-0 top-full mt-1 rounded-lg shadow-lg z-50"
-                  style={{ 
-                    minWidth: '160px',
-                    backgroundColor: 'var(--bg-surface)', 
-                    border: '1px solid var(--border-color)',
-                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {isMember && (
-                    <button
-                      onClick={handleLeave}
-                      disabled={leaving}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                      style={{ 
-                        fontSize: '11px',
-                        color: '#ef4444'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                      role="menuitem"
-                    >
-                      <LogOut className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
-                      <span>{leaving ? 'Leaving...' : 'Leave Community'}</span>
-                    </button>
-                  )}
-                  <button
-                    onClick={handleReport}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors whitespace-nowrap"
-                      style={{ 
-                        fontSize: '11px',
-                        color: 'var(--text-secondary)'
-                      }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    role="menuitem"
-                  >
-                    <Flag className="w-3.5 h-3.5" style={{ flexShrink: 0 }} />
-                    <span>Report</span>
-                  </button>
-                </div>
-              )}
-              </div>
-            </div>
           </div>
           <p className="mobile-text-xs line-clamp-2 mb-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
             {community.description}
@@ -226,7 +125,7 @@ const CommunityCard = React.memo(function CommunityCard({
             <div className="flex items-center gap-1.5">
               <MessageSquare className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
               <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{postCount || 0}</span>
-              </div>
+            </div>
           </div>
 
           {/* Tags */}
