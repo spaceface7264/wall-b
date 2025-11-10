@@ -36,17 +36,60 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    // Disable sourcemaps in production (security + size)
+    sourcemap: process.env.NODE_ENV === 'development',
     // Using esbuild (default) for faster builds
     minify: 'esbuild',
-    chunkSizeWarningLimit: 1000,
+    // Reduced chunk size warning threshold
+    chunkSizeWarningLimit: 500,
+    // Enable compressed size reporting
+    reportCompressedSize: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'supabase-vendor': ['@supabase/supabase-js', '@supabase/auth-ui-react'],
+        // Better chunk naming for cache busting
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
+        // Enhanced manual chunking strategy
+        manualChunks: (id) => {
+          // React ecosystem
+          if (id.includes('node_modules/react') || 
+              id.includes('node_modules/react-dom') ||
+              id.includes('node_modules/react-router')) {
+            return 'react-vendor'
+          }
+          
+          // Supabase
+          if (id.includes('node_modules/@supabase')) {
+            return 'supabase-vendor'
+          }
+          
+          // Lucide icons (large library)
+          if (id.includes('node_modules/lucide-react')) {
+            return 'icons-vendor'
+          }
+          
+          // Charts (if using recharts)
+          if (id.includes('node_modules/recharts')) {
+            return 'charts-vendor'
+          }
+          
+          // Admin page - split into separate chunk (HUGE - 7,476 lines)
+          if (id.includes('admin/page.jsx')) {
+            return 'admin-page'
+          }
+          
+          // Large media components
+          if (id.includes('components/MediaGallery') || 
+              id.includes('components/CreatePostModal')) {
+            return 'media-components'
+          }
         },
       },
+    },
+    // Enable tree shaking
+    treeshake: {
+      moduleSideEffects: false,
     },
   },
   define: {
