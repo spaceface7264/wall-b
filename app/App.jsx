@@ -23,7 +23,7 @@ const GymPage = lazy(() => import('./gyms/[gymId]/page.jsx'))
 const GymRequestPage = lazy(() => import('./gyms/request/page.jsx'))
 const ProfilePage = lazy(() => import('./profile/page.jsx'))
 const PublicProfile = lazy(() => import('./profile/[userId]/page.jsx'))
-const AdminPage = lazy(() => import('./admin/page.jsx')) // HUGE - 7,476 lines - only loads when accessed!
+const AdminPage = lazy(() => import('./admin/page.jsx')) // HUGE - 7,475 lines - only loads when accessed!
 const OnboardingPage = lazy(() => import('./onboarding/page.jsx'))
 const HomePage = lazy(() => import('./home/page.jsx'))
 const SearchPage = lazy(() => import('./search/page.jsx'))

@@ -74,7 +74,7 @@ export default defineConfig({
             return 'charts-vendor'
           }
           
-          // Admin page - split into separate chunk (HUGE - 7,476 lines)
+          // Admin page - split into separate chunk (HUGE - 7,475 lines)
           if (id.includes('admin/page.jsx')) {
             return 'admin-page'
           }
