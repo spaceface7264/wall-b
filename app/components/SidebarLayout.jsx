@@ -493,7 +493,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     return (
       <div className="mobile-app mobile-safe-area flex items-center justify-center animate-fade-in" style={{ backgroundColor: '#252526' }}>
         <div className="text-center animate-bounce-in">
-          <div className="w-8 h-8 border-4 border-[#00d4ff] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-8 h-8 border-4 border-[#3B83F6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="minimal-text">Loading Send Train...</p>
         </div>
       </div>
@@ -781,7 +781,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                             : ''
                         } ${
                           community.hasNewPosts && currentCommunityId !== community.id
-                            ? 'ring-1 ring-[#00d4ff]/50'
+                            ? 'ring-1 ring-[#3B83F6]/50'
                             : ''
                         }`}
                         style={

@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
 import StarfieldBackground from './components/StarfieldBackground';
 
 export default function LoginPage() {
@@ -9,12 +9,92 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Handle email confirmation callback
+  useEffect(() => {
+    const handleEmailConfirmation = async () => {
+      // Check for hash fragments (Supabase uses #access_token=...)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const type = hashParams.get('type');
+      
+      // Also check query params (some configurations use ?access_token=...)
+      const queryToken = searchParams.get('access_token');
+      const queryType = searchParams.get('type');
+
+      if ((accessToken || queryToken) && (type === 'signup' || queryType === 'signup')) {
+        try {
+          setIsLoading(true);
+          setError('');
+          
+          // Supabase should automatically handle the session from the URL
+          // But we'll verify it worked
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError) {
+            console.error('Session error:', sessionError);
+            setError('Email confirmation failed. Please try signing in again.');
+            setIsLoading(false);
+            return;
+          }
+
+          if (session?.user) {
+            setSuccessMessage('Email confirmed successfully! Redirecting...');
+            
+            // Clear URL hash/params
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Check profile and redirect accordingly
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle();
+
+            if (profileError && profileError.code !== 'PGRST116') {
+              console.warn('Profile query error:', profileError);
+            }
+
+            // Check if user is banned
+            if (profile?.is_banned) {
+              await supabase.auth.signOut();
+              setError('Your account has been banned. Please contact support.');
+              setIsLoading(false);
+              return;
+            }
+
+            // Redirect based on profile completeness
+            setTimeout(() => {
+              if (!profile || !profile.nickname || !profile.handle) {
+                navigate('/onboarding');
+              } else if (!profile.user_intent || profile.user_intent.length === 0) {
+                navigate('/onboarding');
+              } else {
+                navigate('/home');
+              }
+            }, 1500);
+          } else {
+            setError('Email confirmation failed. Please try signing in with your credentials.');
+            setIsLoading(false);
+          }
+        } catch (err) {
+          console.error('Email confirmation error:', err);
+          setError('Email confirmation failed. Please try signing in again.');
+          setIsLoading(false);
+        }
+      }
+    };
+
+    handleEmailConfirmation();
+  }, [navigate, searchParams]);
 
   const handlePasswordReset = async () => {
     setResetMessage('');
@@ -230,6 +310,13 @@ export default function LoginPage() {
             {error && (
               <div className="p-3 bg-red-900/20 border border-red-700 rounded-lg">
                 <p className="text-red-300 text-sm">{error}</p>
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="p-3 bg-green-900/20 border border-green-700 rounded-lg flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                <p className="text-green-300 text-sm">{successMessage}</p>
               </div>
             )}
 

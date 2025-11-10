@@ -134,31 +134,67 @@ export default function InviteMembersModal({ isOpen, onClose, communityId, commu
 
       const inviterName = inviterProfile?.nickname || inviterProfile?.full_name || 'Someone';
 
-      // Create invitation notification
-      const { error: notifError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: user.id,
-          type: 'community_invite',
-          title: 'Community Invitation',
-          message: `${inviterName} invited you to join "${communityName}"`,
-          data: {
-            community_id: communityId,
-            community_name: communityName,
-            inviter_id: currentUserId,
-            inviter_name: inviterName
-          }
-        });
+      // Use the create_notification function (SECURITY DEFINER) to bypass RLS issues
+      const { data: notificationData, error: notifError } = await supabase.rpc('create_notification', {
+        target_user_id: user.id,
+        notification_type: 'community_invite',
+        notification_title: 'Community Invitation',
+        notification_message: `${inviterName} invited you to join "${communityName}"`,
+        notification_data: {
+          community_id: communityId,
+          community_name: communityName,
+          inviter_id: currentUserId,
+          inviter_name: inviterName
+        },
+        expires_in_hours: null
+      });
 
       if (notifError) {
         console.error('Error creating invitation:', notifError);
-        showToast('error', 'Error', 'Failed to send invitation');
-        setInvitingUsers(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(user.id);
-          return newSet;
-        });
-        return;
+        
+        // Fallback: Try direct insert if function doesn't exist
+        if (notifError.code === '42883' || notifError.message?.includes('function') || notifError.message?.includes('does not exist')) {
+          console.log('create_notification function not found, trying direct insert...');
+          const { error: directError } = await supabase
+            .from('notifications')
+            .insert({
+              user_id: user.id,
+              type: 'community_invite',
+              title: 'Community Invitation',
+              message: `${inviterName} invited you to join "${communityName}"`,
+              data: {
+                community_id: communityId,
+                community_name: communityName,
+                inviter_id: currentUserId,
+                inviter_name: inviterName
+              }
+            });
+          
+          if (directError) {
+            console.error('Direct insert also failed:', directError);
+            showToast('error', 'Error', `Failed to send invitation: ${directError.message || 'Unknown error'}`);
+            setInvitingUsers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(user.id);
+              return newSet;
+            });
+            return;
+          }
+        } else {
+          // Check if it's a constraint violation (notification type not allowed)
+          if (notifError.code === '23514' || notifError.message?.includes('check constraint') || notifError.message?.includes('type')) {
+            console.error('Database constraint error: community_invite type may not be allowed. Run the SQL script: sql-scripts/add-community-invite-notification-type.sql');
+            showToast('error', 'Database Configuration Error', 'The notification type is not configured. Please contact an administrator.');
+          } else {
+            showToast('error', 'Error', `Failed to send invitation: ${notifError.message || 'Unknown error'}`);
+          }
+          setInvitingUsers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(user.id);
+            return newSet;
+          });
+          return;
+        }
       }
 
       // Mark as invited

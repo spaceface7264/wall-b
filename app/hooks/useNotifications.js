@@ -41,6 +41,9 @@ export function useNotifications(userId) {
         return;
       }
 
+      console.log('Raw notifications fetched:', data?.length || 0, 'notifications');
+      console.log('Notification types:', data?.map(n => n.type) || []);
+
       // Enrich notifications with profile names and event details
       // Also filter out expired notifications client-side as a safety measure
       const now = new Date();
@@ -91,6 +94,9 @@ export function useNotifications(userId) {
         })
       );
 
+      console.log('Enriched notifications:', enrichedNotifications.length);
+      console.log('Community invite notifications:', enrichedNotifications.filter(n => n.type === 'community_invite').length);
+      
       setNotifications(enrichedNotifications);
     } catch (error) {
       console.error('Error loading notifications:', error);

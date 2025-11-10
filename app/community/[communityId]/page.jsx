@@ -130,6 +130,29 @@ export default function CommunityPage() {
     }
   }, [communityId, user?.id]);
 
+  // Helper functions for localStorage invite state
+  const getInviteStateKey = (communityId) => `community_invite_${communityId}`;
+  const setInviteState = (communityId, value) => {
+    if (value) {
+      localStorage.setItem(getInviteStateKey(communityId), 'true');
+    } else {
+      localStorage.removeItem(getInviteStateKey(communityId));
+    }
+  };
+  const getInviteState = (communityId) => {
+    return localStorage.getItem(getInviteStateKey(communityId)) === 'true';
+  };
+
+  // Restore invite banner state from localStorage on mount
+  useEffect(() => {
+    if (communityId && user && !isMember && !loading && community) {
+      const hasInviteState = getInviteState(communityId);
+      if (hasInviteState) {
+        setShowInviteBanner(true);
+      }
+    }
+  }, [communityId, user, isMember, loading, community]);
+
   // Handle invite link parameter
   useEffect(() => {
     const inviteParam = searchParams.get('invite');
@@ -138,26 +161,32 @@ export default function CommunityPage() {
         // Show login overlay for non-logged-in users
         setShowLoginOverlay(true);
       } else if (user && !isMember && !loading && community) {
-        // User logged in - show invite banner
+        // User logged in - show invite banner and persist to localStorage
         setShowLoginOverlay(false);
         setShowInviteBanner(true);
-        showToast('info', 'You\'re Invited!', `Join ${community.name} to connect with other climbers`);
+        setInviteState(communityId, true);
         // Remove the invite parameter from URL after a delay
         setTimeout(() => {
           navigate(`/community/${communityId}`, { replace: true });
         }, 100);
       } else if (user && isMember) {
-        // User is already a member - close overlay
+        // User is already a member - close overlay and clear invite state
         setShowLoginOverlay(false);
         setShowInviteBanner(false);
+        setInviteState(communityId, false);
         // Remove the invite parameter from URL
         navigate(`/community/${communityId}`, { replace: true });
       }
     } else {
-      // Hide banner if invite parameter is removed
-      setShowInviteBanner(false);
+      // Check localStorage if URL param is not present
+      const hasInviteState = getInviteState(communityId);
+      if (hasInviteState && user && !isMember && !loading && community) {
+        setShowInviteBanner(true);
+      } else if (!hasInviteState) {
+        setShowInviteBanner(false);
+      }
     }
-  }, [searchParams, user, isMember, loading, community, showToast, navigate, communityId]);
+  }, [searchParams, user, isMember, loading, community, navigate, communityId]);
 
   // Handle new community parameter - show invite/share modal
   useEffect(() => {
@@ -513,11 +542,68 @@ export default function CommunityPage() {
       return;
     }
 
+    // Check if this is from an invite (banner is showing)
+    const isFromInvite = showInviteBanner;
+
     // Check if community is private
     if (community?.is_private) {
-      // Create join request instead of joining directly
       setJoining(true);
       try {
+        // If from invite, automatically approve and join using RPC function
+        if (isFromInvite) {
+          const { data: result, error: rpcError } = await supabase
+            .rpc('accept_community_invite', {
+              p_community_id: communityId,
+              p_user_id: user.id
+            });
+
+          if (rpcError) {
+            console.error('Error accepting invite:', rpcError);
+            // Fallback to direct insert if RPC doesn't exist
+            if (rpcError.message?.includes('function') || rpcError.message?.includes('does not exist')) {
+              console.log('RPC function not found, falling back to direct insert');
+              // Try direct insert to community_members (will fail if RLS blocks it)
+              const { error: joinError } = await supabase
+                .from('community_members')
+                .insert({
+                  community_id: communityId,
+                  user_id: user.id,
+                  role: 'member'
+                });
+
+              if (joinError && joinError.code !== '23505') {
+                showToast('error', 'Error', 'Failed to accept invite. Please contact support.');
+                return;
+              }
+            } else {
+              showToast('error', 'Error', `Failed to accept invite: ${rpcError.message}`);
+              return;
+            }
+          } else if (result && !result.success) {
+            console.error('RPC returned error:', result.error);
+            showToast('error', 'Error', result.error || 'Failed to accept invite');
+            return;
+          }
+
+          setIsMember(true);
+          setCommunity(prev => ({ ...prev, member_count: (prev.member_count || 0) + 1 }));
+          setJoinRequestStatus('approved');
+          
+          // Hide invite banner and clear localStorage invite state
+          setShowInviteBanner(false);
+          setInviteState(communityId, false);
+          
+          // Dispatch event to update drawer immediately
+          window.dispatchEvent(new CustomEvent('communityJoined', { 
+            detail: { communityId, userId: user.id } 
+          }));
+          
+          // Show welcome modal
+          setShowWelcomeModal(true);
+          return;
+        }
+
+        // Regular join request flow (not from invite)
         const { error } = await supabase
           .from('community_join_requests')
           .insert({
@@ -545,6 +631,9 @@ export default function CommunityPage() {
         }
 
         setJoinRequestStatus('pending');
+        // Hide invite banner and clear localStorage invite state when request is sent
+        setShowInviteBanner(false);
+        setInviteState(communityId, false);
         showToast('success', 'Request Sent', 'Your join request has been sent to the community admins');
       } catch (error) {
         console.error('Error creating join request:', error);
@@ -577,8 +666,9 @@ export default function CommunityPage() {
       setIsMember(true);
       setCommunity(prev => ({ ...prev, member_count: (prev.member_count || 0) + 1 }));
       
-      // Hide invite banner if it was showing
+      // Hide invite banner if it was showing and clear localStorage invite state
       setShowInviteBanner(false);
+      setInviteState(communityId, false);
       
       // Dispatch event to update drawer immediately
       window.dispatchEvent(new CustomEvent('communityJoined', { 
@@ -1042,7 +1132,7 @@ export default function CommunityPage() {
                   placeholder="Search events..."
                   value={eventSearchTerm}
                   onChange={(e) => setEventSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-[#00d4ff]"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-[#3B83F6]"
                 />
                 <div className="absolute left-3 top-1/2 -translate-y-1/2">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
@@ -1098,7 +1188,7 @@ export default function CommunityPage() {
             {/* Description */}
             <div className="animate-slide-up">
               <h4 className="minimal-heading mb-3 minimal-flex">
-                <Info className="minimal-icon mr-2 text-[#00d4ff]" />
+                <Info className="minimal-icon mr-2 text-[#3B83F6]" />
                 About This Community
               </h4>
               <p className="mobile-text-sm text-gray-300 leading-relaxed mb-4">
@@ -1125,7 +1215,7 @@ export default function CommunityPage() {
               return gym ? (
                 <div className="animate-slide-up">
                   <h4 className="minimal-heading mb-3 minimal-flex">
-                    <MapPin className="minimal-icon mr-2 text-[#00d4ff]" />
+                    <MapPin className="minimal-icon mr-2 text-[#3B83F6]" />
                     Location
                   </h4>
                   <div className="space-y-2">
@@ -1145,7 +1235,7 @@ export default function CommunityPage() {
             {/* Moderators List */}
             <div className="animate-slide-up">
               <h4 className="minimal-heading mb-4 minimal-flex">
-                <Shield className="minimal-icon mr-2 text-[#00d4ff]" />
+                <Shield className="minimal-icon mr-2 text-[#3B83F6]" />
                 Moderators
               </h4>
               {moderators.length === 0 ? (
@@ -1167,7 +1257,7 @@ export default function CommunityPage() {
                             className="w-10 h-10 rounded-full object-cover"
                           />
                         ) : (
-                          <div className="w-10 h-10 bg-[#00d4ff] rounded-full flex items-center justify-center text-white font-medium text-sm">
+                          <div className="w-10 h-10 bg-[#3B83F6] rounded-full flex items-center justify-center text-white font-medium text-sm">
                             {displayName.charAt(0).toUpperCase()}
                           </div>
                         )}
@@ -1242,7 +1332,7 @@ export default function CommunityPage() {
         <div className={`mobile-section ${showLoginOverlay ? 'blur-sm' : ''}`} style={{ filter: showLoginOverlay ? 'blur(8px)' : 'none', pointerEvents: showLoginOverlay ? 'none' : 'auto' }}>
           {/* Invite Banner */}
           {showInviteBanner && user && !isMember && (
-            <div className="mb-4 p-4 rounded-lg border-2 animate-fade-in" style={{ backgroundColor: 'rgba(0, 212, 255, 0.1)', borderColor: 'rgba(0, 212, 255, 0.3)' }}>
+            <div className="mb-4 p-4 rounded-lg border-2 animate-fade-in" style={{ backgroundColor: 'rgba(59, 131, 246, 0.1)', borderColor: 'rgba(59, 131, 246, 0.3)' }}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
                   <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
@@ -1260,10 +1350,21 @@ export default function CommunityPage() {
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-blue-hover)'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-blue)'}
                     >
-                      {joining ? 'Joining...' : joinRequestStatus === 'pending' ? 'Request Sent' : community?.is_private ? 'Request to Join' : 'Accept & Join'}
+                      {joining 
+                        ? (showInviteBanner ? 'Accepting invite...' : 'Joining...') 
+                        : joinRequestStatus === 'pending' 
+                        ? 'Request Sent' 
+                        : showInviteBanner && community?.is_private
+                        ? 'Accept & Join'
+                        : community?.is_private 
+                        ? 'Request to Join' 
+                        : 'Accept & Join'}
                     </button>
                     <button
-                      onClick={() => setShowInviteBanner(false)}
+                      onClick={() => {
+                        setShowInviteBanner(false);
+                        setInviteState(communityId, false);
+                      }}
                       className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                       style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--hover-bg)'}
@@ -1274,7 +1375,10 @@ export default function CommunityPage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowInviteBanner(false)}
+                  onClick={() => {
+                    setShowInviteBanner(false);
+                    setInviteState(communityId, false);
+                  }}
                   className="flex-shrink-0 p-1 rounded hover:bg-gray-700/50 transition-colors"
                   style={{ color: 'var(--text-muted)' }}
                 >
@@ -1290,21 +1394,23 @@ export default function CommunityPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-2">
                   <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{community?.name}</h1>
-                  {/* Privacy Indicator */}
-                  {community?.is_private !== undefined && (
-                    community.is_private ? (
-                      <div className="flex items-center gap-1 px-2 py-1 rounded-md" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-                        <Lock className="w-4 h-4" style={{ color: '#ef4444' }} />
-                        <span className="text-sm font-medium" style={{ color: '#ef4444' }}>Private</span>
+                </div>
+                {/* Privacy Indicator */}
+                {community?.is_private !== undefined && (
+                  <div className="mb-2 mt-1">
+                    {community.is_private ? (
+                      <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md w-fit" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                        <Lock className="w-3 h-3" style={{ color: '#ef4444' }} />
+                        <span className="text-xs font-medium" style={{ color: '#ef4444' }}>Private</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1 px-2 py-1 rounded-md" style={{ backgroundColor: 'rgba(59, 131, 246, 0.1)', border: '1px solid rgba(59, 131, 246, 0.3)' }}>
-                        <Globe className="w-4 h-4" style={{ color: '#3b82f6' }} />
-                        <span className="text-sm font-medium" style={{ color: '#3b82f6' }}>Public</span>
+                      <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md w-fit" style={{ backgroundColor: 'rgba(59, 131, 246, 0.1)', border: '1px solid rgba(59, 131, 246, 0.3)' }}>
+                        <Globe className="w-3 h-3" style={{ color: '#3b82f6' }} />
+                        <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>Public</span>
                       </div>
-                    )
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
                 <div className="flex flex-col gap-1 text-sm text-gray-400 mb-3">
                   {(() => {
                     // Extract gym data (handle both array and object formats from Supabase)
@@ -1373,7 +1479,7 @@ export default function CommunityPage() {
                   onClick={() => {
                     showLoginModal({ subtitle: 'Sign in to join communities' });
                   }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-sm rounded-full border-2 border-[#FF5A5F] text-[#FF5A5F] hover:bg-[#FF5A5F] hover:text-white transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-sm rounded-full border-2 border-[#20763B] text-[#20763B] hover:bg-[#20763B] hover:text-white transition-all duration-200 whitespace-nowrap flex-shrink-0"
                 >
                   <Lock className="w-3.5 h-3.5" />
                   {community?.is_private ? 'Request to Join' : 'Join'}
@@ -1382,14 +1488,14 @@ export default function CommunityPage() {
                 <button
                   onClick={handleJoinCommunity}
                   disabled={joining || joinRequestStatus === 'pending'}
-                  className="px-2.5 py-1 text-sm rounded-full border-2 border-[#FF5A5F] text-[#FF5A5F] hover:bg-[#FF5A5F] hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
+                  className="px-2.5 py-1 text-sm rounded-full border-2 border-[#20763B] text-[#20763B] hover:bg-[#20763B] hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
                 >
                   {joining ? 'Joining...' : joinRequestStatus === 'pending' ? 'Request Pending' : community?.is_private ? 'Request to Join' : 'Join'}
                 </button>
               ) : (
                 <button
                   onClick={handleLeaveCommunity}
-                  className="px-2.5 py-1 text-sm rounded-full bg-[#FF5A5F] text-white hover:bg-[#e04a4e] transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                  className="px-2.5 py-1 text-sm rounded-full bg-[#20763B] text-white hover:bg-[#1a5d2f] transition-all duration-200 whitespace-nowrap flex-shrink-0"
                 >
                   Joined
                 </button>
@@ -1406,7 +1512,7 @@ export default function CommunityPage() {
                       className={`
                         flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-all duration-200
                         ${activeTab === tab.id
-                          ? 'bg-[#00d4ff] text-white'
+                          ? 'bg-[#3B83F6] text-white'
                           : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'
                         }
                       `}
@@ -1564,7 +1670,7 @@ export default function CommunityPage() {
             setShowNewPostModal(false);
           }}
           communityName={community?.name || 'Community'}
-          userName={user?.user_metadata?.full_name || 'User'}
+          userName={userProfile?.nickname || userProfile?.full_name || user?.user_metadata?.full_name || 'User'}
         />
       )}
 
@@ -1583,7 +1689,7 @@ export default function CommunityPage() {
             setEditingPost(null);
           }}
           communityName={community?.name || 'Community'}
-          userName={user?.user_metadata?.full_name || 'User'}
+          userName={userProfile?.nickname || userProfile?.full_name || user?.user_metadata?.full_name || 'User'}
         />
       )}
 
@@ -1623,7 +1729,7 @@ export default function CommunityPage() {
             <div className="p-6">
               {/* Welcome Header */}
               <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-[#00d4ff] rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-[#3B83F6] rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="w-8 h-8 text-white" />
                 </div>
                 <h2 className="text-1xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
@@ -1645,7 +1751,7 @@ export default function CommunityPage() {
                     setShowWelcomeModal(false);
                     setShowNewPostModal(true);
                   }}
-                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#00d4ff] hover:bg-[#00b8e6] text-white rounded-xl transition-colors font-medium"
+                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#3B83F6] hover:bg-[#2563EB] text-white rounded-xl transition-colors font-medium"
                 >
                   <MessageSquare className="w-5 h-5" />
                   Create post
@@ -1691,7 +1797,7 @@ export default function CommunityPage() {
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#00d4ff] rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-[#3B83F6] rounded-lg flex items-center justify-center">
                     <Shield className="w-5 h-5 text-white" />
                   </div>
                   <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -1727,7 +1833,7 @@ export default function CommunityPage() {
               <div className="mt-6 pt-4 border-t border-slate-700">
                 <button
                   onClick={() => setShowRulesModal(false)}
-                  className="w-full px-4 py-2 bg-[#00d4ff] hover:bg-[#00b8e6] text-white rounded-lg transition-colors font-medium"
+                  className="w-full px-4 py-2 bg-[#3B83F6] hover:bg-[#2563EB] text-white rounded-lg transition-colors font-medium"
                 >
                   Got it
                 </button>

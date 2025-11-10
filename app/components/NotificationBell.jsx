@@ -61,12 +61,12 @@ export default function NotificationBell({ userId }) {
       comment_like: 'text-yellow-400',
       event_invite: 'text-green-400',
       event_reminder: 'text-orange-400',
-      mention: 'text-[#00d4ff]',
+      mention: 'text-[#3B83F6]',
       direct_message: 'text-pink-400',
-      community_join: 'text-cyan-400',
+      community_join: 'text-blue-400',
       community_invite: 'text-purple-400',
       event_rsvp: 'text-emerald-400',
-      post_comment: 'text-[#00d4ff]',
+      post_comment: 'text-[#3B83F6]',
       system: 'text-gray-400'
     };
     return colors[type] || 'text-gray-400';
@@ -306,7 +306,7 @@ export default function NotificationBell({ userId }) {
                               {(['event_rsvp', 'event_invite', 'event_reminder'].includes(notification.type)) && notification.event ? (
                                 <>
                                   <div className="mt-0.5">
-                                    <span className="text-[#00d4ff]" style={{ fontSize: '11px' }}>
+                                    <span className="text-[#3B83F6]" style={{ fontSize: '11px' }}>
                                       {getActorName(notification)}
                                     </span>
                                     <span className="text-gray-400 ml-1" style={{ fontSize: '11px' }}>
@@ -327,7 +327,7 @@ export default function NotificationBell({ userId }) {
                               ) : notification.type === 'community_invite' ? (
                                 <>
                                   <div className="mt-0.5">
-                                    <span className="text-[#00d4ff]" style={{ fontSize: '11px' }}>
+                                    <span className="text-[#3B83F6]" style={{ fontSize: '11px' }}>
                                       {getActorName(notification)}
                                     </span>
                                     <span className="text-gray-400 ml-1" style={{ fontSize: '11px' }}>
@@ -341,7 +341,7 @@ export default function NotificationBell({ userId }) {
                                     <button
                                       onClick={(e) => handleAcceptInvite(notification, e)}
                                       disabled={processingInvite === notification.id}
-                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-[#00d4ff] hover:bg-[#00b8e6] text-white rounded text-xs transition-colors disabled:opacity-50"
+                                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-[#3B83F6] hover:bg-[#2563EB] text-white rounded text-xs transition-colors disabled:opacity-50"
                                     >
                                       <Check className="w-3 h-3" />
                                       Accept
@@ -364,7 +364,7 @@ export default function NotificationBell({ userId }) {
                               
                               {/* Show actor name for other notification types */}
                               {!['event_rsvp', 'event_invite', 'event_reminder', 'community_invite'].includes(notification.type) && notification.actor_profile && (
-                                <p className="text-[#00d4ff] mt-0.5" style={{ fontSize: '10px' }}>
+                                <p className="text-[#3B83F6] mt-0.5" style={{ fontSize: '10px' }}>
                                   {getActorName(notification)}
                                 </p>
                               )}

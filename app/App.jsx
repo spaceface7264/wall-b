@@ -39,15 +39,15 @@ const PageLoader = () => (
 function App() {
   return (
     <ErrorBoundary>
-      <ToastProvider>
-        <Router>
-          <LoginModalProvider>
+    <ToastProvider>
+      <Router>
+        <LoginModalProvider>
             <Suspense fallback={<PageLoader />}>
-              <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/terms" element={<TermsPage />} />
+          <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/terms" element={<TermsPage />} />
               <Route path="/onboarding" element={
                 <Suspense fallback={<PageLoader />}>
                   <OnboardingPage />
@@ -67,8 +67,8 @@ function App() {
                   </Suspense>
                 </SidebarLayout>
               } />
-              {/* Redirect deprecated /community to /communities for consistency */}
-              <Route path="/community" element={<Navigate to="/communities" replace />} />
+          {/* Redirect deprecated /community to /communities for consistency */}
+          <Route path="/community" element={<Navigate to="/communities" replace />} />
               <Route path="/communities" element={
                 <SidebarLayout currentPage="communities" pageTitle="Communities">
                   <Suspense fallback={<PageLoader />}>
@@ -76,13 +76,13 @@ function App() {
                   </Suspense>
                 </SidebarLayout>
               } />
-              {/* IMPORTANT: /community/new must come BEFORE /community/:communityId - React Router matches routes in order */}
+          {/* IMPORTANT: /community/new must come BEFORE /community/:communityId - React Router matches routes in order */}
               <Route path="/community/new" element={
                 <Suspense fallback={<PageLoader />}>
                   <CreateCommunityPage />
                 </Suspense>
               } />
-              {/* CommunityPage, PostDetailPage, and GymPage wrap themselves so they can set dynamic titles */}
+          {/* CommunityPage, PostDetailPage, and GymPage wrap themselves so they can set dynamic titles */}
               <Route path="/community/:communityId" element={
                 <Suspense fallback={<PageLoader />}>
                   <CommunityPage />
@@ -122,7 +122,7 @@ function App() {
                   <GymPage />
                 </Suspense>
               } />
-              {/* ProfilePage wraps itself so it can set dynamic titles */}
+          {/* ProfilePage wraps itself so it can set dynamic titles */}
               <Route path="/profile" element={
                 <Suspense fallback={<PageLoader />}>
                   <ProfilePage />
@@ -139,7 +139,7 @@ function App() {
                   <AdminPage />
                 </Suspense>
               } />
-            </Routes>
+          </Routes>
           </Suspense>
         </LoginModalProvider>
       </Router>
