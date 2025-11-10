@@ -4,6 +4,7 @@ import SidebarLayout from './components/SidebarLayout.jsx'
 import { ToastProvider } from './providers/ToastProvider.jsx'
 import { LoginModalProvider } from './providers/LoginModalProvider.jsx'
 import LoadingSpinner from './components/LoadingSpinner.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 // Public routes (load immediately - small)
 import LoginPage from './LoginPage.jsx'
@@ -37,11 +38,12 @@ const PageLoader = () => (
 
 function App() {
   return (
-    <ToastProvider>
-      <Router>
-        <LoginModalProvider>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
+    <ErrorBoundary>
+      <ToastProvider>
+        <Router>
+          <LoginModalProvider>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -142,6 +144,7 @@ function App() {
         </LoginModalProvider>
       </Router>
     </ToastProvider>
+    </ErrorBoundary>
   );
 }
 

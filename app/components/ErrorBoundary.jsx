@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import logger from '../../lib/logger';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -19,14 +20,17 @@ class ErrorBoundary extends React.Component {
       errorInfo: errorInfo
     });
     
-    // Log error to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('ErrorBoundary caught an error:', error, errorInfo);
-    }
+    // Log error using logger utility
+    logger.error('ErrorBoundary caught an error', {
+      error: error.toString(),
+      stack: error.stack,
+      componentStack: errorInfo.componentStack
+    });
   }
 
   handleRetry = () => {
     this.setState({ hasError: false, error: null, errorInfo: null });
+    logger.info('ErrorBoundary: User attempted retry');
   };
 
   render() {
@@ -56,7 +60,7 @@ class ErrorBoundary extends React.Component {
                 Refresh Page
               </button>
             </div>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <details className="mt-6 text-left">
                 <summary className="text-sm text-gray-400 cursor-pointer">
                   Error Details (Development)
