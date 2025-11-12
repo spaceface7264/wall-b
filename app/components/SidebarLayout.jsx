@@ -32,6 +32,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     return saved ? parseInt(saved, 10) : 200;
   });
   const [isResizing, setIsResizing] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { showLoginModal } = useLoginModal();
@@ -541,7 +542,21 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
     return (
       <div className="mobile-app mobile-safe-area flex items-center justify-center animate-fade-in" style={{ backgroundColor: '#252526' }}>
         <div className="text-center animate-bounce-in">
-          <div className="w-8 h-8 border-4 border-[#3B83F6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          {!logoError ? (
+            <img 
+              src="/logo.png" 
+              alt="Send Train" 
+              className="mx-auto mb-4 animate-pulse"
+              style={{ 
+                height: '64px', 
+                width: 'auto',
+                maxWidth: '200px'
+              }}
+              onError={() => setLogoError(true)}
+            />
+          ) : (
+            <div className="w-8 h-8 border-4 border-[#3B83F6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          )}
           <p className="minimal-text">Loading Send Train...</p>
         </div>
       </div>
@@ -654,22 +669,45 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
         {/* Collapse Toggle Button - Desktop Only */}
         <button
           onClick={toggleSidebar}
-          className="desktop-sidebar-toggle desktop-only"
+          onMouseDown={createRipple}
+          className="desktop-sidebar-toggle desktop-only ripple-effect"
           aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          <ChevronLeft className={`w-5 h-5 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} />
+          <ChevronLeft className={`w-5 h-5 transition-transform duration-300 ease-in-out ${sidebarCollapsed ? 'rotate-180' : ''}`} aria-hidden="true" />
         </button>
 
         {/* Logo Section - Desktop Only */}
         <div className="sidebar-logo-section desktop-only">
           {!sidebarCollapsed ? (
             <div className="sidebar-logo-full">
-              <h1 className="sidebar-logo-text">Send Train</h1>
+              <img 
+                src="/logo.png" 
+                alt="Send Train" 
+                className="sidebar-logo-image"
+                onError={(e) => {
+                  // Fallback to text if image fails to load
+                  e.target.style.display = 'none';
+                  const fallback = e.target.nextElementSibling;
+                  if (fallback) fallback.style.display = 'block';
+                }}
+              />
+              <h1 className="sidebar-logo-text" style={{ display: 'none' }}>Send Train</h1>
             </div>
           ) : (
             <div className="sidebar-logo-icon">
-              <span className="sidebar-logo-letter">S</span>
+              <img 
+                src="/logo.png" 
+                alt="Send Train" 
+                className="sidebar-logo-icon-image"
+                onError={(e) => {
+                  // Fallback to letter if image fails to load
+                  e.target.style.display = 'none';
+                  const fallback = e.target.nextElementSibling;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+              <span className="sidebar-logo-letter" style={{ display: 'none' }}>S</span>
             </div>
           )}
         </div>

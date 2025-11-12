@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Move } from 'lucide-react';
 
 export default function FocalPointSelector({
   imageUrl,
@@ -11,20 +11,22 @@ export default function FocalPointSelector({
 }) {
   const [localFocalX, setLocalFocalX] = useState(focalX);
   const [localFocalY, setLocalFocalY] = useState(focalY);
+  const [isDragging, setIsDragging] = useState(false);
   const imageRef = useRef(null);
   const containerRef = useRef(null);
+  const indicatorRef = useRef(null);
 
   useEffect(() => {
     setLocalFocalX(focalX);
     setLocalFocalY(focalY);
   }, [focalX, focalY]);
 
-  const handleImageClick = (e) => {
-    if (!imageRef.current || !containerRef.current) return;
+  const updateFocalPoint = (clientX, clientY) => {
+    if (!imageRef.current) return;
 
     const rect = imageRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
+    const x = (clientX - rect.left) / rect.width;
+    const y = (clientY - rect.top) / rect.height;
 
     // Clamp values between 0 and 1
     const clampedX = Math.max(0, Math.min(1, x));
@@ -37,6 +39,63 @@ export default function FocalPointSelector({
       onFocalPointChange(clampedX, clampedY);
     }
   };
+
+  const handleImageClick = (e) => {
+    if (isDragging) return; // Don't update on click if we just finished dragging
+    updateFocalPoint(e.clientX, e.clientY);
+  };
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleTouchStart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+    // Update position immediately on touch start
+    if (e.touches && e.touches[0]) {
+      updateFocalPoint(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDragging) return;
+      updateFocalPoint(e.clientX, e.clientY);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    const handleTouchMove = (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      if (e.touches && e.touches[0]) {
+        updateFocalPoint(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
+      };
+    }
+  }, [isDragging]);
 
   const handleSave = () => {
     if (onFocalPointChange) {
@@ -54,9 +113,9 @@ export default function FocalPointSelector({
       <div className="bg-gray-900 border border-gray-700 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" style={{ borderRadius: 4 }}>
         <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
           <div>
-            <h3 className="text-lg font-semibold text-white">Set Image Focal Point</h3>
+            <h3 className="text-lg font-semibold text-white">Adjust Image Position</h3>
             <p className="text-sm text-gray-400 mt-1">
-              Click on the image to set the focal point. This point will be prioritized when the image is cropped or resized.
+              Click or drag the focal point indicator to adjust the image position. This point will be prioritized when the image is cropped or resized.
             </p>
           </div>
           <button
@@ -88,26 +147,32 @@ export default function FocalPointSelector({
                 }}
               />
               
-              {/* Focal Point Indicator */}
+              {/* Focal Point Indicator - Draggable */}
               <div
-                className="absolute pointer-events-none"
+                ref={indicatorRef}
+                className="absolute cursor-move select-none touch-none"
                 style={{
                   left: `${localFocalX * 100}%`,
                   top: `${localFocalY * 100}%`,
                   transform: 'translate(-50%, -50%)',
                   width: '40px',
                   height: '40px',
-                  border: '3px solid var(--accent-blue)',
+                  border: `3px solid ${isDragging ? 'var(--accent-blue-hover)' : 'var(--accent-blue)'}`,
                   borderRadius: '50%',
-                  backgroundColor: 'rgba(8, 126, 139, 0.3)',
-                  boxShadow: '0 0 0 2px rgba(0, 0, 0, 0.5)'
+                  backgroundColor: isDragging ? 'rgba(8, 126, 139, 0.5)' : 'rgba(8, 126, 139, 0.3)',
+                  boxShadow: '0 0 0 2px rgba(0, 0, 0, 0.5)',
+                  transition: isDragging ? 'none' : 'all 0.2s ease',
+                  zIndex: 10
                 }}
+                onMouseDown={handleMouseDown}
+                onTouchStart={handleTouchStart}
+                title="Drag to adjust position"
               >
                 <div
-                  className="absolute inset-0"
+                  className="absolute inset-0 flex items-center justify-center"
                   style={{
                     borderRadius: '50%',
-                    backgroundColor: 'var(--accent-blue)',
+                    backgroundColor: isDragging ? 'var(--accent-blue-hover)' : 'var(--accent-blue)',
                     width: '12px',
                     height: '12px',
                     top: '50%',
@@ -115,6 +180,12 @@ export default function FocalPointSelector({
                     transform: 'translate(-50%, -50%)'
                   }}
                 />
+                {isDragging && (
+                  <Move 
+                    className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 text-accent-blue w-4 h-4"
+                    style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8))' }}
+                  />
+                )}
               </div>
             </div>
 

@@ -1613,7 +1613,7 @@ export default function GymDetail() {
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-gray-900 border border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col" style={{ borderRadius: 4 }}>
             <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
-              <h3 className="text-lg font-semibold text-white">Edit Gym</h3>
+              <h3 className="text-lg font-semibold text-white">Edit Gym{editingGym?.name ? `: ${editingGym.name}` : ''}</h3>
               <button
                 onClick={() => {
                   setShowEditModal(false);
@@ -1630,7 +1630,7 @@ export default function GymDetail() {
                 }}
                 className="text-gray-400 hover:text-white"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
             

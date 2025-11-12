@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [isSendingReset, setIsSendingReset] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -223,27 +224,42 @@ export default function LoginPage() {
       <div className="w-full max-w-sm relative z-10">
         
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Send Train</h1>
-          <p className="mobile-text-sm font-bold mb-6 " style={{ color: 'var(--text-secondary)' }}>
+        <div className="text-center mb-10 animate-fade-in">
+          {!logoError ? (
+            <img 
+              src="/logo.png" 
+              alt="Send Train" 
+              className="mx-auto mb-5 transition-transform duration-300 hover:scale-105"
+              style={{ 
+                height: '72px', 
+                width: 'auto',
+                maxWidth: '220px',
+                filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))'
+              }}
+              onError={() => setLogoError(true)}
+            />
+          ) : (
+            <h1 className="text-3xl font-bold mb-3 tracking-tight" style={{ color: 'var(--text-primary)' }}>Send Train</h1>
+          )}
+          <p className="text-sm font-semibold mb-2 tracking-wide uppercase" style={{ color: 'var(--text-secondary)', letterSpacing: '1px' }}>
             Bouldering Community
           </p>
-          <p className="mobile-text-sm" style={{ color: 'var(--text-muted)' }}>
-            {isSignUp ? 'Welcome, new friend' : 'Welcome back, friend'}
+          <p className="text-sm font-medium mt-4" style={{ color: 'var(--text-muted)' }}>
+            {isSignUp ? 'Welcome, new friend 👋' : 'Welcome back, friend 👋'}
           </p>
         </div>
 
         {/* Auth Card */}
-        <div className="mobile-card" style={{ backgroundColor: 'rgba(30, 30, 30, 0.85)', backdropFilter: 'blur(10px)' }}>
+        <div className="mobile-card animate-slide-up" style={{ backgroundColor: 'rgba(30, 30, 30, 0.95)', backdropFilter: 'blur(20px)', border: '1px solid rgba(75, 85, 99, 0.3)' }}>
           {/* Tab Switcher */}
-          <div className="flex gap-2 p-1 bg-gray-800/40 rounded-lg mb-6">
+          <div className="flex gap-2 p-1 bg-gray-800/60 rounded-xl mb-6 border border-gray-700/30">
             <button
               type="button"
               onClick={() => { setIsSignUp(false); setError(''); }}
-              className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${
+              className={`flex-1 py-2.5 px-4 text-sm font-semibold rounded-lg transition-all duration-200 ${
                 !isSignUp 
-                  ? 'bg-blue-600 text-white' 
-                  : 'text-gray-400 hover:text-gray-300'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-105' 
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/30'
               }`}
             >
               Sign In
@@ -251,10 +267,10 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => { setIsSignUp(true); setError(''); }}
-              className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${
+              className={`flex-1 py-2.5 px-4 text-sm font-semibold rounded-lg transition-all duration-200 ${
                 isSignUp 
-                  ? 'bg-blue-600 text-white' 
-                  : 'text-gray-400 hover:text-gray-300'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-105' 
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/30'
               }`}
             >
               Sign Up
@@ -262,10 +278,10 @@ export default function LoginPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleAuth} className="space-y-4">
-            <div>
-              <label className="minimal-label flex items-center gap-2 mb-2">
-                <Mail className="w-4 h-4" />
+          <form onSubmit={handleAuth} className="space-y-5">
+            <div className="space-y-2">
+              <label className="minimal-label flex items-center gap-2 mb-2.5 text-sm font-medium">
+                <Mail className="w-4 h-4 opacity-70" />
                 Email
               </label>
               <input
@@ -273,14 +289,14 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
-                className="minimal-input w-full"
+                className="minimal-input w-full transition-all duration-200 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
                 required
               />
             </div>
 
-            <div>
-              <label className="minimal-label flex items-center gap-2 mb-2">
-                <Lock className="w-4 h-4" />
+            <div className="space-y-2">
+              <label className="minimal-label flex items-center gap-2 mb-2.5 text-sm font-medium">
+                <Lock className="w-4 h-4 opacity-70" />
                 Password
               </label>
               <div className="relative">
@@ -289,14 +305,15 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="minimal-input w-full pr-10"
+                  className="minimal-input w-full pr-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
                   required
                   minLength={6}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-all duration-200 hover:scale-110 p-1 rounded"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" />
@@ -307,26 +324,42 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* Accept Terms & Conditions for Sign Up */}
+            {isSignUp && (
+              <label className="flex items-start gap-3 mobile-text-sm text-gray-300 p-3 bg-gray-800/30 rounded-lg border border-gray-700/30 hover:border-gray-600/50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="accent-blue-600 mt-0.5 w-4 h-4 cursor-pointer"
+                />
+                <span className="flex-1">
+                  I agree to the{' '}
+                  <a href="/terms" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 font-medium underline underline-offset-2">Terms & Conditions</a>
+                </span>
+              </label>
+            )}
+
             {error && (
-              <div className="p-3 bg-red-900/20 border border-red-700 rounded-lg">
-                <p className="text-red-300 text-sm">{error}</p>
+              <div className="p-3.5 bg-red-900/30 border border-red-700/50 rounded-lg animate-shake">
+                <p className="text-red-300 text-sm font-medium">{error}</p>
               </div>
             )}
 
             {successMessage && (
-              <div className="p-3 bg-green-900/20 border border-green-700 rounded-lg flex items-center gap-2">
+              <div className="p-3.5 bg-green-900/30 border border-green-700/50 rounded-lg flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-                <p className="text-green-300 text-sm">{successMessage}</p>
+                <p className="text-green-300 text-sm font-medium">{successMessage}</p>
               </div>
             )}
 
             <button
               type="submit"
               disabled={isLoading}
-              className="mobile-btn-primary w-full justify-center"
+              className="mobile-btn-primary w-full justify-center py-3 font-semibold text-base shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isLoading ? (
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
               ) : (
                 isSignUp ? 'Create Account' : 'Sign In'
               )}
@@ -339,7 +372,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={handlePasswordReset}
                   disabled={isSendingReset}
-                  className="text-blue-400 hover:text-blue-300 mobile-text-sm"
+                  className="text-blue-400 hover:text-blue-300 mobile-text-sm font-medium transition-colors"
                 >
                   {isSendingReset ? 'Sending…' : 'Forgot password?'}
                 </button>
@@ -350,32 +383,18 @@ export default function LoginPage() {
                 )}
               </div>
             )}
-
-            {/* Accept Terms & Conditions for Sign Up */}
-            {isSignUp && (
-              <label className="flex items-center gap-2 mobile-text-sm text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={acceptedTerms}
-                  onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="accent-blue-600"
-                />
-                I agree to the
-                <a href="/terms" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300">Terms & Conditions</a>
-              </label>
-            )}
           </form>
         </div>
 
         {/* Continue without login */}
-        <div className="mt-6 text-center">
+        <div className="mt-8 text-center animate-fade-in">
           <button
             type="button"
             onClick={() => navigate('/communities')}
-            className="flex items-center justify-center gap-2 text-gray-400 hover:text-gray-300 mobile-text-sm transition-colors mx-auto"
+            className="flex items-center justify-center gap-2 text-gray-400 hover:text-gray-200 mobile-text-sm transition-all duration-200 hover:gap-3 mx-auto font-medium"
           >
             Continue without login
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
           </button>
         </div>
       </div>
