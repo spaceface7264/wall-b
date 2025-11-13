@@ -33,9 +33,20 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
   });
   const [isResizing, setIsResizing] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { showLoginModal } = useLoginModal();
+
+  // Track desktop size for conditional margin
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
 
   // Define loadUserCommunities BEFORE useEffect to avoid ReferenceError
   // (const functions are NOT hoisted in JavaScript)
@@ -870,6 +881,11 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               <MapPin className="w-5 h-5" />
             </button>
 
+            {/* Separator between actions and communities */}
+            {user && !sidebarCollapsed && (
+              <div className="border-t" style={{ borderColor: 'var(--divider-color)' }}></div>
+            )}
+
             {/* Communities List - Only show if user is authenticated */}
             {user && (
               <div className={`flex-1 overflow-y-auto overflow-x-hidden min-h-0 ${sidebarCollapsed ? 'collapsed' : ''}`}>
@@ -883,6 +899,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                       ? (Array.isArray(community.gyms) ? community.gyms[0] : community.gyms)
                       : null;
                     const gym = gymData;
+                    const isSuspended = community.is_active === false;
                     
                     return (
                       <>
@@ -900,11 +917,12 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                             ? 'ring-1 ring-[#3B83F6]/50'
                             : ''
                         }`}
-                        style={
-                          community.hasNewPosts && currentCommunityId !== community.id
+                        style={{
+                          ...(community.hasNewPosts && currentCommunityId !== community.id
                             ? { backgroundColor: 'var(--accent-primary-lighter)' }
-                            : {}
-                        }
+                            : {}),
+                          ...(isSuspended ? { opacity: 0.6 } : {})
+                        }}
                       >
                         <Users className="mobile-drawer-icon" />
                         <div className="flex-1 min-w-0 flex flex-col items-start">
@@ -929,11 +947,12 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
                             currentCommunityId === community.id ? 'active' : ''
                           } ${community.hasNewPosts && currentCommunityId !== community.id ? 'has-new-posts' : ''}`}
                           title={community.name}
-                          style={
-                            community.hasNewPosts && currentCommunityId !== community.id
+                          style={{
+                            ...(community.hasNewPosts && currentCommunityId !== community.id
                               ? { backgroundColor: 'var(--accent-primary-lighter)' }
-                              : {}
-                          }
+                              : {}),
+                            ...(isSuspended ? { opacity: 0.6 } : {})
+                          }}
                         >
                           <Users className="w-5 h-5" />
                         </button>
@@ -1062,8 +1081,12 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
       <div 
         className={`mobile-content desktop-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${currentPage === 'chat' ? 'mobile-content-chat' : 'mobile-content-with-cards'}`}
         style={{ 
-          marginLeft: sidebarCollapsed ? '72px' : `${sidebarWidth}px`,
-          transition: isResizing ? 'none' : 'margin-left 0.3s ease'
+          ...(isDesktop ? {
+            marginLeft: sidebarCollapsed ? '72px' : `${sidebarWidth}px`,
+            transition: isResizing ? 'none' : 'margin-left 0.3s ease'
+          } : {
+            marginLeft: 0
+          })
         }}
       >
           {children}

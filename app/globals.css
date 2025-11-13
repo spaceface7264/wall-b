@@ -902,9 +902,10 @@
   .mobile-container {
     width: 100%;
     max-width: 100%;
-    margin: 0 auto;
+    margin: 0;
     margin-bottom: 100px;
     padding: 0 var(--container-padding-mobile);
+    box-sizing: border-box;
   }
   
   @media (min-width: 1024px) {
@@ -912,8 +913,8 @@
       padding: 0 var(--container-padding-desktop);
       max-width: 1200px;
       width: 100%;
-      margin-left: auto;
-      margin-right: auto;
+      margin: 0 auto;
+      margin-bottom: 100px;
     }
   }
 
@@ -922,6 +923,8 @@
     flex-direction: column;
     background-color: var(--bg-primary);
     padding: var(--section-padding-mobile) 0;
+    margin: 0;
+    width: 100%;
   }
   
   @media (min-width: 1024px) {
