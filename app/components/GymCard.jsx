@@ -46,15 +46,15 @@ const GymCard = React.memo(function GymCard({
         </div>
       )}
       
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flex: '1 1 auto', minHeight: 0 }}>
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flex: '1 1 auto', minHeight: 0 }}>
         {/* Gym Logo */}
         <div 
           style={{ 
             flexShrink: 0, 
-            width: '60px', 
-            height: '60px',
-            minWidth: '60px',
-            minHeight: '60px',
+            width: '52px', 
+            height: '52px',
+            minWidth: '52px',
+            minHeight: '52px',
             backgroundColor: '#1e1e1e',
             borderRadius: '8px',
             border: '1px solid var(--border-color)',
@@ -63,7 +63,7 @@ const GymCard = React.memo(function GymCard({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '8px'
+            padding: '6px'
           }}
         >
           {(gym.logo_url || gym.logo) ? (
@@ -98,10 +98,10 @@ const GymCard = React.memo(function GymCard({
         
         <div className="flex-1 min-w-0 flex flex-col" style={{ minHeight: '100%', height: '100%' }}>
           <div className="flex-shrink-0">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="flex-1 min-w-0" style={{ paddingRight: ((gym.community_count !== undefined && gym.community_count > 0) || (gym.is_hidden && isAdmin)) ? '80px' : '0' }}>
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              <div className="flex-1 min-w-0" style={{ paddingRight: ((gym.community_count !== undefined && gym.community_count > 0) || (gym.is_hidden && isAdmin)) ? '56px' : '0' }}>
                 {/* Gym Title */}
-                <div className="mb-1">
+                <div className="mb-0.5">
                   <h3 className="mobile-subheading truncate" style={{ 
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -111,8 +111,8 @@ const GymCard = React.memo(function GymCard({
                 </div>
                 
                 {/* Location - Below Title */}
-                <div className="flex items-center gap-1.5 flex-wrap" style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                  <MapPin className="w-3 h-3 flex-shrink-0" style={{ width: '12px', height: '12px', color: 'var(--text-muted)' }} />
+                <div className="flex items-center gap-1.5 flex-wrap" style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '2px' }}>
+                  <MapPin className="w-3 h-3 flex-shrink-0" style={{ width: '11px', height: '11px', color: 'var(--text-muted)' }} />
                   <span className="truncate" style={{ color: 'var(--text-secondary)' }}>
                     {gym.city}{gym.country ? `, ${gym.country}` : ''}
                   </span>
@@ -128,23 +128,24 @@ const GymCard = React.memo(function GymCard({
               </div>
             </div>
             
-            <p className="mobile-text-xs line-clamp-2 mb-3 leading-relaxed flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>
+            <p className="mobile-text-xs line-clamp-2 mb-2 leading-relaxed flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>
               {gym.description}
             </p>
           </div>
           
           {/* Facilities - Bottom */}
           {facilities.length > 0 && (
-            <div className="flex flex-wrap gap-1 flex-shrink-0 mt-auto" style={{ paddingBottom: '8px' }}>
+            <div className="flex flex-wrap gap-1 flex-shrink-0 mt-auto" style={{ paddingTop: '4px' }}>
               {facilities.slice(0, 3).map((facility, index) => (
                 <span 
                   key={index} 
-                  className="mobile-text-xs px-2 py-1 rounded"
+                  className="mobile-text-xs px-1.5 py-0.5 rounded"
                   style={{ 
                     fontSize: '10px',
                     backgroundColor: 'var(--hover-bg)',
                     color: 'var(--text-secondary)',
-                    border: '1px solid var(--border-color)'
+                    border: '1px solid var(--border-color)',
+                    lineHeight: '1.2'
                   }}
                 >
                   {facility}
@@ -152,12 +153,13 @@ const GymCard = React.memo(function GymCard({
               ))}
               {facilities.length > 3 && (
                 <span 
-                  className="mobile-text-xs px-2 py-1 rounded"
+                  className="mobile-text-xs px-1.5 py-0.5 rounded"
                   style={{ 
                     fontSize: '10px',
                     backgroundColor: 'var(--hover-bg)',
                     color: 'var(--text-muted)',
-                    border: '1px solid var(--border-color)'
+                    border: '1px solid var(--border-color)',
+                    lineHeight: '1.2'
                   }}
                 >
                   +{facilities.length - 3} more
