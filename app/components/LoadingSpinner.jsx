@@ -33,7 +33,7 @@ export default function LoadingSpinner({ size = 'md', className = '' }) {
       ) : (
         <div
           className={`${spinnerSizeClasses[size]} border-4 border-gray-700 border-t-accent-blue rounded-full animate-spin`}
-        />
+      />
       )}
     </div>
   )

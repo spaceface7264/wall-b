@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, Plus, MapPin, Calendar, MessageCircle, Building, Globe, AlertTriangle, Search, Filter, X, Sparkles, ArrowRight, ChevronDown } from 'lucide-react';
+import { Users, Plus, MapPin, Calendar, MessageCircle, Building, Globe, AlertTriangle, Search, Filter, X, Sparkles, ArrowRight, ChevronDown, AlertCircle } from 'lucide-react';
 import CommunityCard from '../components/CommunityCard';
 import ReportCommunityModal from '../components/ReportCommunityModal';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -177,7 +177,7 @@ export default function CommunitiesPage() {
       setLoading(true);
       
       // First try with gyms relation
-      // Filter out suspended communities for non-admins
+      // Filter out suspended communities for non-admins, but allow admins to see them
       let query = supabase
         .from('communities')
         .select(`
@@ -364,7 +364,8 @@ export default function CommunitiesPage() {
           .in('id', communityIds);
         
         // Filter out suspended communities for non-admins
-        if (!isAdmin && communitiesData) {
+        // Admins can see all communities including suspended ones
+        if (communitiesData && !isAdmin) {
           communitiesData = communitiesData.filter(c => c.is_active !== false);
         }
 
@@ -458,21 +459,26 @@ export default function CommunitiesPage() {
     const combined = [...communities];
     
     // Add my communities if they're not already in the list
+    // Filter out suspended for non-admins
     myCommunities.forEach(myComm => {
-      if (!combined.find(c => c.id === myComm.id)) {
+      if ((isAdmin || myComm.is_active !== false) && !combined.find(c => c.id === myComm.id)) {
         combined.push(myComm);
       }
     });
     
     // Add recommended communities if they're not already in the list
+    // Filter out suspended for non-admins
     recommendedCommunities.forEach(recComm => {
-      if (!combined.find(c => c.id === recComm.id)) {
+      if ((isAdmin || recComm.is_active !== false) && !combined.find(c => c.id === recComm.id)) {
         combined.push(recComm);
       }
     });
     
-    return combined;
-  }, [communities, myCommunities, recommendedCommunities]);
+    // Final filter to ensure no suspended communities slip through for non-admins
+    return isAdmin 
+      ? combined 
+      : combined.filter(c => c.is_active !== false);
+  }, [communities, myCommunities, recommendedCommunities, isAdmin]);
   
   // Get unique countries and cities from all communities
   const availableCountries = useMemo(() => {
@@ -508,7 +514,12 @@ export default function CommunitiesPage() {
       if (!community || !community.name) {
         return false;
       }
-      return true; // Include all communities now
+      // Hide suspended communities from explore view for non-admins
+      // Admins can see them to manage them
+      if (!isAdmin && community.is_active === false) {
+        return false;
+      }
+      return true;
     });
     
     // Search filter
@@ -601,7 +612,7 @@ export default function CommunitiesPage() {
     });
     
     return filtered;
-  }, [allCommunities, debouncedSearchQuery, selectedType, selectedCountry, selectedCity, selectedGym, selectedCategory, sortBy]);
+  }, [allCommunities, debouncedSearchQuery, selectedType, selectedCountry, selectedCity, selectedGym, selectedCategory, sortBy, isAdmin]);
   
   
   const clearFilters = useCallback(() => {
@@ -811,9 +822,9 @@ export default function CommunitiesPage() {
             <div className="animate-slide-up mb-4">
               <button
                 onClick={() => navigate('/community/new')}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#2663EB] hover:bg-[#1e4fd4] text-white rounded-lg transition-colors font-medium"
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-800/30 hover:bg-gray-700/50 text-gray-300 border border-gray-700 rounded-lg transition-colors text-sm font-normal"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
                 Create Community
               </button>
             </div>
@@ -1040,41 +1051,59 @@ export default function CommunitiesPage() {
           {/* All Communities - Unified List */}
           <div className="animate-slide-up mt-6">
             {filteredCommunities.length === 0 ? (
-              <EmptyCommunities onCreateClick={() => navigate('/community/new')} />
+              <EmptyCommunities 
+                onCreateClick={() => navigate('/community/new')}
+                searchQuery={searchQuery}
+                hasActiveFilters={activeFilterCount > 0}
+                onClearFilters={clearFilters}
+              />
             ) : (
               <div className="-mx-4 md:-mx-6" style={{ marginLeft: 'calc(-1 * var(--container-padding-mobile))', marginRight: 'calc(-1 * var(--container-padding-mobile))' }}>
                 <div className="px-3 desktop-grid-3">
                 {filteredCommunities.map((community) => {
                   // Check if user is a member
                   const isMember = myCommunities.some(c => c.id === community.id);
+                  const isSuspended = community.is_active === false;
                   
                   return (
                     <div
                       key={community.id}
-                      className="rounded-lg transition-all duration-200 cursor-pointer"
+                      className="rounded-lg transition-all duration-200 cursor-pointer relative flex flex-col"
                       style={{
                         backgroundColor: 'var(--bg-surface)',
-                        border: '1px solid var(--border-color)',
-                        padding: 'var(--card-padding-mobile)'
+                        border: isSuspended ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid var(--border-color)',
+                        padding: 'var(--card-padding-mobile)',
+                        opacity: isSuspended ? 0.7 : 1,
+                        minHeight: '100%',
+                        height: '100%'
                       }}
                       onClick={() => navigate(`/community/${community.id}`)}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--hover-bg)';
+                        e.currentTarget.style.backgroundColor = isSuspended ? 'rgba(239, 68, 68, 0.05)' : 'var(--hover-bg)';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
                       }}
                     >
-                  <CommunityCard
-                    community={community}
-                    isMember={isMember}
-                    onJoin={handleJoinCommunity}
-                    onLeave={handleLeaveCommunity}
-                    onReport={handleReportCommunity}
-                    onOpen={() => navigate(`/community/${community.id}`)}
-                    joining={joiningCommunity === community.id}
-                    leaving={leavingCommunity === community.id}
-                  />
+                      {/* Suspended Banner - Top of Card */}
+                      {isSuspended && (
+                        <div className="absolute top-0 left-0 right-0 z-20 bg-red-500/20 border-b border-red-500/40 px-3 py-1.5 flex items-center gap-2 rounded-t-lg" onClick={(e) => e.stopPropagation()}>
+                          <AlertCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+                          <span className="text-xs font-medium text-red-300">Suspended</span>
+                        </div>
+                      )}
+                      <div className="flex-1 flex flex-col" style={{ marginTop: isSuspended ? '32px' : '0', minHeight: 0 }}>
+                        <CommunityCard
+                          community={community}
+                          isMember={isMember}
+                          onJoin={handleJoinCommunity}
+                          onLeave={handleLeaveCommunity}
+                          onReport={handleReportCommunity}
+                          onOpen={() => navigate(`/community/${community.id}`)}
+                          joining={joiningCommunity === community.id}
+                          leaving={leavingCommunity === community.id}
+                        />
+                      </div>
                     </div>
                   );
                 })}

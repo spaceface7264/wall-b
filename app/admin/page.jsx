@@ -170,6 +170,7 @@ export default function AdminPage() {
         feedbackRes
       ] = await Promise.all([
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        // Explicitly include suspended communities (is_active = false) for admins
         supabase.from('communities').select('*, gyms(name, city, country)').order('created_at', { ascending: false }),
         supabase.from('gym_requests').select('*, profiles(full_name, email)').order('created_at', { ascending: false }),
         supabase.from('community_reports').select('*, communities(id, name)').order('created_at', { ascending: false }),
@@ -198,6 +199,15 @@ export default function AdminPage() {
 
       const communitiesData = communitiesRes.data || [];
       const usersData = usersRes.data || [];
+      
+      // Debug: Log suspended communities to verify they're being returned
+      const suspendedCount = communitiesData.filter(c => c.is_active === false).length;
+      const activeCount = communitiesData.filter(c => c.is_active !== false).length;
+      console.log(`Admin: Loaded ${communitiesData.length} total communities (${activeCount} active, ${suspendedCount} suspended)`);
+      if (suspendedCount > 0) {
+        console.log('Suspended communities:', communitiesData.filter(c => c.is_active === false).map(c => ({ id: c.id, name: c.name })));
+      }
+      
       setUsers(usersData);
       setCommunities(communitiesData);
       setGymRequests(gymRequestsRes.data || []);

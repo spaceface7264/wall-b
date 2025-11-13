@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, MessageSquare, MapPin, Lock, Globe, CheckCircle2 } from 'lucide-react';
+import { Users, MessageSquare, MapPin, Lock, Globe, CheckCircle2, AlertCircle } from 'lucide-react';
 
 const CommunityCard = React.memo(function CommunityCard({
   community,
@@ -51,24 +51,38 @@ const CommunityCard = React.memo(function CommunityCard({
     }
   };
 
+  const isSuspended = community.is_active === false;
+  const hasPrivacyIndicator = community.is_private !== undefined;
+  
   return (
     <div 
       className="touch-feedback transition-all duration-200 relative w-full cursor-pointer flex flex-col"
-      style={{ minHeight: '100%', height: '100%' }}
+      style={{ 
+        minHeight: '100%', 
+        height: '100%',
+        opacity: isSuspended ? 0.75 : 1
+      }}
       onClick={handleCardClick}
     >
+      {/* Suspended Indicator - Top Left */}
+      {isSuspended && (
+        <div className="absolute top-0 left-0 z-10" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-center px-1 py-0.5 rounded" style={{ backgroundColor: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)' }} title="Suspended">
+            <AlertCircle className="w-2.5 h-2.5" style={{ color: '#ef4444' }} aria-label="Suspended community" />
+          </div>
+        </div>
+      )}
+      
       {/* Privacy Indicator - Top Right */}
-      {community.is_private !== undefined && (
+      {hasPrivacyIndicator && (
         <div className="absolute top-0 right-0 z-10" onClick={(e) => e.stopPropagation()}>
           {community.is_private ? (
-            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-              <Lock className="w-3 h-3" style={{ color: '#ef4444' }} />
-              <span className="text-xs font-medium" style={{ color: '#ef4444' }}>Private</span>
+            <div className="flex items-center justify-center px-1 py-0.5 rounded" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }} title="Private">
+              <Lock className="w-2.5 h-2.5" style={{ color: '#ef4444' }} aria-label="Private community" />
             </div>
           ) : (
-            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(59, 131, 246, 0.1)', border: '1px solid rgba(59, 131, 246, 0.3)' }}>
-              <Globe className="w-3 h-3" style={{ color: '#3b82f6' }} />
-              <span className="text-xs font-medium" style={{ color: '#3b82f6' }}>Public</span>
+            <div className="flex items-center justify-center px-1 py-0.5 rounded" style={{ backgroundColor: 'rgba(59, 131, 246, 0.1)', border: '1px solid rgba(59, 131, 246, 0.3)' }} title="Public">
+              <Globe className="w-2.5 h-2.5" style={{ color: '#3b82f6' }} aria-label="Public community" />
             </div>
           )}
         </div>
@@ -89,59 +103,59 @@ const CommunityCard = React.memo(function CommunityCard({
         </div>
       )}
       
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flex: '1 1 auto', minHeight: 0 }}>
-        <div className="flex-1 min-w-0 flex flex-col" style={{ minHeight: '100%', height: '100%' }}>
-          <div className="flex-shrink-0">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="flex-1 min-w-0" style={{ paddingRight: community.is_private !== undefined ? '80px' : '0' }}>
-                {/* Community Title */}
-                <div className="mb-1">
-                  <h3 className="mobile-subheading truncate" style={{ 
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    maxWidth: '100%'
-                  }}>{community.name}</h3>
+      <div className="flex-1 flex flex-col min-h-0" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        {/* Content Section - Takes available space */}
+        <div className="flex-shrink-0">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex-1 min-w-0" style={{ 
+              paddingRight: hasPrivacyIndicator ? '28px' : '0',
+              paddingLeft: isSuspended ? '28px' : '0'
+            }}>
+              {/* Community Title */}
+              <div className="mb-1">
+                <h3 className="mobile-subheading truncate" style={{ 
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '100%',
+                  color: isSuspended ? 'var(--text-muted)' : undefined
+                }}>{community.name}</h3>
+              </div>
+              
+              {/* Gym Name and City - Below Title */}
+              {gym && (gym.city || gym.name) && (
+                <div className="flex items-center gap-1.5 flex-wrap" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {gym.name && (
+                    <span className="truncate" title={gym.name} style={{ color: 'var(--text-secondary)' }}>{gym.name}</span>
+                  )}
+                  {gym.city && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3 flex-shrink-0" style={{ width: '12px', height: '12px', color: 'var(--text-muted)' }} />
+                      <span className="truncate" title={gym.city} style={{ color: 'var(--text-secondary)' }}>{gym.city}</span>
+                    </div>
+                  )}
                 </div>
-                
-                {/* City and Gym - Below Title */}
-                {gym && (gym.city || gym.name) && (
-                  <div className="flex items-center gap-1.5 flex-wrap" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {gym.city && (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3 flex-shrink-0" style={{ width: '12px', height: '12px', color: 'var(--text-muted)' }} />
-                        <span className="truncate" title={gym.city} style={{ color: 'var(--text-secondary)' }}>{gym.city}</span>
-                      </div>
-                    )}
-                    {gym.city && gym.name && (
-                      <span className="flex-shrink-0" style={{ color: 'var(--text-subtle)' }}>·</span>
-                    )}
-                    {gym.name && (
-                      <span className="truncate" title={gym.name} style={{ color: 'var(--text-secondary)' }}>{gym.name}</span>
-                    )}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
-            <p className="mobile-text-xs line-clamp-2 mb-3 leading-relaxed flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>
-              {community.description}
-            </p>
           </div>
-          
-          {/* Hide member/message counts for private communities */}
-          {!community.is_private && (
-            <div className="flex items-center gap-4 mt-auto flex-shrink-0" style={{ marginTop: 'auto', paddingRight: isMember ? '32px' : '0' }}>
-              <div className="flex items-center gap-1.5">
-                <Users className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
-                <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{community.member_count || 0}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <MessageSquare className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
-                <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{postCount || 0}</span>
-              </div>
-            </div>
-          )}
+          <p className="mobile-text-xs line-clamp-2 mb-3 leading-relaxed flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>
+            {community.description}
+          </p>
         </div>
+        
+        {/* Member/Post Indicators - Pushed to Bottom */}
+        {!community.is_private && (
+          <div className="flex items-center gap-4 mt-auto flex-shrink-0" style={{ marginTop: 'auto', paddingTop: '8px', paddingRight: isMember ? '32px' : '0' }}>
+            <div className="flex items-center gap-1.5">
+              <Users className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
+              <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{community.member_count || 0}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <MessageSquare className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
+              <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{postCount || 0}</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

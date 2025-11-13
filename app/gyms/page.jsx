@@ -330,10 +330,8 @@ export default function Gyms() {
         ];
         setGyms(mockGyms);
       } else if (data && data.length > 0) {
-        // Filter out hidden gyms for non-admins (additional check in case query didn't work)
-        const visibleGyms = isAdmin 
-          ? data 
-          : data.filter(gym => !gym.is_hidden);
+        // Filter out hidden gyms for all users (including admins)
+        const visibleGyms = data.filter(gym => !gym.is_hidden);
         
         // Process community count from Supabase relation query
         const processedGyms = visibleGyms.map(gym => {
@@ -641,10 +639,8 @@ export default function Gyms() {
       });
     }
 
-    // Final filter: exclude hidden gyms for non-admins (double-check)
-    if (!isAdmin) {
+    // Final filter: exclude hidden gyms for all users (including admins)
       filtered = filtered.filter(gym => !gym.is_hidden);
-    }
 
     return filtered;
   }, [

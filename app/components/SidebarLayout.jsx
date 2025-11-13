@@ -555,7 +555,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
               onError={() => setLogoError(true)}
             />
           ) : (
-            <div className="w-8 h-8 border-4 border-[#3B83F6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-8 h-8 border-4 border-[#3B83F6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           )}
           <p className="minimal-text">Loading Send Train...</p>
         </div>

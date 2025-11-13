@@ -10,7 +10,8 @@ import {
   Globe,
   Building,
   UserPlus,
-  Compass
+  Compass,
+  AlertCircle
 } from 'lucide-react';
 
 export default function EmptyState({
@@ -85,7 +86,53 @@ export default function EmptyState({
 }
 
 // Pre-configured empty states for common scenarios
-export function EmptyCommunities({ onCreateClick, onExploreClick }) {
+export function EmptyCommunities({ onCreateClick, onExploreClick, searchQuery, hasActiveFilters = false, onClearFilters }) {
+  const isSearching = searchQuery && searchQuery.trim().length > 0;
+  
+  if (isSearching || hasActiveFilters) {
+    return (
+      <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+        <div className="text-center max-w-sm mx-auto">
+          {/* Icon */}
+          <div className="bg-gray-800/30 w-16 h-16 rounded-full minimal-flex-center mx-auto mb-4">
+            <Search className="text-gray-500" size={32} />
+          </div>
+
+          {/* Title */}
+          <h3 className="mobile-subheading mb-2 text-gray-300">No communities found</h3>
+
+          {/* Description */}
+          <p className="mobile-text-sm text-gray-500 mb-6 leading-relaxed">
+            {isSearching 
+              ? `We couldn't find any communities matching "${searchQuery}". Try adjusting your search terms${hasActiveFilters ? ' or clear filters' : ''} to see more results.`
+              : "No communities match your current filters. Try adjusting your search criteria or clear filters to see more results."}
+          </p>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-2 items-center">
+            {onClearFilters && (isSearching || hasActiveFilters) && (
+              <button
+                onClick={onClearFilters}
+                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 border border-gray-700"
+              >
+                Clear {isSearching && hasActiveFilters ? 'Search & Filters' : isSearching ? 'Search' : 'Filters'}
+              </button>
+            )}
+            {onCreateClick && (
+              <button
+                onClick={onCreateClick}
+                className="mobile-btn-primary minimal-flex gap-2"
+              >
+                <Plus className="minimal-icon" />
+                Create Community
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: '40px 16px', textAlign: 'center' }}>
       <div className="text-center max-w-sm mx-auto">
@@ -117,7 +164,28 @@ export function EmptyCommunities({ onCreateClick, onExploreClick }) {
   );
 }
 
-export function EmptyPosts({ onCreateClick, isMember = false }) {
+export function EmptyPosts({ onCreateClick, isMember = false, isSuspended = false }) {
+  if (isSuspended) {
+    return (
+      <div style={{ padding: '40px 16px', textAlign: 'center', opacity: 0.7 }}>
+        <div className="text-center max-w-sm mx-auto">
+          {/* Icon */}
+          <div className="bg-red-500/10 w-16 h-16 rounded-full minimal-flex-center mx-auto mb-4 border border-red-500/20">
+            <AlertCircle className="text-red-400" size={32} />
+          </div>
+
+          {/* Title */}
+          <h3 className="mobile-subheading mb-2 text-red-300">Community Suspended</h3>
+
+          {/* Description */}
+          <p className="mobile-text-sm mb-4 leading-relaxed text-red-200/80">
+            This community has been suspended. Posts and interactions are currently disabled.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: '40px 16px', textAlign: 'center' }}>
       <div className="text-center max-w-sm mx-auto">

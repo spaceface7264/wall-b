@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { Users, MessageCircle, Plus, MessageSquare, Clock, X, ThumbsUp, MapPin, UserPlus, TrendingUp, Calendar, Settings, ArrowLeft, Shield, Info, MoreHorizontal, RefreshCw, Heart, Flag, AlertTriangle, UserMinus, Lock, Globe } from 'lucide-react';
+import { Users, MessageCircle, Plus, MessageSquare, Clock, X, ThumbsUp, MapPin, UserPlus, TrendingUp, Calendar, Settings, ArrowLeft, Shield, Info, MoreHorizontal, RefreshCw, Heart, Flag, AlertTriangle, UserMinus, Lock, Globe, AlertCircle } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
 import ReportCommunityModal from '../../components/ReportCommunityModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -1021,7 +1021,8 @@ export default function CommunityPage() {
                     ) : (
                       <button
                         onClick={handleJoinCommunity}
-                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"
+                        disabled={community?.is_active === false}
+                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Request to Join
                       </button>
@@ -1067,7 +1068,8 @@ export default function CommunityPage() {
                 <div style={{ marginLeft: 'var(--container-padding-mobile)', marginRight: 'var(--container-padding-mobile)', marginBottom: '12px' }}>
                   <button
                     onClick={() => setShowNewPostModal(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-full text-gray-300 hover:bg-gray-800 hover:border-gray-600 hover:text-white transition-all duration-200"
+                    disabled={community?.is_active === false}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-full text-gray-300 hover:bg-gray-800 hover:border-gray-600 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-4 h-4 flex-shrink-0" />
                     <span className="text-xs font-medium">Create post</span>
@@ -1078,6 +1080,7 @@ export default function CommunityPage() {
                 <EmptyPosts
                   onCreateClick={() => setShowNewPostModal(true)}
                   isMember={isMember || isAdmin}
+                  isSuspended={community?.is_active === false}
                 />
               ) : (
                 <div style={{ marginLeft: 'var(--container-padding-mobile)', marginRight: 'var(--container-padding-mobile)' }}>
@@ -1146,7 +1149,8 @@ export default function CommunityPage() {
               {(isMember || isAdmin) && (
                 <button
                   onClick={() => setShowNewEventModal(true)}
-                  className="mobile-btn-secondary minimal-flex gap-2 text-sm px-4 py-2"
+                  disabled={community?.is_active === false}
+                  className="mobile-btn-secondary minimal-flex gap-2 text-sm px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Plus className="minimal-icon w-4 h-4" />
                   Create Event
@@ -1344,7 +1348,7 @@ export default function CommunityPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={handleJoinCommunity}
-                      disabled={joining || joinRequestStatus === 'pending'}
+                      disabled={joining || joinRequestStatus === 'pending' || community?.is_active === false}
                       className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{ backgroundColor: 'var(--accent-blue)', color: 'white' }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-blue-hover)'}
@@ -1393,7 +1397,15 @@ export default function CommunityPage() {
             <div className="flex items-start justify-between gap-4 mb-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-2">
-                  <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{community?.name}</h1>
+                  <h1 
+                    className="text-2xl font-bold" 
+                    style={{ 
+                      color: 'var(--text-primary)',
+                      opacity: community?.is_active === false ? 0.95 : 1
+                    }}
+                  >
+                    {community?.name}
+                  </h1>
                 </div>
                 <div className="flex flex-col gap-1 text-sm text-gray-400 mb-3">
                   {(() => {
@@ -1420,7 +1432,12 @@ export default function CommunityPage() {
                   {/* Privacy Indicator */}
                   {community?.is_private !== undefined && (
                     <div className="mb-2 mt-3">
-                      {community.is_private ? (
+                      {community?.is_active === false ? (
+                        <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md w-fit" style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)' }}>
+                          <AlertCircle className="w-3 h-3" style={{ color: '#ef4444' }} />
+                          <span className="text-xs font-medium" style={{ color: '#ef4444' }}>Suspended</span>
+                        </div>
+                      ) : community.is_private ? (
                         <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md w-fit" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
                           <Lock className="w-3 h-3" style={{ color: '#ef4444' }} />
                           <span className="text-xs font-medium" style={{ color: '#ef4444' }}>Private</span>
@@ -1487,7 +1504,7 @@ export default function CommunityPage() {
               ) : !isMember ? (
                 <button
                   onClick={handleJoinCommunity}
-                  disabled={joining || joinRequestStatus === 'pending'}
+                  disabled={joining || joinRequestStatus === 'pending' || community?.is_active === false}
                   className="px-2.5 py-1 text-sm rounded-full border-2 border-[#20763B] text-[#20763B] hover:bg-[#20763B] hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
                 >
                   {joining ? 'Joining...' : joinRequestStatus === 'pending' ? 'Request Pending' : community?.is_private ? 'Request to Join' : 'Join'}
@@ -1495,7 +1512,8 @@ export default function CommunityPage() {
               ) : (
                 <button
                   onClick={handleLeaveCommunity}
-                  className="px-2.5 py-1 text-sm rounded-full bg-[#20763B] text-white hover:bg-[#1a5d2f] transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                  disabled={community?.is_active === false}
+                  className="px-2.5 py-1 text-sm rounded-full bg-[#20763B] text-white hover:bg-[#1a5d2f] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
                 >
                   Joined
                 </button>
@@ -1505,13 +1523,17 @@ export default function CommunityPage() {
               <div className="flex items-center gap-1 min-w-max">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
+                  const isSuspended = community?.is_active === false;
                   return (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => !isSuspended && setActiveTab(tab.id)}
+                      disabled={isSuspended}
                       className={`
                         flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-all duration-200
-                        ${activeTab === tab.id
+                        ${isSuspended
+                          ? 'bg-slate-800/50 text-slate-500 cursor-not-allowed opacity-50'
+                          : activeTab === tab.id
                           ? 'bg-[#3B83F6] text-white'
                           : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'
                         }
@@ -1528,7 +1550,9 @@ export default function CommunityPage() {
               <div className="relative flex-shrink-0">
                 <button
                   ref={menuButtonRef}
+                  disabled={community?.is_active === false}
                   onClick={(e) => {
+                    if (community?.is_active === false) return;
                     e.stopPropagation();
                     if (menuButtonRef.current) {
                       const rect = menuButtonRef.current.getBoundingClientRect();
@@ -1539,7 +1563,11 @@ export default function CommunityPage() {
                     }
                     setShowMenu(!showMenu);
                   }}
-                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                  className={`p-2 rounded-lg transition-colors ${
+                    community?.is_active === false
+                      ? 'text-gray-600 cursor-not-allowed opacity-50'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                  }`}
                 >
                   <MoreHorizontal className="w-5 h-5" />
                 </button>

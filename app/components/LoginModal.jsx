@@ -142,13 +142,13 @@ export default function LoginModal({ isOpen, onClose, title = "Sign In", subtitl
             <p className="text-sm flex-1 text-left font-medium" style={{ color: 'var(--text-muted)' }}>
               {isSignUp ? 'Welcome, new friend 👋' : 'Welcome back, friend 👋'}
             </p>
-            <button
-              onClick={onClose}
+          <button
+            onClick={onClose}
               className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200 hover:scale-110"
               aria-label="Close"
-            >
-              <X className="w-5 h-5" />
-            </button>
+          >
+            <X className="w-5 h-5" />
+          </button>
           </div>
         </div>
 
@@ -238,7 +238,7 @@ export default function LoginModal({ isOpen, onClose, title = "Sign In", subtitl
                   I agree to the{' '}
                   <a href="/terms" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 font-medium underline underline-offset-2">Terms & Conditions</a>
                 </span>
-              </label>
+                </label>
             )}
 
             {error && (
