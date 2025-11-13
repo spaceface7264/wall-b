@@ -1,6 +1,7 @@
 import { Heart, MessageCircle, Clock, Share, Bookmark, MoreHorizontal, Edit2, Trash2, Calendar, User, Users, MapPin, Ban, VolumeX, Flag, Lock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
 import ConfirmationModal from './ConfirmationModal';
 import BlockUserModal from './BlockUserModal';
 import MuteUserModal from './MuteUserModal';
@@ -33,8 +34,30 @@ export default function PostCard({
   const [showReportModal, setShowReportModal] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [authorAvatar, setAuthorAvatar] = useState(() => {
+    const profileData = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
+    return profileData?.avatar_url || null;
+  });
   const navigate = useNavigate();
   const isOwnPost = post.user_id === currentUserId;
+
+  // Fetch avatar if not loaded with post
+  useEffect(() => {
+    if (!authorAvatar && post.user_id) {
+      const fetchAvatar = async () => {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', post.user_id)
+          .single();
+        
+        if (profile?.avatar_url) {
+          setAuthorAvatar(profile.avatar_url);
+        }
+      };
+      fetchAvatar();
+    }
+  }, [authorAvatar, post.user_id]);
   const canEdit = showActions && isOwnPost; // Only owners can edit
   const canDelete = showActions && (isOwnPost || isAdmin); // Owners and admins can delete
   const canBlockMute = showActions && !isOwnPost && currentUserId; // Can block/mute if not own post
@@ -217,8 +240,9 @@ export default function PostCard({
     setShowMenu(!showMenu);
   };
 
-  const authorName = post.profiles?.nickname || post.profiles?.full_name || post.user_name || 'Anonymous';
-  const authorAvatar = post.profiles?.avatar_url;
+  // Handle profiles as object or array (Supabase sometimes returns arrays)
+  const profileData = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
+  const authorName = profileData?.nickname || profileData?.full_name || post.user_name || 'Anonymous';
   const authorInitial = authorName.charAt(0).toUpperCase();
 
   // Hide post if user is blocked

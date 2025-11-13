@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Users, MapPin, MessageSquare, User, Search as SearchIcon, Hash } from 'lucide-react';
+import { Users, MapPin, MessageSquare, User, Search as SearchIcon, Hash, Lock } from 'lucide-react';
 import { useToast } from '../providers/ToastProvider';
 import ListSkeleton from '../components/ListSkeleton';
 
@@ -57,7 +57,7 @@ export default function SearchPage() {
     const searchLower = searchTerm.toLowerCase().trim();
 
     try {
-      // Search communities
+      // Search communities (including private communities)
       const { data: communitiesData, error: communitiesError } = await supabase
         .from('communities')
         .select(`
@@ -66,6 +66,7 @@ export default function SearchPage() {
           description,
           member_count,
           gym_id,
+          is_private,
           gyms (
             id,
             name,
@@ -279,7 +280,15 @@ export default function SearchPage() {
                           <Users className="w-5 h-5 text-blue-400" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="mobile-subheading mb-1">{community.name}</h3>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="mobile-subheading">{community.name}</h3>
+                            {community.is_private && (
+                              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }} title="Private community">
+                                <Lock className="w-3 h-3" style={{ color: '#ef4444' }} />
+                                <span className="text-xs font-medium" style={{ color: '#ef4444' }}>Private</span>
+                              </div>
+                            )}
+                          </div>
                           {community.description && (
                             <p className="mobile-text-xs text-gray-400 line-clamp-2 mb-2">
                               {community.description}

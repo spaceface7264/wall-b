@@ -883,15 +883,21 @@ export default function CommunityPage() {
         throw error;
       }
 
+      // Ensure profile data is properly attached (handle array/object format)
+      const postWithProfile = {
+        ...data,
+        profiles: Array.isArray(data.profiles) ? data.profiles[0] : data.profiles
+      };
+
       // Add the new post to the beginning of the posts array
-      setPosts(prev => [data, ...prev]);
+      setPosts(prev => [postWithProfile, ...prev]);
       
       // Update community member count if this is the first post
       if (posts.length === 0) {
         setCommunity(prev => ({ ...prev, member_count: (prev.member_count || 0) + 1 }));
       }
 
-      return data;
+      return postWithProfile;
     } catch (error) {
       console.error('Error creating post:', error);
       throw error;

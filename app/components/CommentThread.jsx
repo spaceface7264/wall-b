@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Heart, Reply, Edit2, Trash2, ChevronDown, ChevronUp, MoreVertical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
 import CommentInput from './CommentInput';
 import ConfirmationModal from './ConfirmationModal';
 
@@ -135,8 +136,27 @@ export default function CommentThread({
   const [liked, setLiked] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(comment.profiles?.avatar_url || null);
   const menuRef = useRef(null);
   const navigate = useNavigate();
+
+  // Fetch avatar if not loaded with comment
+  useEffect(() => {
+    if (!avatarUrl && comment.user_id) {
+      const fetchAvatar = async () => {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', comment.user_id)
+          .single();
+        
+        if (profile?.avatar_url) {
+          setAvatarUrl(profile.avatar_url);
+        }
+      };
+      fetchAvatar();
+    }
+  }, [avatarUrl, comment.user_id]);
 
   const isOwnComment = comment.user_id === userId;
   const canModerate = isOwnComment || isAdmin;
@@ -230,21 +250,21 @@ export default function CommentThread({
         {/* Comment Header */}
         <div className="minimal-flex justify-between items-start mb-2" style={{ padding: depth !== 1 ? '0 16px' : '0' }}>
           <div className="minimal-flex gap-2">
-            {comment.profiles?.avatar_url ? (
-              <img
-                src={comment.profiles.avatar_url}
-                alt={comment.profiles?.nickname || comment.profiles?.full_name || comment.user_name || 'User'}
-                className="w-9 h-9 rounded-full object-cover flex-shrink-0 cursor-pointer"
-                onClick={(e) => handleProfileClick(e, comment.user_id)}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                }}
-              />
-            ) : null}
+            <img
+              src={avatarUrl || ''}
+              alt={comment.profiles?.nickname || comment.profiles?.full_name || comment.user_name || 'User'}
+              className="w-9 h-9 rounded-full object-cover flex-shrink-0 cursor-pointer"
+              style={{ display: avatarUrl ? 'block' : 'none' }}
+              onClick={(e) => handleProfileClick(e, comment.user_id)}
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+                setAvatarUrl(null); // Prevent retry
+              }}
+            />
             <div 
               className="w-9 h-9 bg-gradient-to-br from-accent-blue to-accent-blue-hover rounded-full minimal-flex-center flex-shrink-0 cursor-pointer"
-              style={{ display: comment.profiles?.avatar_url ? 'none' : 'flex' }}
+              style={{ display: avatarUrl ? 'none' : 'flex' }}
               onClick={(e) => handleProfileClick(e, comment.user_id)}
             >
               <span className="text-white font-semibold text-sm">
@@ -441,18 +461,17 @@ export default function CommentThread({
                     {/* Reply Header */}
                     <div className="minimal-flex justify-between items-start mb-1">
                       <div className="minimal-flex gap-2">
-                        {reply.profiles?.avatar_url ? (
-                          <img
-                            src={reply.profiles.avatar_url}
-                            alt={reply.profiles?.nickname || reply.profiles?.full_name || reply.user_name || 'User'}
-                            className="w-9 h-9 rounded-full object-cover flex-shrink-0 cursor-pointer"
-                            onClick={(e) => handleProfileClick(e, reply.user_id)}
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'flex';
-                            }}
-                          />
-                        ) : null}
+                        <img
+                          src={reply.profiles?.avatar_url || ''}
+                          alt={reply.profiles?.nickname || reply.profiles?.full_name || reply.user_name || 'User'}
+                          className="w-9 h-9 rounded-full object-cover flex-shrink-0 cursor-pointer"
+                          style={{ display: reply.profiles?.avatar_url ? 'block' : 'none' }}
+                          onClick={(e) => handleProfileClick(e, reply.user_id)}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
                         <div 
                           className="w-9 h-9 bg-gradient-to-br from-accent-blue to-accent-blue-hover rounded-full minimal-flex-center flex-shrink-0 cursor-pointer"
                           style={{ display: reply.profiles?.avatar_url ? 'none' : 'flex' }}
