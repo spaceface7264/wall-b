@@ -1,10 +1,12 @@
 import React, { Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { QueryClientProvider } from '@tanstack/react-query'
 import SidebarLayout from './components/SidebarLayout.jsx'
 import { ToastProvider } from './providers/ToastProvider.jsx'
 import { LoginModalProvider } from './providers/LoginModalProvider.jsx'
 import LoadingSpinner from './components/LoadingSpinner.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
+import { queryClient } from '../lib/queryClient.js'
 
 // Public routes (load immediately - small)
 import LoginPage from './LoginPage.jsx'
@@ -39,6 +41,7 @@ const PageLoader = () => (
 function App() {
   return (
     <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
     <ToastProvider>
       <Router>
         <LoginModalProvider>
@@ -144,6 +147,7 @@ function App() {
         </LoginModalProvider>
       </Router>
     </ToastProvider>
+    </QueryClientProvider>
     </ErrorBoundary>
   );
 }

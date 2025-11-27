@@ -11,14 +11,14 @@ import { getRecommendedCommunities } from '../../lib/recommendation-utils';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { EmptyCommunities } from '../components/EmptyState';
 import ListSkeleton from '../components/ListSkeleton';
+import { useCommunities } from '../hooks/useCommunities';
+import { useMyCommunities } from '../hooks/useMyCommunities';
+import { useJoinCommunity, useLeaveCommunity } from '../hooks/useCommunityMutations';
 
 export default function CommunitiesPage() {
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userIntent, setUserIntent] = useState([]);
-  const [communities, setCommunities] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [myCommunities, setMyCommunities] = useState([]);
   const [recommendedCommunities, setRecommendedCommunities] = useState([]);
   const [loadingRecommended, setLoadingRecommended] = useState(false);
   
@@ -39,6 +39,14 @@ export default function CommunitiesPage() {
   
   // Geolocation for recommendations
   const { location, requestLocation, isSupported: geolocationSupported } = useGeolocation();
+  
+  // React Query hooks for data fetching
+  const { data: communities = [], isLoading: loading, error: communitiesError } = useCommunities(isAdmin);
+  const { data: myCommunities = [], isLoading: myCommunitiesLoading } = useMyCommunities(user?.id, isAdmin);
+  
+  // Mutations for join/leave
+  const joinMutation = useJoinCommunity(user?.id);
+  const leaveMutation = useLeaveCommunity(user?.id);
 
   // Debounce search input
   useEffect(() => {
@@ -67,8 +75,6 @@ export default function CommunitiesPage() {
             setIsAdmin(false);
           }
           
-          loadMyCommunities(user.id);
-          
           // Get user intent for recommendations
           const { data: profile } = await supabase
             .from('profiles')
@@ -92,13 +98,9 @@ export default function CommunitiesPage() {
       }
     };
     getUser();
-    loadCommunities();
   }, []);
 
-  // Reload communities when admin status changes
-  useEffect(() => {
-    loadCommunities();
-  }, [isAdmin]);
+  // React Query will automatically refetch when isAdmin changes (via queryKey)
   
   // Load recommended communities when user and intent are available
   useEffect(() => {
@@ -160,299 +162,8 @@ export default function CommunitiesPage() {
     loadGyms();
   }, [selectedType, selectedCountry]);
 
-  // Reload communities when navigating back to this page
-  useEffect(() => {
-    const handleFocus = () => {
-      loadCommunities();
-      if (user) {
-        loadMyCommunities(user.id);
-      }
-    };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [user]);
-
-  const loadCommunities = async () => {
-    try {
-      setLoading(true);
-      
-      // First try with gyms relation
-      // Filter out suspended communities for non-admins, but allow admins to see them
-      let query = supabase
-        .from('communities')
-        .select(`
-          *,
-          gyms (
-            name,
-            city,
-            country,
-            address,
-            image_url
-          )
-        `);
-      
-      // Only filter suspended communities if user is not admin
-      if (!isAdmin) {
-        query = query.eq('is_active', true);
-      }
-      
-      query = query.order('created_at', { ascending: false });
-      
-      let { data, error } = await query;
-
-      // If that fails (e.g., RLS issue with gyms), try without gyms relation
-      if (error) {
-        console.warn('Error loading communities with gyms relation:', error);
-        console.log('Retrying without gyms relation...');
-        
-        let fallbackQuery = supabase
-          .from('communities')
-          .select('*');
-        
-        // Only filter suspended communities if user is not admin
-        if (!isAdmin) {
-          fallbackQuery = fallbackQuery.eq('is_active', true);
-        }
-        
-        const fallbackResult = await fallbackQuery.order('created_at', { ascending: false });
-        
-        if (fallbackResult.error) {
-          console.error('Error loading communities:', fallbackResult.error);
-          showToast('error', 'Error', `Failed to load communities: ${fallbackResult.error.message}`);
-          return;
-        }
-        
-        data = fallbackResult.data;
-        
-        // Fetch gym data separately for communities that have gym_id
-        if (data && data.length > 0) {
-          const gymIds = data
-            .map(c => c.gym_id)
-            .filter(Boolean)
-            .filter((id, index, self) => self.indexOf(id) === index); // unique IDs
-          
-          if (gymIds.length > 0) {
-            console.log('Fetching gym data for', gymIds.length, 'gyms:', gymIds);
-            
-            // Try fetching gyms one by one if batch fails (RLS might block .in())
-            let gymsMap = {};
-            
-            // First try batch query
-            const { data: gymsData, error: gymsError } = await supabase
-              .from('gyms')
-              .select('id, name, city, country, address')
-              .in('id', gymIds);
-            
-            if (gymsError) {
-              console.warn('Batch gym query failed, trying individual queries:', gymsError);
-              console.error('Full error details:', JSON.stringify(gymsError, null, 2));
-              
-              // Fallback: fetch gyms individually
-              for (const gymId of gymIds) {
-                try {
-                  console.log('Fetching individual gym:', gymId);
-                  const { data: gymData, error: singleError } = await supabase
-                    .from('gyms')
-                    .select('id, name, city, country, address')
-                    .eq('id', gymId)
-                    .single();
-                  
-                  if (singleError) {
-                    console.error(`Failed to fetch gym ${gymId}:`, singleError);
-                  } else if (gymData) {
-                    console.log('✅ Successfully fetched gym:', gymData.name);
-                    gymsMap[gymData.id] = gymData;
-                  }
-                } catch (err) {
-                  console.error('Exception fetching gym', gymId, err);
-                }
-              }
-            } else if (gymsData) {
-              // Batch query succeeded
-              gymsData.forEach(gym => {
-                gymsMap[gym.id] = gym;
-              });
-            }
-            
-            // Attach gym data to communities
-            if (Object.keys(gymsMap).length > 0) {
-              data = data.map(community => {
-                const gym = community.gym_id && gymsMap[community.gym_id] ? gymsMap[community.gym_id] : null;
-                return {
-                  ...community,
-                  gyms: gym ? [gym] : undefined
-                };
-              });
-              
-              console.log('Attached gym data to communities:', data.filter(c => c.gyms).length, 'communities have gym data');
-            } else {
-              console.warn('No gym data fetched for any communities');
-            }
-          }
-        }
-      }
-
-      if (error) {
-        console.error('Error loading communities:', error);
-        showToast('error', 'Error', `Failed to load communities: ${error.message}`);
-        return;
-      }
-
-      console.log('Loaded communities:', data?.length || 0, data);
-
-      // Enrich communities with actual member counts
-      const enrichedCommunities = await enrichCommunitiesWithActualCounts(data || []);
-      console.log('Enriched communities:', enrichedCommunities?.length || 0, enrichedCommunities);
-      setCommunities(enrichedCommunities);
-    } catch (error) {
-      console.error('Error loading communities:', error);
-      showToast('error', 'Error', `Something went wrong: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadMyCommunities = async (userId) => {
-    try {
-      // Try with nested gyms relation first
-      let { data, error } = await supabase
-        .from('community_members')
-        .select(`
-          community_id,
-          communities (
-            id,
-            name,
-            description,
-            community_type,
-            member_count,
-            created_at,
-            gym_id,
-            is_private,
-            gyms (
-              name,
-              city,
-              country,
-              image_url
-            )
-          )
-        `)
-        .eq('user_id', userId);
-
-      // If nested query fails, fetch communities separately
-      if (error) {
-        console.warn('Error loading my communities with nested gyms:', error);
-        
-        const { data: membersData, error: membersError } = await supabase
-          .from('community_members')
-          .select('community_id')
-          .eq('user_id', userId);
-
-        if (membersError) {
-          console.error('Error loading my communities:', membersError);
-          return;
-        }
-
-        const communityIds = membersData?.map(m => m.community_id).filter(Boolean) || [];
-        if (communityIds.length === 0) {
-          setMyCommunities([]);
-          return;
-        }
-
-        const { data: communitiesData, error: communitiesError } = await supabase
-          .from('communities')
-          .select('id, name, description, community_type, member_count, created_at, gym_id, is_active, is_private')
-          .in('id', communityIds);
-        
-        // Filter out suspended communities for non-admins
-        // Admins can see all communities including suspended ones
-        if (communitiesData && !isAdmin) {
-          communitiesData = communitiesData.filter(c => c.is_active !== false);
-        }
-
-        if (communitiesError) {
-          console.error('Error loading communities:', communitiesError);
-          return;
-        }
-
-        data = communitiesData?.map(c => ({ community_id: c.id, communities: c })) || [];
-        
-        // Fetch gym data separately
-        const gymIds = communitiesData
-          ?.map(c => c.gym_id)
-          .filter(Boolean)
-          .filter((id, index, self) => self.indexOf(id) === index) || [];
-        
-        if (gymIds.length > 0) {
-          console.log('Fetching gym data for my communities:', gymIds.length, 'gyms');
-          
-          // Try fetching gyms one by one if batch fails (RLS might block .in())
-          let gymsMap = {};
-          
-          // First try batch query
-          const { data: gymsData, error: gymsError } = await supabase
-            .from('gyms')
-            .select('id, name, city, country')
-            .in('id', gymIds);
-          
-          if (gymsError) {
-            console.warn('Batch gym query failed for my communities, trying individual queries:', gymsError);
-            
-            // Fallback: fetch gyms individually
-            for (const gymId of gymIds) {
-              try {
-                const { data: gymData, error: singleError } = await supabase
-                  .from('gyms')
-                  .select('id, name, city, country')
-                  .eq('id', gymId)
-                  .single();
-                
-                if (!singleError && gymData) {
-                  gymsMap[gymData.id] = gymData;
-                }
-              } catch (err) {
-                console.warn('Failed to fetch gym', gymId, err);
-              }
-            }
-          } else if (gymsData) {
-            // Batch query succeeded
-            gymsData.forEach(gym => {
-              gymsMap[gym.id] = gym;
-            });
-          }
-          
-          // Attach gym data to communities
-          if (Object.keys(gymsMap).length > 0) {
-            data = data.map(item => {
-              const gym = item.communities.gym_id && gymsMap[item.communities.gym_id] 
-                ? gymsMap[item.communities.gym_id] 
-                : null;
-              return {
-                ...item,
-                communities: {
-                  ...item.communities,
-                  gyms: gym ? [gym] : undefined
-                }
-              };
-            });
-          }
-        }
-      }
-
-      const myCommunitiesList = data?.map(item => item.communities).filter(Boolean) || [];
-      
-      // Filter out suspended communities for non-admins
-      // Admins can see all communities including suspended ones
-      const activeMyCommunities = isAdmin 
-        ? myCommunitiesList 
-        : myCommunitiesList.filter(c => c.is_active !== false);
-      
-      // Enrich with actual member counts
-      const enrichedMyCommunities = await enrichCommunitiesWithActualCounts(activeMyCommunities);
-      setMyCommunities(enrichedMyCommunities);
-    } catch (error) {
-      console.error('Error loading my communities:', error);
-    }
-  };
+  // React Query handles refetching automatically - no need for manual focus handler
+  // Data fetching is now handled by useCommunities() and useMyCommunities() hooks
 
   // Combine all communities (my communities, recommended, and all others) into one list
   const allCommunities = useMemo(() => {
@@ -644,8 +355,9 @@ export default function CommunitiesPage() {
     return daysDiff < 7;
   }, []);
 
-  const [joiningCommunity, setJoiningCommunity] = useState(null);
-  const [leavingCommunity, setLeavingCommunity] = useState(null);
+  // Track which community is being joined/left for loading states
+  const [joiningCommunityId, setJoiningCommunityId] = useState(null);
+  const [leavingCommunityId, setLeavingCommunityId] = useState(null);
 
   const handleJoinCommunity = async (communityId) => {
     if (!user) {
@@ -653,56 +365,35 @@ export default function CommunitiesPage() {
       return;
     }
 
-    setJoiningCommunity(communityId);
-    try {
-      const { error } = await supabase
-        .from('community_members')
-        .insert({
-          community_id: communityId,
-          user_id: user.id
-        });
-
-      if (error) {
-        console.error('Error joining community:', error);
-        showToast('error', 'Error', 'Failed to join community');
-        return;
-      }
-
-      showToast('success', 'Success', 'Joined community successfully!');
-      
-      // Dispatch event to update drawer immediately
-      window.dispatchEvent(new CustomEvent('communityJoined', { 
-        detail: { communityId, userId: user.id } 
-      }));
-      
-      // Remove from recommended if it was there
-      setRecommendedCommunities(prev => prev.filter(c => c.id !== communityId));
-      
-      await loadCommunities();
-      if (user) {
-        await loadMyCommunities(user.id);
+    setJoiningCommunityId(communityId);
+    joinMutation.mutate(communityId, {
+      onSuccess: () => {
+        setJoiningCommunityId(null);
+        showToast('success', 'Success', 'Joined community successfully!');
+        
+        // Remove from recommended if it was there
+        setRecommendedCommunities(prev => prev.filter(c => c.id !== communityId));
         
         // Reload recommendations to get fresh suggestions
         if (userIntent && userIntent.length > 0) {
-          try {
-            const recommended = await getRecommendedCommunities(
-              user.id,
-              userIntent,
-              location,
-              8
-            );
+          getRecommendedCommunities(
+            user.id,
+            userIntent,
+            location,
+            8
+          ).then(recommended => {
             setRecommendedCommunities(recommended);
-          } catch (error) {
+          }).catch(error => {
             console.error('Error reloading recommended communities:', error);
-          }
+          });
         }
-      }
-    } catch (error) {
-      console.error('Error joining community:', error);
-      showToast('error', 'Error', 'Something went wrong');
-    } finally {
-      setJoiningCommunity(null);
-    }
+      },
+      onError: (error) => {
+        setJoiningCommunityId(null);
+        console.error('Error joining community:', error);
+        showToast('error', 'Error', 'Failed to join community');
+      },
+    });
   };
 
 
@@ -710,7 +401,6 @@ export default function CommunitiesPage() {
   const [reportingCommunity, setReportingCommunity] = useState(null);
   
   const [showLeaveModal, setShowLeaveModal] = useState(false);
-  const [leavingCommunityId, setLeavingCommunityId] = useState(null);
 
   const handleLeaveCommunity = async (communityId) => {
     if (!user) {
@@ -726,15 +416,13 @@ export default function CommunitiesPage() {
       return;
     }
 
-    setLeavingCommunity(leavingCommunityId);
-    try {
-      const { error } = await supabase
-        .from('community_members')
-        .delete()
-        .eq('community_id', leavingCommunityId)
-        .eq('user_id', user.id);
-
-      if (error) {
+    leaveMutation.mutate(leavingCommunityId, {
+      onSuccess: () => {
+        showToast('success', 'Success', 'You have left the community');
+        setLeavingCommunityId(null);
+        setShowLeaveModal(false);
+      },
+      onError: (error) => {
         console.error('Error leaving community:', error);
         let errorMessage = 'Failed to leave community';
         if (error.code === '42501' || error.message?.includes('permission denied') || error.message?.includes('policy')) {
@@ -743,27 +431,10 @@ export default function CommunitiesPage() {
           errorMessage = `Failed to leave community: ${error.message}`;
         }
         showToast('error', 'Error', errorMessage);
-        return;
-      }
-
-      showToast('success', 'Success', 'You have left the community');
-      
-      // Dispatch event to update drawer immediately
-      window.dispatchEvent(new CustomEvent('communityLeft', { 
-        detail: { communityId: leavingCommunityId, userId: user.id } 
-      }));
-      
-      await loadCommunities();
-      if (user) {
-        await loadMyCommunities(user.id);
-      }
-    } catch (error) {
-      console.error('Error leaving community:', error);
-      showToast('error', 'Error', 'Something went wrong');
-    } finally {
-      setLeavingCommunity(null);
-      setLeavingCommunityId(null);
-    }
+        setLeavingCommunityId(null);
+        setShowLeaveModal(false);
+      },
+    });
   };
 
   const handleReportCommunity = async (communityId) => {
@@ -1050,7 +721,13 @@ export default function CommunitiesPage() {
 
           {/* All Communities - Unified List */}
           <div className="animate-slide-up mt-6">
-            {filteredCommunities.length === 0 ? (
+            {communitiesError ? (
+              <div className="text-center py-12">
+                <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500" />
+                <p className="text-red-400 mb-2">Failed to load communities</p>
+                <p className="text-gray-400 text-sm">{communitiesError.message || 'Please try again later'}</p>
+              </div>
+            ) : filteredCommunities.length === 0 ? (
               <EmptyCommunities 
                 onCreateClick={() => navigate('/community/new')}
                 searchQuery={searchQuery}
@@ -1100,8 +777,8 @@ export default function CommunitiesPage() {
                           onLeave={handleLeaveCommunity}
                           onReport={handleReportCommunity}
                           onOpen={() => navigate(`/community/${community.id}`)}
-                          joining={joiningCommunity === community.id}
-                          leaving={leavingCommunity === community.id}
+                          joining={joiningCommunityId === community.id}
+                          leaving={leavingCommunityId === community.id}
                         />
                       </div>
                     </div>

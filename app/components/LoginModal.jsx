@@ -116,6 +116,15 @@ export default function LoginModal({ isOpen, onClose, title = "Sign In", subtitl
       
       {/* Modal */}
       <div className="relative w-full max-w-sm bg-gray-800 rounded-2xl shadow-2xl border border-gray-700/50 z-10 animate-slide-up" style={{ backgroundColor: 'rgba(30, 30, 30, 0.95)', backdropFilter: 'blur(20px)' }}>
+        {/* Close Button - Top Right */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200 hover:scale-110 z-20"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
         {/* Header */}
         <div className="text-center px-6 pt-8 pb-6 border-b border-gray-700/50">
           {/* Logo */}
@@ -138,18 +147,6 @@ export default function LoginModal({ isOpen, onClose, title = "Sign In", subtitl
           <p className="text-sm font-semibold mb-2 tracking-wide uppercase" style={{ color: 'var(--text-secondary)', letterSpacing: '1px' }}>
             Bouldering Community
           </p>
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-sm flex-1 text-left font-medium" style={{ color: 'var(--text-muted)' }}>
-              {isSignUp ? 'Welcome, new friend 👋' : 'Welcome back, friend 👋'}
-            </p>
-          <button
-            onClick={onClose}
-              className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200 hover:scale-110"
-              aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
-          </div>
         </div>
 
         {/* Form */}

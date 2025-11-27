@@ -613,7 +613,7 @@ export default function CreateCommunityPage() {
                 <Info className="w-5 h-5 text-accent-blue" />
               </div>
               <div className="flex-1">
-                <h4 className="text-sm font-semibold text-white mb-2">Tips for Creating a Great Community</h4>
+                <h4 className="text-sm font-semibold text-white mb-2">Tips for creating a great community</h4>
                 <ul className="text-sm text-gray-300 space-y-2">
                   <li className="flex items-start gap-2">
                     <span className="text-accent-blue mt-0.5">•</span>

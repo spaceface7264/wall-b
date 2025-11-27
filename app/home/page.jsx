@@ -8,7 +8,8 @@ import { enrichCommunitiesWithActualCounts } from '../../lib/community-utils';
 import CommunityCard from '../components/CommunityCard';
 import GymCard from '../components/GymCard';
 import ListSkeleton from '../components/ListSkeleton';
-import { Users, MapPin, ArrowRight, Sparkles, PlusCircle, Compass } from 'lucide-react';
+import { Users, MapPin, ArrowRight, Sparkles, PlusCircle, Compass, Building2 } from 'lucide-react';
+import GymSelectorModal from '../components/GymSelectorModal';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ export default function HomePage() {
   const [loadingGyms, setLoadingGyms] = useState(true);
   const [isFirstVisit, setIsFirstVisit] = useState(false);
   const [loginCount, setLoginCount] = useState(0);
+  const [showGymSearchModal, setShowGymSearchModal] = useState(false);
 
   const { location, requestLocation, isSupported: geolocationSupported } = useGeolocation();
 
@@ -264,6 +266,13 @@ export default function HomePage() {
                   <PlusCircle className="w-4 h-4" />
                   Create Community
                 </button>
+                <button
+                  onClick={() => setShowGymSearchModal(true)}
+                  className="mobile-btn-secondary flex-1 flex items-center justify-center gap-2"
+                >
+                  <Building2 className="w-4 h-4" />
+                  Find Gym
+                </button>
               </div>
             </div>
           </div>
@@ -409,6 +418,18 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* Gym Search Modal */}
+      <GymSelectorModal
+        isOpen={showGymSearchModal}
+        onClose={() => setShowGymSearchModal(false)}
+        selectedGymId={null}
+        showRequestOption={true}
+        onSelectGym={(gymId) => {
+          setShowGymSearchModal(false);
+          navigate(`/gyms/${gymId}`);
+        }}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Search, MapPin, Navigation, Check, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { X, Search, MapPin, Navigation, Check, EyeOff, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { calculateDistance, formatDistance } from '../../lib/geolocation';
@@ -8,8 +9,10 @@ export default function GymSelectorModal({
   isOpen,
   onClose,
   selectedGymId,
-  onSelectGym
+  onSelectGym,
+  showRequestOption = false
 }) {
+  const navigate = useNavigate();
   const [gyms, setGyms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -271,9 +274,21 @@ export default function GymSelectorModal({
           ) : filteredAndSortedGyms.length === 0 ? (
             <div className="p-8 text-center">
               <MapPin className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-400 mb-4">
                 {searchTerm ? 'No gyms found matching your search.' : 'No gyms available.'}
               </p>
+              {showRequestOption && searchTerm && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate('/gyms/request', { state: { gymName: searchTerm } });
+                  }}
+                  className="mobile-btn-primary flex items-center justify-center gap-2 mx-auto"
+                >
+                  <Plus className="w-4 h-4" />
+                  Request "{searchTerm}"
+                </button>
+              )}
             </div>
           ) : (
             <div className="divide-y divide-gray-700/50">

@@ -301,7 +301,6 @@ export default function OnboardingPage() {
                   value={nickname}
                   onChange={(e) => { setNickname(e.target.value); if (error) setError(''); }}
                   className="minimal-input w-full"
-                  placeholder="e.g., Rami"
                   required
                 />
                 <p className="mobile-text-xs text-gray-500 mt-1">You can change this later in your profile.</p>

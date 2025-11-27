@@ -244,9 +244,6 @@ export default function LoginPage() {
           <p className="text-sm font-semibold mb-2 tracking-wide uppercase" style={{ color: 'var(--text-secondary)', letterSpacing: '1px' }}>
             Bouldering Community
           </p>
-          <p className="text-sm font-medium mt-4" style={{ color: 'var(--text-muted)' }}>
-            {isSignUp ? 'Welcome, new friend 👋' : 'Welcome back, friend 👋'}
-          </p>
         </div>
 
         {/* Auth Card */}

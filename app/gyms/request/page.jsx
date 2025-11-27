@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { MapPin, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import SidebarLayout from '../../components/SidebarLayout';
@@ -43,10 +43,14 @@ export default function GymRequestPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { showToast } = useToast();
 
+  // Pre-fill gym name from navigation state if available
+  const initialGymName = location.state?.gymName || '';
+
   const [formData, setFormData] = useState({
-    gym_name: '',
+    gym_name: initialGymName,
     country: '',
     city: '',
     address: '',
