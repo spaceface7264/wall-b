@@ -21,6 +21,7 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
   const [communitiesLoading, setCommunitiesLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     // Initialize sidebar state from localStorage or default to expanded
     const saved = localStorage.getItem('sidebarCollapsed');
@@ -688,8 +689,8 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
           <ChevronLeft className={`w-5 h-5 transition-transform duration-300 ease-in-out ${sidebarCollapsed ? 'rotate-180' : ''}`} aria-hidden="true" />
         </button>
 
-        {/* Logo Section - Desktop Only */}
-        <div className="sidebar-logo-section desktop-only">
+        {/* Logo Section */}
+        <div className="sidebar-logo-section">
           {!sidebarCollapsed ? (
             <div className="sidebar-logo-full">
               <img 
@@ -726,16 +727,20 @@ export default function SidebarLayout({ children, currentPage = 'community', pag
         {/* Search Section */}
         <div className={`sidebar-search-section ${sidebarCollapsed ? 'collapsed' : ''}`} style={{ borderColor: 'var(--divider-color)' }}>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4" style={{ color: 'var(--text-muted)' }} />
-            </div>
+            {(!isSearchFocused && !searchQuery) && (
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4" style={{ color: 'var(--text-muted)' }} />
+              </div>
+            )}
             <input
               type="text"
               value={searchQuery}
               onChange={handleSearchChange}
               onKeyPress={handleKeyPress}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
               placeholder="Search everything..."
-              className="minimal-input w-full pl-10 pr-10"
+              className={`minimal-input w-full pr-10 ${(!isSearchFocused && !searchQuery) ? 'pl-10' : 'pl-3'}`}
             />
             {searchQuery && (
               <button

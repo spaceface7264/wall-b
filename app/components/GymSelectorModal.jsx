@@ -10,7 +10,7 @@ export default function GymSelectorModal({
   onClose,
   selectedGymId,
   onSelectGym,
-  showRequestOption = false
+  showRequestOption = true
 }) {
   const navigate = useNavigate();
   const [gyms, setGyms] = useState([]);
@@ -277,16 +277,16 @@ export default function GymSelectorModal({
               <p className="text-sm text-gray-400 mb-4">
                 {searchTerm ? 'No gyms found matching your search.' : 'No gyms available.'}
               </p>
-              {showRequestOption && searchTerm && (
+              {showRequestOption && (
                 <button
                   onClick={() => {
                     onClose();
-                    navigate('/gyms/request', { state: { gymName: searchTerm } });
+                    navigate('/gyms/request', { state: { gymName: searchTerm || '' } });
                   }}
                   className="mobile-btn-primary flex items-center justify-center gap-2 mx-auto"
                 >
                   <Plus className="w-4 h-4" />
-                  Request "{searchTerm}"
+                  {searchTerm ? `Request "${searchTerm}"` : 'Request gym'}
                 </button>
               )}
             </div>

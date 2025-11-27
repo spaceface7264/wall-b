@@ -445,7 +445,43 @@
     transform: translateX(0);
   }
   
-  /* Mobile Logo Section */
+  /* Mobile Search Section - Match desktop styling */
+  .mobile-drawer .sidebar-search-section {
+    padding: 12px;
+    border-bottom: 1px solid var(--divider-color);
+    transition: padding 0.3s ease;
+  }
+  
+  .mobile-drawer .sidebar-search-section .minimal-input {
+    font-size: 12px;
+  }
+  
+  .mobile-drawer .sidebar-search-section .minimal-input::placeholder {
+    font-size: 11px;
+  }
+  
+  /* Mobile Logo Section - Match desktop styling */
+  .mobile-drawer .sidebar-logo-section {
+    padding: var(--spacing-base) var(--spacing-base);
+    border-bottom: 1px solid var(--divider-color);
+    flex-shrink: 0;
+  }
+  
+  .mobile-drawer .sidebar-logo-section .sidebar-logo-text {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    letter-spacing: -0.5px;
+  }
+  
+  .mobile-drawer .sidebar-logo-section .sidebar-logo-image {
+    height: 32px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+  }
+  
   .mobile-drawer .sidebar-logo-section.mobile-only {
     padding: var(--spacing-base);
     border-bottom: 1px solid var(--divider-color);
@@ -453,7 +489,7 @@
   }
   
   .mobile-drawer .sidebar-logo-section.mobile-only .sidebar-logo-text {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
@@ -693,6 +729,10 @@
       font-size: 12px;
     }
     
+    .sidebar-search-section .minimal-input::placeholder {
+      font-size: 11px;
+    }
+    
     /* Icon-only buttons for collapsed state - match mobile-drawer-item dimensions exactly */
     .sidebar-icon-button {
       display: flex;
@@ -798,7 +838,7 @@
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: 12px;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.3s ease;
     border-radius: 4px;
@@ -846,7 +886,7 @@
 
   .mobile-drawer-text {
     font-weight: 500;
-    font-size: inherit;
+    font-size: 12px;
   }
   
   @media (min-width: 1024px) {
