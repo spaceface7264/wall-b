@@ -187,8 +187,9 @@ export default function PublicProfile() {
         return;
       }
 
+      // Chat feature disabled - working on feature/chat-development branch
       // Navigate to chat page
-      navigate('/chat');
+      // navigate('/chat');
     } catch (err) {
       console.error('Error starting conversation:', err);
       alert('Failed to start conversation. Please try again.');

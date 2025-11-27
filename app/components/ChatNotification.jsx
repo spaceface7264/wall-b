@@ -118,7 +118,8 @@ export default function ChatNotification({ userId }) {
 
     browserNotification.onclick = () => {
       window.focus();
-      navigate(`/chat?conversationId=${notification.conversationId}`);
+      // Chat feature disabled - working on feature/chat-development branch
+      // navigate(`/chat?conversationId=${notification.conversationId}`);
       browserNotification.close();
     };
 
@@ -129,7 +130,8 @@ export default function ChatNotification({ userId }) {
   };
 
   const handleNotificationClick = (conversationId) => {
-    navigate(`/chat?conversationId=${conversationId}`);
+    // Chat feature disabled - working on feature/chat-development branch
+    // navigate(`/chat?conversationId=${conversationId}`);
     setShowNotification(false);
   };
 

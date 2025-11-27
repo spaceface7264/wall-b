@@ -476,7 +476,8 @@ export default function AdminPage() {
         return;
       }
 
-      navigate('/chat');
+      // Chat feature disabled - working on feature/chat-development branch
+      // navigate('/chat');
     } catch (err) {
       console.error('Error starting conversation:', err);
       alert('Failed to start conversation');

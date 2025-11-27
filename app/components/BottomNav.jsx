@@ -42,12 +42,13 @@ export default function BottomNav() {
       icon: MapPin,
       path: '/gyms'
     },
-    {
-      id: 'chats',
-      label: 'Chats',
-      icon: MessageCircle,
-      path: '/chat'
-    },
+    // Chat feature disabled - working on feature/chat-development branch
+    // {
+    //   id: 'chats',
+    //   label: 'Chats',
+    //   icon: MessageCircle,
+    //   path: '/chat'
+    // },
     {
       id: 'profile',
       label: 'Profile',
@@ -72,11 +73,11 @@ export default function BottomNav() {
       showLoginModal({ subtitle: 'Sign in to view your profile' });
       return;
     }
-    // If clicking chat and user is not logged in, show login modal
-    if (path === '/chat' && !user) {
-      showLoginModal({ subtitle: 'Sign in to start conversations' });
-      return;
-    }
+    // Chat feature disabled - working on feature/chat-development branch
+    // if (path === '/chat' && !user) {
+    //   showLoginModal({ subtitle: 'Sign in to start conversations' });
+    //   return;
+    // }
     navigate(path);
   };
 
@@ -86,7 +87,7 @@ export default function BottomNav() {
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path);
-          const requiresAuth = (item.id === 'profile' || item.id === 'chats') && !user;
+          const requiresAuth = (item.id === 'profile') && !user; // Chat disabled: || item.id === 'chats'
           
           return (
             <button
@@ -102,9 +103,10 @@ export default function BottomNav() {
                 ) : (
                   <Icon className="bottom-nav-icon" />
                 )}
-                {item.id === 'chats' && user && (
+                {/* Chat feature disabled - working on feature/chat-development branch */}
+                {/* {item.id === 'chats' && user && (
                   <UnreadBadge userId={user.id} />
-                )}
+                )} */}
               </div>
             </button>
           );

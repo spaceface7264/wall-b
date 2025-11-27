@@ -20,7 +20,8 @@ const CommunityPage = lazy(() => import('./community/[communityId]/page.jsx'))
 const PostDetailPage = lazy(() => import('./community/[communityId]/post/[postId]/page.jsx'))
 const CommunitySettingsPage = lazy(() => import('./community/[communityId]/settings/page.jsx'))
 const CreateCommunityPage = lazy(() => import('./community/new/page.jsx'))
-const ChatPage = lazy(() => import('./chat/page.jsx'))
+// Chat feature disabled - working on feature/chat-development branch
+// const ChatPage = lazy(() => import('./chat/page.jsx'))
 const GymsPage = lazy(() => import('./gyms/page.jsx'))
 const GymPage = lazy(() => import('./gyms/[gymId]/page.jsx'))
 const GymRequestPage = lazy(() => import('./gyms/request/page.jsx'))
@@ -101,13 +102,14 @@ function App() {
                   <PostDetailPage />
                 </Suspense>
               } />
-              <Route path="/chat" element={
+              {/* Chat feature disabled - working on feature/chat-development branch */}
+              {/* <Route path="/chat" element={
                 <SidebarLayout currentPage="chat" pageTitle="Chat">
                   <Suspense fallback={<PageLoader />}>
                     <ChatPage />
                   </Suspense>
                 </SidebarLayout>
-              } />
+              } /> */}
               <Route path="/gyms" element={
                 <SidebarLayout currentPage="gyms" pageTitle="Gyms">
                   <Suspense fallback={<PageLoader />}>
